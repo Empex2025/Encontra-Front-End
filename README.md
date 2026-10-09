@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EncontraÊ — Front-end do consumidor
 
-## Getting Started
+App web do consumidor da EncontraÊ (Next.js 16 + React 19 + TypeScript + Tailwind CSS 4).
+A fonte das telas, regras e chamadas é o **Documento de entrega EncontraÊ – consumidor**.
 
-First, run the development server:
+## Rodar
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local   # aponte BACKEND_URL para o back-end
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Sem `BACKEND_URL`, as telas abrem, mas mostram os estados de "sem conexão" / visitante: não há dados simulados.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | ambiente de desenvolvimento |
+| `npm run build` / `npm start` | versão de produção |
+| `npm run typecheck` | confere os tipos |
+| `npm run lint` | confere o código |
+| `npm run format` | formata os arquivos |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Como o projeto está organizado
 
-## Learn More
+```
+src/
+  app/                  rotas (App Router)
+    (app)/              telas com cabeçalho, menu lateral e rodapé
+    (conta-acesso)/     entrar, cadastro, recuperar senha (sem menu)
+    globals.css         tokens do Design System (claro e escuro)
+  components/
+    layout/             cabeçalho, local e raio, busca, menu lateral, barra inferior, rodapé
+    ui/                 peças pequenas reutilizáveis
+  hooks/                sessão, local do usuário, tema
+  lib/
+    api/                cliente da API, schemas (Zod) e chamadas
+    domain/             regras fixas do produto: 12 categorias (CAT12), escala de raio
+    routes.ts           endereços das telas
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Convenções
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **API:** tudo em `/api/v1`, repassado ao back-end pelo `next.config.ts` (`BACKEND_URL`). Toda resposta é conferida com Zod antes de usar. Erros chegam como `{ code, message, fields? }`.
+- **Cores:** use os nomes de papel (`bg-surface`, `text-text-muted`, `bg-primary`…). Eles trocam sozinhos no modo escuro. Cores de categoria: `var(--cat-<id>)`.
+- **Raio:** só 1, 3, 5, 10, 20 ou 50 km; padrão 50 km.
+- **Acessibilidade:** HTML semântico, foco visível, áreas de toque de 44 px, textos de erro claros.
+- **Navegador:** `localStorage` só para conveniências (tema, menu recolhido, histórico de busca, local do visitante). Dados da conta vêm sempre da API.

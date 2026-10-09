@@ -1,26 +1,195 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource/poppins/700.css";
+
+/*
+ * Tokens do Design System EncontraÊ.
+ * Cores com nome de papel (surface, text-muted…) trocam sozinhas no modo escuro.
+ * Os valores escuros vêm do protótipo (mapa de cores do modo escuro).
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --surface-3: #e9ecef;
+  --selected: #e6e9f0;
+  --border: #dee2e6;
+  --border-strong: #ced4da;
+
+  --text-strong: #00154f;
+  --text: #212529;
+  --text-2: #343a40;
+  --text-muted: #495057;
+  --text-subtle: #6c757d;
+  --link: #26397f;
+
+  --primary: #00154f;
+  --primary-hover: #26397f;
+  --on-primary: #ffffff;
+  --accent: #f4af1b;
+  --accent-hover: #e09a0f;
+  --on-accent: #00154f;
+  --accent-text: #a86704;
+  --accent-soft: #fef5e2;
+  --accent-border: #fcd780;
+
+  --success-text: #146c43;
+  --success-soft: #e8f3ee;
+  --danger: #dc3545;
+  --danger-text: #b02a37;
+  --danger-soft: #fcebec;
+  --header-bg: #00154f;
+  --header-border: #26397f;
+  --focus: #f4af1b;
+
+  /* CAT12 – cor de cada categoria */
+  --cat-comida: #a86704;
+  --cat-bares: #7a4320;
+  --cat-mercado: #146c43;
+  --cat-moda: #b02a37;
+  --cat-esporte: #0f6e8c;
+  --cat-beleza: #9f5c2e;
+  --cat-saude: #dc3545;
+  --cat-casa: #26397f;
+  --cat-servicos: #4d5f8f;
+  --cat-auto: #6c757d;
+  --cat-pet: #198754;
+  --cat-eletronicos: #00154f;
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #060f22;
+  --surface: #0d1e3d;
+  --surface-2: #132a54;
+  --surface-3: #132a54;
+  --selected: #17315f;
+  --border: #1c3664;
+  --border-strong: #27477e;
+
+  --text-strong: #ffffff;
+  --text: #f3f7ff;
+  --text-2: #c7d6f2;
+  --text-muted: #93a9cf;
+  --text-subtle: #7890b8;
+  --link: #7db0ff;
+
+  --primary: #2563eb;
+  --primary-hover: #3b76f0;
+  --on-primary: #ffffff;
+  --accent: #ea6113;
+  --accent-hover: #f88f22;
+  --on-accent: #ffffff;
+  --accent-text: #fbb931;
+  --accent-soft: #3a220f;
+  --accent-border: #3a220f;
+
+  --success-text: #5ee0a8;
+  --success-soft: #0e2f2a;
+  --danger-text: #ff8fa3;
+  --danger-soft: #3a1626;
+  --header-bg: #081530;
+  --header-border: #132a54;
+  --focus: #fbb931;
+
+  --cat-comida: #fcd780;
+  --cat-bares: #e0a47a;
+  --cat-mercado: #75b798;
+  --cat-moda: #f1aeb5;
+  --cat-esporte: #7dd3ec;
+  --cat-beleza: #f0b48a;
+  --cat-saude: #ea868f;
+  --cat-casa: #7db0ff;
+  --cat-servicos: #b3bdd8;
+  --cat-auto: #ced4da;
+  --cat-pet: #a3cfbb;
+  --cat-eletronicos: #c7d2fe;
+
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-brand: Poppins, "Inter Variable", sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-selected: var(--selected);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-strong: var(--text-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-link: var(--link);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-border: var(--accent-border);
+  --color-success-text: var(--success-text);
+  --color-success-soft: var(--success-soft);
+  --color-danger: var(--danger);
+  --color-danger-text: var(--danger-text);
+  --color-danger-soft: var(--danger-soft);
+  --color-header: var(--header-bg);
+  --color-header-border: var(--header-border);
+  --color-focus: var(--focus);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Cores fixas da marca (não mudam com o tema) */
+@theme {
+  --color-navy: #00154f;
+  --color-navy-700: #26397f;
+  --color-navy-500: #4d5f8f;
+  --color-navy-300: #808daf;
+  --color-navy-200: #b3bbcf;
+  --color-navy-50: #e6e9f0;
+  --color-amber: #f4af1b;
+  --color-amber-400: #f7bb35;
+  --color-amber-50: #fef5e2;
+
+  --shadow-card: 0px 1px 1.5px rgba(0, 0, 0, 0.1);
+  --shadow-raised: 0px 4px 6px rgba(0, 0, 0, 0.12);
+  --shadow-pop: 0px 8px 12px rgba(0, 0, 0, 0.16);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[data-theme="dark"] {
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 20px rgba(0, 0, 0, 0.4);
+  --shadow-raised: 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 20px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
