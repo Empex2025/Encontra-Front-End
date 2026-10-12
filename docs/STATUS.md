@@ -21,7 +21,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 | Tela / funcionalidade | Estado | Depende de |
 |---|---|---|
-| Explorar: busca, resultados, filtros, ordenação, ampliar raio | Pendente | `GET /search` (+ contagens dos filtros) |
+| Explorar: busca, resultados, filtros, ordenação, ampliar raio | Implementado (conferido com tipos, lint, build e navegador contra um servidor de teste isolado; **não** validado com a API real). Contrato proposto em `docs/contratos/busca.md` | `GET /search`, `GET /discovery/nearby` (+ contagens dos filtros), `POST /me/wants` |
 | Explorar: mapa | Bloqueado | Escolha do serviço de mapas; `GET /map` |
 | Home: busca em destaque e descoberta próxima | Pendente | `GET /discovery/home` |
 | Produto: detalhes, preço, disponibilidade, contato, rota | Pendente | `GET /products/{id}`, `GET /products/{id}/offers` |
