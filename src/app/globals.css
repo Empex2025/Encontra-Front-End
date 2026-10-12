@@ -35,6 +35,7 @@
   --accent-soft: #fef5e2;
   --accent-border: #fcd780;
 
+  --success: #198754;
   --success-text: #146c43;
   --success-soft: #e8f3ee;
   --danger: #dc3545;
@@ -137,6 +138,7 @@
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
+  --color-success: var(--success);
   --color-success-text: var(--success-text);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);

@@ -2,13 +2,16 @@
 
 import { ChevronDown, LocateFixed, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useDeferredValue, useId, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/components/ui/cn";
 import { useDismiss } from "@/components/ui/use-dismiss";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { endpoints, queryKeys } from "@/lib/api/endpoints";
 import { RADIUS_STEPS, type RadiusKm } from "@/lib/domain/radius";
+
+/** Outras telas pedem para abrir este painel disparando este evento na janela. */
+export const OPEN_LOCATION_EVENT = "encontrae:abrir-local";
 
 /** Botão "local · raio" do cabeçalho, com o painel para trocar bairro/cidade e a distância. */
 export function LocationPicker() {
@@ -17,6 +20,8 @@ export function LocationPicker() {
   const [label, setLabel] = useState(location.label);
   const [radius, setRadius] = useState<RadiusKm>(location.radiusKm as RadiusKm);
   const [gpsMsg, setGpsMsg] = useState("");
+  /** Coordenadas só existem quando vêm do GPS; texto digitado é convertido em ponto pelo back-end. */
+  const [coords, setCoords] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const inputId = useId();
@@ -24,12 +29,18 @@ export function LocationPicker() {
   const close = useCallback(() => setOpen(false), []);
   useDismiss(ref, open, close);
 
-  const openPanel = () => {
+  const openPanel = useCallback(() => {
     setLabel(location.label);
+    setCoords({ lat: location.lat, lng: location.lng });
     setRadius(location.radiusKm as RadiusKm);
     setGpsMsg("");
     setOpen(true);
-  };
+  }, [location]);
+
+  useEffect(() => {
+    window.addEventListener(OPEN_LOCATION_EVENT, openPanel);
+    return () => window.removeEventListener(OPEN_LOCATION_EVENT, openPanel);
+  }, [openPanel]);
 
   const useGps = () => {
     if (!("geolocation" in navigator)) {
@@ -38,8 +49,9 @@ export function LocationPicker() {
     }
     setGpsMsg("Buscando sua localização…");
     navigator.geolocation.getCurrentPosition(
-      () => {
+      (pos) => {
         // O nome do bairro virá de GET /geo/reverse quando o back-end estiver pronto.
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setLabel("Minha localização atual");
         setGpsMsg("");
       },
@@ -63,10 +75,7 @@ export function LocationPicker() {
     e.preventDefault();
     const text = label.trim();
     if (!text) return;
-    save.mutate(
-      { label: text, lat: location.lat, lng: location.lng, radiusKm: radius },
-      { onSuccess: close },
-    );
+    save.mutate({ label: text, lat: coords.lat, lng: coords.lng, radiusKm: radius }, { onSuccess: close });
   };
 
   return (
@@ -104,7 +113,10 @@ export function LocationPicker() {
                 id={inputId}
                 autoFocus
                 value={label}
-                onChange={(e) => setLabel(e.target.value.slice(0, 80))}
+                onChange={(e) => {
+                  setLabel(e.target.value.slice(0, 80));
+                  setCoords({ lat: null, lng: null });
+                }}
                 placeholder="Ex.: Ponta Verde, Maceió"
                 autoComplete="off"
                 className="h-11 rounded-lg border border-border-strong bg-surface px-3 text-base text-text outline-none placeholder:text-text-subtle focus:border-primary"
@@ -115,7 +127,10 @@ export function LocationPicker() {
                     <li key={p}>
                       <button
                         type="button"
-                        onClick={() => setLabel(p)}
+                        onClick={() => {
+                          setLabel(p);
+                          setCoords({ lat: null, lng: null });
+                        }}
                         className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm text-text-2 hover:bg-surface-2"
                       >
                         <MapPin className="size-4 text-text-subtle" aria-hidden />
