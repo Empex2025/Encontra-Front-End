@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { HelpView } from "@/components/help/help-view";
 
 export const metadata: Metadata = { title: "Central de Ajuda" };
 
 export default function AjudaPage() {
-  return <ScreenPending title="Central de Ajuda" purpose="Perguntas frequentes e fale conosco." />;
+  return (
+    <Suspense fallback={null}>
+      <HelpView />
+    </Suspense>
+  );
 }

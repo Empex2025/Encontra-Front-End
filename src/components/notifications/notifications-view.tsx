@@ -7,18 +7,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { AlertsPanel } from "@/components/alerts/alerts-panel";
+import { NotificationPrefsForm } from "@/components/account/notification-prefs";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { queryKeys } from "@/lib/api/endpoints";
-import {
-  me,
-  type Notification,
-  type NotificationPrefs,
-  notifications,
-  type NotificationType,
-} from "@/lib/api/me";
+import { me, type Notification, notifications, type NotificationType } from "@/lib/api/me";
 import { groupNotifications, safeInternalHref } from "@/lib/domain/notification-groups";
 import { formatTimeAgo } from "@/lib/format";
 
@@ -270,103 +265,17 @@ function Row({ n, onRead, onRemove }: { n: Notification; onRead: () => void; onR
   );
 }
 
-const CATS: { key: keyof NotificationPrefs["categories"]; label: string }[] = [
-  { key: "alerts", label: "Alertas inteligentes" },
-  { key: "offers", label: "Ofertas e cupons" },
-  { key: "stores", label: "Lojas que sigo" },
-  { key: "activity", label: "Minha atividade e segurança" },
-];
-const CHANNELS: { key: keyof NotificationPrefs["channels"]; label: string }[] = [
-  { key: "site", label: "No site" },
-  { key: "email", label: "E-mail" },
-  { key: "whatsapp", label: "WhatsApp" },
-];
-
 function PrefsDialog({ onClose }: { onClose: () => void }) {
-  const toast = useToast();
-  const q = useQuery({ queryKey: ["me", "notification-prefs"], queryFn: notifications.prefs });
-  const [draft, setDraft] = useState<NotificationPrefs | null>(null);
-  const prefs = draft ?? q.data ?? null;
-  const save = useMutation({
-    mutationFn: notifications.savePrefs,
-    onSuccess: () => {
-      toast("Preferências salvas.");
-      onClose();
-    },
-    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível salvar.", "info"),
-  });
-  const set = (next: NotificationPrefs) => setDraft(next);
   return (
     <Modal title="Preferências de notificação" onClose={onClose}>
-      {q.isPending ? (
-        <p className="text-text-muted">Carregando…</p>
-      ) : q.isError || !prefs ? (
-        <ErrorState error={q.error ?? new Error("Não foi possível carregar.")} onRetry={() => q.refetch()} />
-      ) : (
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-text-muted">
-            Você só recebe avisos do que segue, salvou ou pediu para acompanhar.
-          </p>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 font-bold text-text-strong">O que avisar</legend>
-            {CATS.map((c) => (
-              <label key={c.key} className="flex min-h-11 items-center gap-3 text-text">
-                <input
-                  type="checkbox"
-                  className="size-5"
-                  checked={prefs.categories[c.key]}
-                  onChange={(e) =>
-                    set({ ...prefs, categories: { ...prefs.categories, [c.key]: e.target.checked } })
-                  }
-                />
-                {c.label}
-              </label>
-            ))}
-          </fieldset>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 font-bold text-text-strong">Por onde avisar</legend>
-            {CHANNELS.map((c) => (
-              <label key={c.key} className="flex min-h-11 items-center gap-3 text-text">
-                <input
-                  type="checkbox"
-                  className="size-5"
-                  checked={prefs.channels[c.key]}
-                  disabled={
-                    c.key === "site" &&
-                    prefs.channels.site &&
-                    !prefs.channels.email &&
-                    !prefs.channels.whatsapp
-                  }
-                  onChange={(e) =>
-                    set({ ...prefs, channels: { ...prefs.channels, [c.key]: e.target.checked } })
-                  }
-                />
-                {c.label}
-              </label>
-            ))}
-            <p className="text-xs text-text-subtle">
-              Pelo menos um canal fica ligado. Avisos de segurança chegam sempre.
-            </p>
-          </fieldset>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={save.isPending}
-              onClick={() => save.mutate(prefs)}
-              className="h-11 flex-1 rounded-lg bg-primary font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
-            >
-              Salvar
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-11 rounded-lg border border-border-strong px-5 font-semibold hover:bg-surface-2"
-            >
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
+      <NotificationPrefsForm />
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-4 h-11 w-full rounded-lg border border-border-strong font-semibold hover:bg-surface-2"
+      >
+        Fechar
+      </button>
     </Modal>
   );
 }

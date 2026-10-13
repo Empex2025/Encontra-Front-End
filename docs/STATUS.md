@@ -38,7 +38,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Avaliações (ler, filtrar, "útil") | Implementado (tipos, lint, testes e navegador contra servidor de teste; **não** validado com a API real) | `GET /…/reviews`, `POST /reviews/{id}/helpful` |
 | Avaliar (fotos, vídeo, checagem, rascunho) | Implementado (idem). Contrato em `docs/contratos/acompanhar.md` | `GET /review-targets/…`, `POST /reviews`, `POST /uploads/presign` |
 | Sinais de confiança (verificado, atualizado em, disponibilidade informada) | Pendente | campos no perfil e na oferta |
-| Denunciar | Pendente | `POST /reports` |
+| Denunciar | Implementado (tipos, lint, testes e navegador contra servidor de teste; **não** validado com a API real). Contrato em `docs/contratos/conta.md` | `GET /reports/target`, `POST /reports` |
 
 ## Fase 3 — Descobrir
 
@@ -59,9 +59,9 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Conversas (chat próprio: lista, conversa, foto, silenciar, bloquear, denunciar, apagar) | Implementado (idem; atualização por consulta periódica, sem Socket.IO) | `/conversations…`, `/uploads/presign` |
 | Notificações e preferências | Implementado (idem) | `/notifications…`, `/me/notification-prefs` |
 | Minha atividade | Implementado (idem) | `/me/quotes`, `/me/wants`, `/me/reviews`, `/me/coupons`, `/me/activity/summary`, `/recent` |
-| Minha Conta (perfil, endereços, interesses, sessões, LGPD) | Pendente | `/me/*` |
-| Ajuda, Institucional | Pendente | `/help/*`, `/legal/{doc}` |
-| Telas de sistema (404, erro, sem internet, manutenção) | Pendente | `GET /status` |
+| Minha Conta (perfil, endereços, interesses, notificações, privacidade e segurança, excluir conta, configurações, sair) | Implementado (conferido com tipos, lint, 83 testes, build e navegador contra servidor de teste isolado, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/conta.md` | `/me/profile`, `PATCH /me`, `/me/addresses`, `/me/interests`, `/me/notification-prefs`, `/me/sessions`, `/me/search-history`, `/me/export`, `/me/deletion`, `/auth/logout` |
+| Ajuda (FAQ, fale conosco) e Institucional (sobre, termos, privacidade, cookies com controles reais, avaliações) | Implementado (idem). Textos jurídicos e de ajuda vêm da API; nada fixo no código | `GET /help/faq`, `POST /help/contact`, `GET /legal/{doc}` |
+| Telas de sistema (404 com sugestões, erro 500, faixa sem internet, manutenção) | Implementado (idem). Faltam: limite de 8 s de carregamento e "Oferta encerrada" (dependem de telas futuras) | `GET /status`, `POST /status/notify` |
 
 ## Fase 4 — Inteligência
 

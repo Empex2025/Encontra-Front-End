@@ -33,3 +33,15 @@ describe("whatsappUrl", () => {
     expect(whatsappUrl(null, "x")).toBeNull();
   });
 });
+
+describe("whatsappUrl por modo", () => {
+  it("app, web e padrão", async () => {
+    const { whatsappUrl } = await import("./whatsapp");
+    expect(whatsappUrl("5582999998888", "oi", "app")).toBe("whatsapp://send?phone=5582999998888&text=oi");
+    expect(whatsappUrl("5582999998888", "oi", "web")).toBe(
+      "https://web.whatsapp.com/send?phone=5582999998888&text=oi",
+    );
+    expect(whatsappUrl("5582999998888", "oi", null)).toBe("https://wa.me/5582999998888?text=oi");
+    expect(whatsappUrl("123", "oi", null)).toBeNull();
+  });
+});

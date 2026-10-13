@@ -91,15 +91,31 @@ Código pronto (PR #7), **não validado com a API real**. Contrato: `docs/contra
 
 ## Fluxo 5 · Conta, suporte e sistema
 
-Tudo pendente.
+Código pronto (PR #8), **não validado com a API real** (testado no navegador contra um servidor de teste isolado). Contrato: `docs/contratos/conta.md`.
 
-| Tela | Pendência |
-|---|---|
-| Minha Conta (perfil, endereços, interesses, sessões, LGPD, excluir conta) | API `/me/*`. Prazos da LGPD: **Externo** (revisão jurídica). |
-| Central de Ajuda, Institucional | API `/help/*`, `/legal/{doc}`; textos jurídicos dependem de revisão. |
-| Denunciar | API `POST /reports`. |
-| Telas de sistema (404, erro, sem internet, manutenção, oferta encerrada) | Front, parte depende de `GET /status`. |
-| Área do lojista | Fora do escopo do app do consumidor (aparece "em breve" no rodapé). |
+| Tela | Estado | Pendência |
+|---|---|---|
+| Minha Conta: Perfil (nome, e-mail, celular com código por SMS, CPF mascarado) | Implementado | `GET /me/profile`, `PATCH /me`, `POST /auth/otp/send {purpose:change_phone}` e `/auth/otp/verify` (API). O CPF nunca é editável. |
+| Minha Conta: Endereços (principal único, não remove o último, CEP, "usar minha localização", raio padrão) | Implementado | `/me/addresses`, `/geo/cep`, `/geo/reverse`, `PUT /me/location`. Trocar o principal não atualiza o local do cabeçalho até o servidor refletir isso em `GET /me/location`. |
+| Minha Conta: Interesses (CAT12, mínimo 3) | Implementado | `GET/PUT /me/interests`. |
+| Minha Conta: Notificações (o que avisar, por onde, não perturbe à noite) | Implementado | `PATCH /me/notification-prefs` (**mudou em relação ao Fluxo 4**: antes `PUT` com outro formato; a janela da tela Notificações agora usa o mesmo formulário). Segurança e "Na EncontraÊ" travadas ligadas. A entrega real dos avisos (WhatsApp, e-mail, horário) é do back-end. |
+| Minha Conta: Privacidade e segurança (trocar senha, aparelhos, privacidade, nome nas avaliações, histórico, baixar dados) | Implementado | `PUT /me/password`, `/me/sessions`, `POST /auth/logout`, `/me/search-history`, `POST /me/export`. Pedido de senha: o documento não descreve a tela de trocar senha; fiz modal com senha atual + nova (regras do cadastro). **Confirmar.** |
+| Minha Conta: Excluir conta (3 passos, 30 dias) | Implementado | `POST/DELETE /me/deletion`. Prazo e textos são do documento; **revisão jurídica** (LGPD) pendente. O aviso "será excluída em…" aparece no topo de Minha Conta e permite cancelar. |
+| Minha Conta: Configurações (tema, WhatsApp, idioma, mídia/sons) | Implementado | Autoplay e sons são só preferência gravada: ainda não há vídeo nem som no app para obedecê-las. "WhatsApp no aplicativo" usa `whatsapp://` (falha em computador sem o app); sem escolha, o app usa `wa.me`, que abre o app quando existe. **Decisão:** o documento diz "aplicativo" como padrão; mantive `wa.me` até a pessoa escolher, por ser mais seguro. |
+| Sair da conta | Implementado | Sempre pergunta. Apaga local, histórico de buscas, comparação, vistos e rascunhos; mantém tema, cookies, modo do WhatsApp. |
+| "Tem um negócio?" | Bloqueado | Área do lojista fora do escopo: o cartão diz "em breve". |
+| Central de Ajuda (busca, categorias, "ajudou?") e Fale conosco | Implementado | `GET /help/faq` (todo o texto, inclusive horários, vem do servidor), `/help/faq/{id}/feedback`, `POST /help/contact` e `purpose:"help"` em `/uploads/presign`. Visitante pode usar. Cada resposta ajudou conta uma vez só **por clique no mesmo carregamento** (o servidor precisa impedir repetição). |
+| Institucional (sobre, termos, privacidade, cookies, avaliações) | Implementado | `GET /legal/{doc}`: **nenhum texto jurídico está no código**. Sem a API ou sem revisão jurídica, a tela mostra erro/carregando. |
+| Cookies: controles reais | Implementado | Mesma escolha do aviso da Home. Desempenho e Personalização andam juntos porque o app só tem uma chave de medição. |
+| Denunciar (loja, produto, avaliação, prestador, story/live, outro) | Implementado | `GET /reports/target`, `POST /reports`. Denunciar **story/live e conversa** não tem ponto de entrada ainda (telas de Stories/Ao vivo pendentes). A denúncia de conversa continua usando o fluxo próprio do chat. |
+| 404 | Implementado | Sugestões saem de `GET /discovery/home`; sem local ou sem dados somem. |
+| Erro 500 | Implementado | "ref." é o código (digest) do Next; não há ainda como cruzar com o log do back-end. |
+| Sem internet | Implementado | Faixa e nova tentativa a cada 10 s via `GET /status`; ao voltar, refaz as consultas. Não há tela dedicada "sem internet" para páginas que nunca carregaram (só a faixa). |
+| Manutenção | Implementado | Tela cheia quando o servidor responde 503 com `MAINTENANCE`. "Me avise quando voltar" → `POST /status/notify`. |
+| Regras de carregamento (esqueleto ≤ 300 ms, > 8 s vira "Algo deu errado") | Pendente | Cada tela tem seu estado de carregamento próprio; não há limite geral de 8 s. Fazer junto com a validação na API real. |
+| "Oferta encerrada" (cupom/live) | Pendente | Depende da tela de oferta (`/o`) e de Ao vivo, que ainda não existem. |
+| Estados vazios com próximo passo | Parcial | Feitos nas telas dos fluxos anteriores e nas novas; revisar todos com dados reais. |
+| Área do lojista | Fora do escopo | Aparece "em breve" no rodapé. |
 
 ---
 

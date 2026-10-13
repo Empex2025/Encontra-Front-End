@@ -27,7 +27,10 @@ export const conversationSchema = z.object({
 });
 export type Conversation = z.infer<typeof conversationSchema>;
 
-const listSchema = z.object({ items: z.array(conversationSchema), unreadTotal: z.number().int().nonnegative() });
+const listSchema = z.object({
+  items: z.array(conversationSchema),
+  unreadTotal: z.number().int().nonnegative(),
+});
 
 export const conversationDetailSchema = conversationSchema.extend({
   product: z
@@ -68,7 +71,7 @@ export const chat = {
   remove: (id: string) => api(`/conversations/${seg(id)}`, none, { method: "DELETE" }),
   report: (body: { conversationId: string; reason: string; details?: string; alsoBlock: boolean }) =>
     api("/reports", none, { method: "POST", body }),
-  presign: (purpose: "chat" | "review", file: { type: string; size: number }) =>
+  presign: (purpose: "chat" | "review" | "help", file: { type: string; size: number }) =>
     api("/uploads/presign", presignSchema, {
       method: "POST",
       body: { purpose, contentType: file.type, size: file.size },
@@ -76,7 +79,7 @@ export const chat = {
 };
 
 /** Envia o arquivo direto ao armazenamento (URL assinada) e devolve a chave para a mensagem/avaliação. */
-export async function uploadFile(purpose: "chat" | "review", file: File): Promise<string> {
+export async function uploadFile(purpose: "chat" | "review" | "help", file: File): Promise<string> {
   const { uploadUrl, key } = await chat.presign(purpose, file);
   const res = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type }, body: file });
   if (!res.ok) throw new Error("Não foi possível enviar o arquivo. Tente de novo.");

@@ -124,10 +124,25 @@ export const prefsSchema = z.object({
     alerts: z.boolean(),
     offers: z.boolean(),
     stores: z.boolean(),
-    activity: z.boolean(),
+    chat: z.boolean(),
+    nearby: z.boolean(),
+    /** Sempre ligado: o servidor devolve true e ignora tentativa de desligar. */
+    security: z.boolean(),
   }),
-  channels: z.object({ site: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }),
+  channels: z.object({
+    /** Sempre ligado. */
+    site: z.boolean(),
+    whatsapp: z.boolean(),
+    email: z.boolean(),
+  }),
+  /** "Não perturbe à noite" (22h às 8h). */
+  quietHours: z.boolean(),
 });
+export type PrefsPatch = {
+  categories?: Partial<z.infer<typeof prefsSchema>["categories"]>;
+  channels?: Partial<z.infer<typeof prefsSchema>["channels"]>;
+  quietHours?: boolean;
+};
 export type NotificationPrefs = z.infer<typeof prefsSchema>;
 export const NOTIFICATIONS_PAGE_SIZE = 20;
 
@@ -139,7 +154,7 @@ export const notifications = {
     api("/notifications/read-all", none, { method: "POST", body: type ? { type } : {} }),
   remove: (id: string) => api(`/notifications/${seg(id)}`, none, { method: "DELETE" }),
   prefs: () => api("/me/notification-prefs", prefsSchema),
-  savePrefs: (body: NotificationPrefs) => api("/me/notification-prefs", prefsSchema, { method: "PUT", body }),
+  savePrefs: (body: PrefsPatch) => api("/me/notification-prefs", prefsSchema, { method: "PATCH", body }),
 };
 
 /* ---------- Atividade ---------- */

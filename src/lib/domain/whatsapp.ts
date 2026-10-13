@@ -27,11 +27,36 @@ export const QUICK_QUESTIONS = [
   "Qual o endereço?",
 ] as const;
 
+export type WhatsappMode = "app" | "web";
+const WA_KEY = "encontrae_whatsapp";
+
+/** Como abrir o WhatsApp (Minha Conta › Configurações). Sem escolha, usa o link universal wa.me. */
+export function readWhatsappMode(): WhatsappMode | null {
+  try {
+    const v = typeof window === "undefined" ? null : window.localStorage.getItem(WA_KEY);
+    return v === "app" || v === "web" ? v : null;
+  } catch {
+    return null;
+  }
+}
+export function saveWhatsappMode(mode: WhatsappMode) {
+  try {
+    window.localStorage.setItem(WA_KEY, mode);
+  } catch {}
+}
+
 /** Link do WhatsApp. `digits` = número só com dígitos e DDI; sem número válido não há link. */
-export function whatsappUrl(digits: string | null, text: string): string | null {
+export function whatsappUrl(
+  digits: string | null,
+  text: string,
+  mode: WhatsappMode | null = readWhatsappMode(),
+): string | null {
   const n = (digits ?? "").replace(/\D/g, "");
   if (n.length < 10) return null;
-  return `https://wa.me/${n}?text=${encodeURIComponent(text)}`;
+  const t = encodeURIComponent(text);
+  if (mode === "app") return `whatsapp://send?phone=${n}&text=${t}`;
+  if (mode === "web") return `https://web.whatsapp.com/send?phone=${n}&text=${t}`;
+  return `https://wa.me/${n}?text=${t}`;
 }
 
 /** Mensagem de abertura para uma loja, sem produto. */
