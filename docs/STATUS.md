@@ -28,7 +28,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Perfil da loja | Pendente | `GET /profiles/{slug}` e sub-rotas |
 | Perfil do prestador e pedido de orçamento | Pendente | `GET /profiles/{slug}`, `GET /services/{id}`, `POST /quotes` |
 | Contato: WhatsApp, telefone, rota | Pendente | dados do perfil + `POST /tracking` |
-| Entrada: entrar, cadastro (CPF, SMS, local, interesses), recuperar senha, visitante | Pendente | `/auth/*`, provedor de SMS |
+| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Falta: cada tela futura retomar a ação pendente após o login (`takePendingAction`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
 
 ## Fase 2 — Confiar
 

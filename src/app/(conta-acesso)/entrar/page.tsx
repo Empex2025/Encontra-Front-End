@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { LoginForm } from "@/components/auth/login-form";
 
-export const metadata: Metadata = { title: "Entrar" };
+export const metadata: Metadata = { title: "Entrar", robots: { index: false, follow: true } };
 
 export default function EntrarPage() {
   return (
-    <ScreenPending title="Entrar" purpose="Entre com CPF ou e-mail e senha, ou continue como visitante." />
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
