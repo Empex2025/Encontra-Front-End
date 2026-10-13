@@ -25,10 +25,10 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Explorar: mapa | Bloqueado | Escolha do serviço de mapas; `GET /map` |
 | Home: busca em destaque (histórico, atalhos, buscas populares), categorias (CAT12), blocos "Acontecendo", Produtos, Serviços e Experiências perto de você (blocos vazios ficam ocultos), aviso de cookies | Implementado (conferido com tipos, lint, 25 testes, build e navegador contra servidor de teste isolado, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/home.md` | `GET /discovery/home`, `GET /search/autocomplete` |
 | Home: Stories, Meu Radar, Radar do bairro (preços, mais procurados, lugares) e mapa de resultados | Pendente / mapa Bloqueado | `/stories`, `/me/radar`, `/discovery/trending`, `/discovery/prices`; serviço de mapas |
-| Produto: detalhes, preço, disponibilidade, contato, rota | Pendente | `GET /products/{id}`, `GET /products/{id}/offers` |
-| Perfil da loja | Pendente | `GET /profiles/{slug}` e sub-rotas |
-| Perfil do prestador e pedido de orçamento | Pendente | `GET /profiles/{slug}`, `GET /services/{id}`, `POST /quotes` |
-| Contato: WhatsApp, telefone, rota | Pendente | dados do perfil + `POST /tracking` |
+| Produto: detalhes, preço, disponibilidade, quantidade, mensagem pronta, Avise-me, contato, comparar, cupom, avaliações | Implementado (tipos, lint, 46 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/decidir.md` | `GET /products/{slug}`, `/related`, `/reviews` |
+| Perfil da loja (fotos, produtos, ofertas, avaliações, sobre) | Implementado (idem; **não** validado com a API real) | `GET /profiles/{slug}` e sub-rotas |
+| Perfil do prestador e pedido de orçamento | Implementado (idem) | `GET /profiles/{slug}`, `POST /quotes` |
+| Contato: chat, WhatsApp, rota | Implementado (idem) | dados do perfil + `POST /conversations`, `POST /tracking` |
 | Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Retomada da ação pendente após o login: só "Quero em promoção" por enquanto; as demais telas retomam quando existirem (detalhes em `docs/PENDENCIAS.md`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
 
 ## Fase 2 — Confiar
@@ -44,9 +44,9 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 | Tela / funcionalidade | Estado | Depende de |
 |---|---|---|
-| Ofertas & Promoções, cupons | Pendente | `GET /offers`, `GET /coupons`, `POST /coupons/{id}/claim` |
+| Ofertas & Promoções, cupons | Implementado (idem) | `GET /offers`, `POST /coupons/{id}/claim` |
 | Comparar: quadro lado a lado (até 3 itens escolhidos pelo usuário, prioridades, "só o que é diferente") e botão "Comparar" nos cards | Implementado (conferido com tipos, lint, build, 11 testes da lógica e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/comparar.md`; a lista de itens fica no navegador | `GET /comparisons/view`, campo `group` nos itens da busca |
-| Comparar: tela de pesquisa e bandeja "Sua comparação" (CompararSelecao), mapa | Pendente | Escolha do serviço de mapas (mapa) |
+| Comparar: pesquisa e bandeja "Sua comparação" | Implementado (idem) | `GET /search`; mapa depende do serviço de mapas |
 | Favoritos, listas, seguir | Pendente | `/me/favorites`, `/me/lists`, `/profiles/{id}/follow` |
 | Alertas e "Quero em promoção" | Pendente | `/me/alerts`, `/me/wants` |
 | Stories, Ao vivo, Evento | Pendente | `/stories`, `/lives`, `/happenings` + Socket.IO |

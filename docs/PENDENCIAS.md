@@ -57,16 +57,21 @@ Código pronto (PR #4), não validado com a API real.
 
 ## Fluxo 3 · Decidir
 
+Código pronto (PR #6), **não validado com a API real**. Contratos: `docs/contratos/decidir.md` e `comparar.md`.
+
 | Tela | Estado | Pendência |
 |---|---|---|
-| Comparar (lado a lado) | Implementado, não validado | `GET /comparisons/view` e o campo `group` nos itens da busca (API). Contrato em `docs/contratos/comparar.md`. A lista fica no navegador. |
-| Comparar (seleção: pesquisa e bandeja "Sua comparação") | Pendente | Front. Hoje só dá para adicionar pelo botão "Comparar" dos cards. |
-| "Salvar comparação" na conta | Decisão | O convite existe (`saveComparison`), mas a decisão 5 revisada diz que a lista fica só no navegador. Decidir se haverá salvar em Favoritos; se sim, vira rota nova. |
-| Produto | Pendente | `GET /products/{id}`, `GET /products/{id}/offers`. Hoje `/p/{slug}` é página provisória. |
-| Perfil da loja | Pendente | `GET /profiles/{slug}` e sub-rotas. `/l/{slug}` provisória. |
-| Perfil do prestador e pedido de orçamento | Pendente | `GET /services/{id}`, `POST /quotes`. `/s/{slug}` provisória. |
-| Ofertas, cupom e card de oferta | Pendente | `GET /offers`, `GET /coupons`, `POST /coupons/{id}/claim`. O card de oferta ainda não existe como componente. |
-| Contato: WhatsApp, telefone, rota | Pendente | Dados do perfil + `POST /tracking`. Rota no mapa depende da escolha do serviço de mapas. |
+| Comparar (lado a lado) | Implementado | `GET /comparisons/view` e o campo `group` nos itens da busca (API). A lista fica no navegador. |
+| Comparar: pesquisa e bandeja "Sua comparação" | Implementado | Usa `GET /search`. Falta o mapa (bloqueado). |
+| "Salvar comparação" na conta | Decisão | O convite existe (`saveComparison`), mas a decisão 5 diz que a lista fica só no navegador. Decidir se haverá salvar em Favoritos. |
+| Produto | Implementado | `GET /products/{slug}` (+ `/related`, `/reviews`). "Ver no mapa" abre o Explorar (mapa bloqueado). Vários-lojas (`/products/{id}/offers`) não entrou: o contrato novo traz `sameLine` e `related`. |
+| Perfil da loja | Implementado | `GET /profiles/{slug}` e `/products`, `/posts`, `/offers`, `/reviews`. Visualizador de fotos simples (sem curtir/comentar: depende de `POST /posts/{id}/like` e comentários, Fluxo 4). Destaques (stories) só aparecem como círculos: abrir depende da tela de Stories. |
+| Perfil do prestador e orçamento | Implementado | `POST /quotes`. Mapa da área de atendimento não existe (mapa bloqueado). |
+| Ofertas, cupom | Implementado | `GET /offers` (contrato novo, em `decidir.md`) e `POST /coupons/{id}/claim`. Cupons resgatados aparecem em Atividade (Fluxo 4). "Mapa (camada ofertas)" bloqueado. |
+| Contato: WhatsApp, telefone, rota | Implementado | WhatsApp abre `wa.me` só se o perfil tiver número. Telefone não é exibido (o documento prevê só chat e WhatsApp). "Como chegar" abre o Google Maps no navegador (não depende de chave); trocar se for escolhido outro serviço de mapas. |
+| Páginas públicas com SEO (título e prévia ao compartilhar) | Front/API | Produto, loja e prestador são renderizados no navegador. Para título, descrição, imagem de prévia e indexação é preciso buscar os dados no servidor (`BACKEND_URL` em tempo de execução) e gerar `generateMetadata`. Fica para quando a API existir. |
+| Avaliar, denunciar, compartilhar (links) | Pendente | Os botões levam a `/avaliar`, `/denunciar` (Fluxos 4 e 5). |
+| Retomar ação pendente (favoritar, seguir, conversar, alerta, cupom, orçamento) | Front | O convite abre e leva ao login, mas só "Quero em promoção" retoma sozinho. Falta chamar `takePendingAction` nas telas novas. |
 
 ## Fluxo 4 · Contato e acompanhamento
 
