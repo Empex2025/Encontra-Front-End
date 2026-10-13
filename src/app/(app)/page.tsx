@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { CategoryStrip } from "@/components/home/category-strip";
 import { HomeHero } from "@/components/home/home-hero";
+import { HomeRadar } from "@/components/home/home-radar";
+import { NeighborhoodRadar } from "@/components/home/neighborhood-radar";
 import { HomeStories } from "@/components/home/home-stories";
 import { HomeSections } from "@/components/home/home-sections";
 
@@ -13,7 +15,9 @@ export default function HomePage() {
       <HomeHero />
       <HomeStories />
       <CategoryStrip />
+      <HomeRadar />
       <HomeSections />
+      <NeighborhoodRadar />
     </div>
   );
 }

@@ -13,12 +13,15 @@ export function Tabs({
   onChange,
   label,
   className,
+  dark,
 }: {
   tabs: TabDef[];
   value: string;
   onChange: (id: string) => void;
   label: string;
   className?: string;
+  /** Para fundo escuro (faixa azul-marinho). */
+  dark?: boolean;
 }) {
   const base = useId();
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -36,7 +39,11 @@ export function Tabs({
   };
 
   return (
-    <div role="tablist" aria-label={label} className={cn("flex gap-1 overflow-x-auto border-b border-border", className)}>
+    <div
+      role="tablist"
+      aria-label={label}
+      className={cn("flex gap-1 overflow-x-auto border-b border-border", className)}
+    >
       {tabs.map((t, i) => {
         const on = t.id === value;
         return (
@@ -54,11 +61,19 @@ export function Tabs({
             onKeyDown={(e) => onKey(e, i)}
             className={cn(
               "-mb-px h-12 shrink-0 border-b-2 px-4 text-sm font-semibold whitespace-nowrap",
-              on ? "border-primary text-text-strong" : "border-transparent text-text-muted hover:text-text",
+              dark
+                ? on
+                  ? "border-amber text-white"
+                  : "border-transparent text-navy-200 hover:text-white"
+                : on
+                  ? "border-primary text-text-strong"
+                  : "border-transparent text-text-muted hover:text-text",
             )}
           >
             {t.label}
-            {t.count != null && <span className="ml-1.5 text-text-subtle">({t.count})</span>}
+            {t.count != null && (
+              <span className={cn("ml-1.5", dark ? "text-navy-300" : "text-text-subtle")}>({t.count})</span>
+            )}
           </button>
         );
       })}
