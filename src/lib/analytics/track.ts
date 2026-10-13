@@ -6,7 +6,7 @@
  *   associa o usuário logado pela sessão e a região pelo local salvo, quando permitido.
  * - Visualizações repetidas do mesmo item na mesma aba, em 30 min, não são reenviadas.
  * - Um clique em WhatsApp, telefone ou rota é "contato iniciado", nunca "venda".
- * - Quem escolheu "Só os necessários" no aviso de cookies não tem eventos enviados.
+ * - Medição só com consentimento: sem escolha ainda ou com "Só os necessários", nenhum evento é enviado (LGPD).
  * - Falha no envio nunca atrapalha o uso: o evento é descartado em silêncio.
  */
 import { API_BASE } from "@/lib/api/client";
@@ -69,7 +69,7 @@ function isDuplicateView(e: TrackEvent) {
 }
 
 export function track(event: TrackEvent) {
-  if (typeof window === "undefined" || readCookieChoice() === "necessary" || isDuplicateView(event)) return;
+  if (typeof window === "undefined" || readCookieChoice() !== "all" || isDuplicateView(event)) return;
   const body = JSON.stringify({
     ...event,
     sessionId: sessionId(),

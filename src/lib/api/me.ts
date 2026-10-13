@@ -64,6 +64,19 @@ export type ListSummary = z.infer<typeof listSummarySchema>;
 const listsSchema = z.object({ items: z.array(listSummarySchema) });
 const listDetailSchema = listSummarySchema.extend({ items: z.array(favoriteSchema) });
 
+export const savedComparisonSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  createdAt: z.string(),
+  group: z.object({ id: z.string(), label: z.string() }),
+  items: z
+    .array(z.object({ ref: z.string(), title: z.string(), imageUrl: nstr }))
+    .min(2)
+    .max(3),
+});
+export type SavedComparison = z.infer<typeof savedComparisonSchema>;
+const savedComparisonsSchema = z.object({ items: z.array(savedComparisonSchema) });
+
 export const alertRowSchema = alertSchema.extend({
   active: z.boolean(),
   lastTrigger: z.object({ at: z.string(), text: z.string() }).nullable(),
@@ -92,6 +105,10 @@ export const me = {
     api(`/me/lists/${seg(id)}/items/${type}/${seg(itemId)}`, none, { method: "DELETE" }),
   shareList: (id: string) =>
     api(`/me/lists/${seg(id)}/share`, z.object({ url: z.string() }), { method: "POST" }),
+  comparisons: () => api("/me/comparisons", savedComparisonsSchema),
+  saveComparison: (body: { name: string; items: string[] }) =>
+    api("/me/comparisons", savedComparisonSchema, { method: "POST", body }),
+  deleteComparison: (id: string) => api(`/me/comparisons/${seg(id)}`, none, { method: "DELETE" }),
   alerts: () => api("/me/alerts", alertsSchema),
   setAlertActive: (id: string, active: boolean) =>
     api(`/me/alerts/${seg(id)}`, none, { method: "PATCH", body: { active } }),

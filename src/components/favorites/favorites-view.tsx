@@ -24,8 +24,10 @@ import {
   FAVORITE_SORTS,
   type ListSummary,
   me,
+  type SavedComparison,
 } from "@/lib/api/me";
 import { listCompareEntries } from "@/lib/domain/list-compare";
+import { savedToEntries } from "@/lib/domain/saved-comparison";
 import { formatTimeAgo } from "@/lib/format";
 import { conversaHref, lojaHref, prestadorHref, routes } from "@/lib/routes";
 
@@ -520,63 +522,127 @@ function ListsTab() {
   if (q.isPending) return <p className="text-text-muted">Carregando…</p>;
   if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {q.data.items.map((l) => (
-        <li key={l.id} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
-          <button
-            type="button"
-            onClick={() => setOpenId(l.id)}
-            className="flex flex-col gap-3 text-left"
-            aria-label={`Abrir lista ${l.name}`}
-          >
-            <span className="grid aspect-[2/1] grid-cols-4 gap-1 overflow-hidden rounded-lg bg-surface-2">
-              {l.thumbnails.slice(0, 4).map((t, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={t} alt="" className="size-full object-cover" />
-              ))}
-            </span>
-            <span className="flex items-center gap-1.5 font-bold text-text-strong">
-              {l.shared ? (
-                <Users className="size-4" aria-label="Compartilhada" />
-              ) : (
-                <Lock className="size-4" aria-label="Só você vê" />
-              )}
-              {l.name}
-            </span>
-            <span className="text-sm text-text-muted">
-              {l.itemCount} {l.itemCount === 1 ? "item" : "itens"} ·{" "}
-              {l.shared ? `compartilhada${l.sharedWith ? ` com ${l.sharedWith}` : ""}` : "só você vê"}
-            </span>
-          </button>
-          <button
-            type="button"
-            disabled={share.isPending}
-            onClick={() => share.mutate(l.id)}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-border-strong text-sm font-semibold hover:bg-surface-2"
-          >
-            <Share2 className="size-4" aria-hidden />
-            Compartilhar
-          </button>
+    <div className="flex flex-col gap-8">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {q.data.items.map((l) => (
+          <li key={l.id} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+            <button
+              type="button"
+              onClick={() => setOpenId(l.id)}
+              className="flex flex-col gap-3 text-left"
+              aria-label={`Abrir lista ${l.name}`}
+            >
+              <span className="grid aspect-[2/1] grid-cols-4 gap-1 overflow-hidden rounded-lg bg-surface-2">
+                {l.thumbnails.slice(0, 4).map((t, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={t} alt="" className="size-full object-cover" />
+                ))}
+              </span>
+              <span className="flex items-center gap-1.5 font-bold text-text-strong">
+                {l.shared ? (
+                  <Users className="size-4" aria-label="Compartilhada" />
+                ) : (
+                  <Lock className="size-4" aria-label="Só você vê" />
+                )}
+                {l.name}
+              </span>
+              <span className="text-sm text-text-muted">
+                {l.itemCount} {l.itemCount === 1 ? "item" : "itens"} ·{" "}
+                {l.shared ? `compartilhada${l.sharedWith ? ` com ${l.sharedWith}` : ""}` : "só você vê"}
+              </span>
+            </button>
+            <button
+              type="button"
+              disabled={share.isPending}
+              onClick={() => share.mutate(l.id)}
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-border-strong text-sm font-semibold hover:bg-surface-2"
+            >
+              <Share2 className="size-4" aria-hidden />
+              Compartilhar
+            </button>
+          </li>
+        ))}
+        <li className="rounded-2xl border border-dashed border-border-strong p-4">
+          <p className="mb-2 flex items-center gap-1.5 font-bold text-text-strong">
+            <Plus className="size-4" aria-hidden />
+            Nova lista
+          </p>
+          <NewListForm
+            name={name}
+            onName={(v) => {
+              setName(v);
+              setError("");
+            }}
+            onSubmit={(n) => create.mutate(n)}
+            pending={create.isPending}
+            error={error}
+            submitLabel="Criar"
+          />
         </li>
-      ))}
-      <li className="rounded-2xl border border-dashed border-border-strong p-4">
-        <p className="mb-2 flex items-center gap-1.5 font-bold text-text-strong">
-          <Plus className="size-4" aria-hidden />
-          Nova lista
-        </p>
-        <NewListForm
-          name={name}
-          onName={(v) => {
-            setName(v);
-            setError("");
-          }}
-          onSubmit={(n) => create.mutate(n)}
-          pending={create.isPending}
-          error={error}
-          submitLabel="Criar"
-        />
-      </li>
-    </ul>
+      </ul>
+      <SavedComparisons />
+    </div>
+  );
+}
+
+/** Comparações que a pessoa salvou na conta (botão "Salvar comparação" em Comparar). */
+function SavedComparisons() {
+  const router = useRouter();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const { replace } = useComparisonSelection();
+  const q = useQuery({ queryKey: ["me", "comparisons"], queryFn: me.comparisons });
+  const del = useMutation({
+    mutationFn: me.deleteComparison,
+    onSuccess: () => {
+      toast("Comparação excluída.");
+      void qc.invalidateQueries({ queryKey: ["me", "comparisons"] });
+    },
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível excluir.", "info"),
+  });
+  if (q.isPending || q.isError || q.data.items.length === 0) return null;
+  const open = (c: SavedComparison) => {
+    replace(savedToEntries(c));
+    router.push(routes.comparar);
+  };
+  return (
+    <section aria-labelledby="comparacoes-salvas" className="flex flex-col gap-3">
+      <h2 id="comparacoes-salvas" className="flex items-center gap-2 text-lg font-bold text-text-strong">
+        <Scale className="size-5" aria-hidden />
+        Comparações salvas
+      </h2>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {q.data.items.map((c) => (
+          <li key={c.id} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+            <div>
+              <p className="font-bold text-text-strong">{c.name}</p>
+              <p className="text-sm text-text-muted">
+                {c.items.length} opções · {c.group.label}
+                {formatTimeAgo(c.createdAt) ? ` · ${formatTimeAgo(c.createdAt)}` : ""}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => open(c)}
+                className="h-10 flex-1 rounded-lg bg-primary text-sm font-bold text-on-primary hover:bg-primary-hover"
+              >
+                Abrir
+              </button>
+              <button
+                type="button"
+                disabled={del.isPending}
+                onClick={() => del.mutate(c.id)}
+                aria-label={`Excluir comparação ${c.name}`}
+                className="inline-flex size-10 items-center justify-center rounded-lg border border-border-strong text-text-muted hover:bg-surface-2"
+              >
+                <Trash2 className="size-4" aria-hidden />
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

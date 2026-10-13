@@ -83,12 +83,12 @@ Código pronto (PR #7), **não validado com a API real**. Contrato: `docs/contra
 
 | Tela | Estado | Pendência |
 |---|---|---|
-| Favoritos (itens, lojas, listas, alertas) | Implementado | `/me/favorites`, `/me/following`, `/me/lists…`, `/me/alerts` (API). Lista compartilhada: o link abre uma página pública que **ainda não existe** (ver "Compartilhado"). Comentar numa lista compartilhada depende da página pública. O faixa "{N} lojas com novidades" depende de `news` real vinda do servidor. |
+| Favoritos (itens, lojas, listas, alertas) | Implementado | `/me/favorites`, `/me/following`, `/me/lists…`, `/me/alerts` (API). **Lista compartilhada:** o link agora abre a página pública `/listas/{token}` (ver `docs/contratos/lista-publica.md`; sem comentários nesta versão; `noindex`). **Comparações salvas na conta** (decisão de 13/10): botão "Salvar comparação" (pede conta, retoma após o login) e seção em Favoritos › Listas (`docs/contratos/comparacoes-salvas.md`). A faixa "{N} lojas com novidades" depende de `news` real vinda do servidor. |
 | Conversas | Implementado | `/conversations…` (API). **Tempo real não existe**: o front consulta a cada 5 s (conversa aberta) e 30 s (lista); "digitando…" e "online" só aparecem se o servidor mandar. Socket.IO é melhoria futura. Envio de foto exige `POST /uploads/presign` e armazenamento (Externo). |
 | Notificações e preferências | Implementado | `/notifications…`, `/me/notification-prefs` (API). O envio por e-mail e WhatsApp é do back-end (Externo: contas). Push do navegador não faz parte do escopo. |
 | Atividade (orçamentos, pedidos, avaliações, cupons, vistos) | Implementado | `/me/quotes`, `/quotes/{id}/accept|cancel`, `/me/wants`, `/me/reviews`, `/me/coupons`, `GET /recent` (novo). "Vistos" fica só no navegador. "Ver no mapa" nos pedidos depende do mapa (bloqueado). |
 | Avaliar | Implementado | `GET /review-targets/{tipo}/{slug}`, `POST /reviews`, `POST /uploads/presign`. Rascunho fica só no navegador e não guarda as fotos. Duração do vídeo é conferida no navegador e **deve ser conferida de novo no servidor**. Moderação (pendente até 24 h) é do back-end. |
-| Compartilhado (página pública com prévia) | Implementado, não validado | Era isto: a página que abre quando alguém recebe um link de produto, loja, prestador ou oferta. `/p`, `/l`, `/s` já eram públicas; foi criada `/o/{slug}` (contagem regressiva, cupom, contato, rota, "Oferta encerrada", "Este link não está mais disponível") e a prévia no servidor. **Dúvida de produto:** o documento não define página pública para *lista* compartilhada (Favoritos › Listas); o link vem de `POST /me/lists/{id}/share` e hoje não há tela para quem o abre. Ver decisões abertas. |
+| Compartilhado (página pública com prévia) | Implementado, não validado | Era isto: a página que abre quando alguém recebe um link de produto, loja, prestador ou oferta. `/p`, `/l`, `/s` já eram públicas; foi criada `/o/{slug}` (contagem regressiva, cupom, contato, rota, "Oferta encerrada", "Este link não está mais disponível") e a prévia no servidor. Lista compartilhada: resolvida em `/listas/{token}` (ver Fluxo 4). |
 | Retomar ação depois do login | Implementado | Agora também "útil", avaliar e orçamento (ver Fluxo 1). |
 | Avaliar a partir de Orçamento concluído | Front | O botão leva a `/avaliar?tipo=prestador`; o servidor precisa aceitar avaliação de prestador após orçamento concluído. |
 | Atalhos de teclado, notificação do navegador | Front/Decisão | Não feitos. |
@@ -131,3 +131,13 @@ Código pronto (PR #8), **não validado com a API real** (testado no navegador c
 4. Revisão jurídica: termos, privacidade, prazos da LGPD.
 5. Logo em vetor (SVG).
 6. Confirmar que o repositório do back-end (`plataforma-`) é privado.
+
+
+## Decisões de 13/10/2026
+
+- Salvar comparação na conta: sim (só com login). Feito.
+- Lista compartilhada com página pública: sim. Feita (`/listas/{token}`).
+- Raio inicial: 50 km no código; o protótipo (5 km) será ajustado.
+- Stories duram 24 h: o front esconde o que passou disso (destaques são permanentes); o servidor deve parar de enviar.
+- Cookies: medição de uso só depois de "Aceitar todos" (sem escolha = sem eventos).
+- Abas dentro dos blocos da Home: adiadas até haver volume de dados.

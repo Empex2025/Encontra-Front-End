@@ -1,4 +1,29 @@
+import type { StoryGroup } from "@/lib/api/discover";
+
 /** Regras de Stories, Ao vivo e Evento (Documento de entrega › Fluxo 2). */
+
+/** Um story dura 24 horas. */
+export const STORY_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Tira stories com mais de 24 h e grupos que ficaram sem story. Destaques do perfil são permanentes
+ * e passam sem filtro. Data inválida é mantida (o servidor é quem manda; o front só impede o óbvio).
+ */
+export function activeStoryGroups(groups: StoryGroup[], now: number): StoryGroup[] {
+  return groups
+    .map((g) =>
+      g.highlight
+        ? g
+        : {
+            ...g,
+            stories: g.stories.filter((s) => {
+              const t = new Date(s.publishedAt).getTime();
+              return Number.isNaN(t) || now - t < STORY_TTL_MS;
+            }),
+          },
+    )
+    .filter((g) => g.stories.length > 0);
+}
 
 export const STORY_SECONDS = 5;
 export const REPLY_MAX = 300;

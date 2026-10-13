@@ -77,3 +77,35 @@ describe("evento", () => {
     expect(eventDayBadge(at(3, 20), now)).toBe("Quinta-feira");
   });
 });
+
+import { activeStoryGroups } from "./discover";
+import type { StoryGroup } from "@/lib/api/discover";
+
+describe("stories de 24 h", () => {
+  const now = Date.parse("2026-10-13T12:00:00Z");
+  const story = (id: string, at: string) =>
+    ({ id, publishedAt: at }) as unknown as StoryGroup["stories"][number];
+  const group = (stories: StoryGroup["stories"], highlight: StoryGroup["highlight"] = null) =>
+    ({ profile: { id: "p" }, highlight, stories }) as unknown as StoryGroup;
+  it("tira o que passou de 24 h e o grupo vazio", () => {
+    const g = activeStoryGroups(
+      [
+        group([story("a", "2026-10-13T00:00:00Z"), story("b", "2026-10-12T11:00:00Z")]),
+        group([story("c", "2026-10-11T00:00:00Z")]),
+      ],
+      now,
+    );
+    expect(g).toHaveLength(1);
+    expect(g[0].stories.map((s) => s.id)).toEqual(["a"]);
+  });
+  it("destaque é permanente", () => {
+    const g = activeStoryGroups(
+      [group([story("old", "2026-01-01T00:00:00Z")], { id: "h", name: "Verão" })],
+      now,
+    );
+    expect(g).toHaveLength(1);
+  });
+  it("data inválida é mantida", () => {
+    expect(activeStoryGroups([group([story("x", "lixo")])], now)).toHaveLength(1);
+  });
+});

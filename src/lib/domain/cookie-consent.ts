@@ -1,7 +1,7 @@
 /**
  * Decisão sobre cookies e medição (Documento de entrega › Home, regra do aviso de cookies).
- * Fica só neste navegador. Enquanto não houver decisão, o aviso aparece.
- * - "all": medição de uso liberada. - "necessary": só o necessário; os eventos de uso não são enviados.
+ * Fica só neste navegador. Enquanto não houver decisão, o aviso aparece e **nenhum evento de uso é enviado**.
+ * - "all": medição de uso liberada. - "necessary" (ou sem decisão): só o necessário; os eventos de uso não são enviados.
  */
 export type CookieChoice = "all" | "necessary";
 

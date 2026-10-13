@@ -20,6 +20,7 @@ const TYPE_LABEL: Record<ReportType, string> = {
   story: "Story",
   live: "Live",
   evento: "Evento",
+  lista: "Lista compartilhada",
   prestador: "Prestador de serviço",
   outro: "Outro",
 };

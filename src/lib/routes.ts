@@ -27,10 +27,9 @@ export const conversaHref = (id: string) => `/conversas/${encodeURIComponent(id)
 export const avaliarHref = (tipo: "produto" | "loja" | "prestador", slug: string) =>
   `/avaliar?tipo=${tipo}&id=${encodeURIComponent(slug)}`;
 export const denunciarHref = (
-  tipo: "produto" | "loja" | "prestador" | "avaliacao" | "story" | "live" | "evento",
+  tipo: "produto" | "loja" | "prestador" | "avaliacao" | "story" | "live" | "evento" | "lista",
   id: string,
-) =>
-  `/denunciar?tipo=${tipo}&id=${encodeURIComponent(id)}`;
+) => `/denunciar?tipo=${tipo}&id=${encodeURIComponent(id)}`;
 export const eventoHref = (id: string) => `/eventos/${encodeURIComponent(id)}`;
 /** Stories: `perfil` abre só os stories dele; `destaque` abre um destaque; `inicio` começa naquele perfil. */
 export const storiesHref = (o: { perfil?: string; destaque?: string; inicio?: string } = {}) => {

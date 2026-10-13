@@ -100,4 +100,8 @@ export function validateReport(v: { type: string; name: string; reason: string; 
 
 /** Tipo da URL (?tipo=) → tipo do formulário. */
 export const reportTypeFromParam = (p: string | null | undefined) =>
-  (["produto", "loja", "prestador", "avaliacao", "story", "live", "evento"] as const).includes(p as never) ? (p as string) : "";
+  (["produto", "loja", "prestador", "avaliacao", "story", "live", "evento", "lista"] as const).includes(
+    p as never,
+  )
+    ? (p as string)
+    : "";

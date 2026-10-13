@@ -180,8 +180,10 @@ export type NearbyHappening = z.infer<typeof nearbyHappeningsSchema>["items"][nu
 
 const likeSchema = z.object({ likes: count });
 
+import { activeStoryGroups } from "@/lib/domain/discover";
+
 export const discover = {
-  stories: (q: {
+  stories: async (q: {
     lat: number | null;
     lng: number | null;
     radiusKm: number;
@@ -190,8 +192,8 @@ export const discover = {
     highlight?: string | null;
     /** Só a faixa da Home: seguidos primeiro, depois até 6 não seguidos. */
     preview?: boolean;
-  }) =>
-    api("/stories", storiesSchema, {
+  }) => {
+    const r = await api("/stories", storiesSchema, {
       query: {
         lat: q.lat,
         lng: q.lng,
@@ -201,7 +203,10 @@ export const discover = {
         highlight: q.highlight,
         preview: q.preview ? 1 : undefined,
       },
-    }),
+    });
+    // story dura 24 h: o servidor decide, e o front não mostra o que passou disso (destaques são permanentes)
+    return { ...r, groups: activeStoryGroups(r.groups, Date.now()) };
+  },
   view: (id: string) => api(`/stories/${seg(id)}/view`, none, { method: "POST" }),
   like: (id: string, on: boolean) =>
     api(`/stories/${seg(id)}/like`, likeSchema, { method: on ? "POST" : "DELETE" }),

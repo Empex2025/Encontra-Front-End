@@ -156,6 +156,7 @@ export const REPORT_TYPES = [
   "story",
   "live",
   "evento",
+  "lista",
   "prestador",
   "outro",
 ] as const;

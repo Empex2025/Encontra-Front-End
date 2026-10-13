@@ -1,14 +1,18 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, RotateCw, Scale, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Bookmark, Plus, RotateCw, Scale, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useRequireAuth } from "@/components/auth/auth-invite";
 import { cn } from "@/components/ui/cn";
+import { useToast } from "@/components/ui/toast";
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useComparisonSelection } from "@/hooks/use-comparison-selection";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { ApiError } from "@/lib/api/client";
+import { me } from "@/lib/api/me";
 import { type Cell, type ComparedItem, fetchComparison } from "@/lib/api/comparison";
 import {
   computeWinners,
@@ -20,6 +24,7 @@ import {
   orderCriteria,
   togglePriority,
 } from "@/lib/domain/comparison";
+import { defaultComparisonName } from "@/lib/domain/saved-comparison";
 import { lojaHref, prestadorHref, produtoHref, routes } from "@/lib/routes";
 
 const itemHref = (it: ComparedItem) =>
@@ -55,6 +60,9 @@ export function ComparisonBoard() {
   const [priorities, setPriorities] = useState<string[]>([]);
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [notice, setNotice] = useState("");
+  const requireAuth = useRequireAuth();
+  const toast = useToast();
+  const qc = useQueryClient();
 
   const refs = list.map((e) => e.ref);
   const enough = refs.length >= MIN_COMPARE;
@@ -72,6 +80,31 @@ export function ComparisonBoard() {
   }, [missing, remove]);
 
   const data = view.data;
+  const save = useMutation({
+    mutationFn: () =>
+      me.saveComparison({
+        name: defaultComparisonName(
+          (view.data?.items ?? []).map((i) => i.title),
+          view.data?.group.label ?? "",
+        ),
+        items: (view.data?.items ?? []).map((i) => i.ref),
+      }),
+    onSuccess: () => {
+      toast("Comparação salva em Favoritos › Listas.");
+      void qc.invalidateQueries({ queryKey: ["me", "comparisons"] });
+    },
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível salvar a comparação.", "info"),
+  });
+  // quem entrou na conta depois de tocar em "Salvar": a seleção continua no navegador, então salva sozinho
+  const [wantSave, setWantSave] = useState(false);
+  useResumeAction("saveComparison", undefined, () => setWantSave(true));
+  const ready = !!view.data && view.data.items.length >= MIN_COMPARE;
+  const { mutate: saveNow } = save;
+  useEffect(() => {
+    if (!wantSave || !ready) return;
+    saveNow();
+    queueMicrotask(() => setWantSave(false));
+  }, [wantSave, ready, saveNow]);
   const items = data?.items ?? [];
   const criteria = data?.criteria ?? [];
   const selectable = criteria.filter((c) => c.priority);
@@ -164,19 +197,33 @@ export function ComparisonBoard() {
             {items.length} opções salvas · categoria {data.group.label}
           </p>
         </div>
-        <button
-          type="button"
-          aria-pressed={onlyDiff}
-          onClick={() => setOnlyDiff((v) => !v)}
-          className={cn(
-            "h-11 rounded-full border px-4 text-sm font-semibold",
-            onlyDiff
-              ? "border-primary bg-primary text-on-primary"
-              : "border-border bg-surface text-text-2 hover:border-navy-300",
-          )}
-        >
-          Mostrar só o que é diferente
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={save.isPending || save.isSuccess}
+            onClick={() => {
+              if (!requireAuth("saveComparison")) return;
+              save.mutate();
+            }}
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-primary px-4 text-sm font-bold text-text-strong hover:bg-surface-2 disabled:opacity-60"
+          >
+            <Bookmark className="size-4" aria-hidden />
+            {save.isSuccess ? "Comparação salva" : save.isPending ? "Salvando…" : "Salvar comparação"}
+          </button>
+          <button
+            type="button"
+            aria-pressed={onlyDiff}
+            onClick={() => setOnlyDiff((v) => !v)}
+            className={cn(
+              "h-11 rounded-full border px-4 text-sm font-semibold",
+              onlyDiff
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border bg-surface text-text-2 hover:border-navy-300",
+            )}
+          >
+            Mostrar só o que é diferente
+          </button>
+        </div>
       </div>
 
       {selectable.length > 0 && (

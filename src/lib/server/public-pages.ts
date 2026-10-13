@@ -135,3 +135,7 @@ export async function loadOffer(slug: string): Promise<PublicResult<{ meta: Offe
     },
   };
 }
+
+export async function loadSharedList(token: string): Promise<PublicResult<{ name: string }>> {
+  return publicGet(`/share/lists/${seg(token)}`, z.object({ name: z.string() }));
+}
