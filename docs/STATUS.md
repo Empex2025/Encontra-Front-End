@@ -23,7 +23,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 |---|---|---|
 | Explorar: busca, resultados, filtros, ordenação, ampliar raio | Implementado (conferido com tipos, lint, build e navegador contra um servidor de teste isolado; **não** validado com a API real). Contrato proposto em `docs/contratos/busca.md` | `GET /search`, `GET /discovery/nearby` (+ contagens dos filtros), `POST /me/wants` |
 | Explorar: mapa | Bloqueado | Escolha do serviço de mapas; `GET /map` |
-| Home: busca em destaque e descoberta próxima | Pendente | `GET /discovery/home` |
+| Home: busca em destaque (histórico, atalhos, buscas populares), categorias (CAT12), blocos "Acontecendo", Produtos, Serviços e Experiências perto de você (blocos vazios ficam ocultos), aviso de cookies | Implementado (conferido com tipos, lint, 25 testes, build e navegador contra servidor de teste isolado, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/home.md` | `GET /discovery/home`, `GET /search/autocomplete` |
+| Home: Stories, Meu Radar, Radar do bairro (preços, mais procurados, lugares) e mapa de resultados | Pendente / mapa Bloqueado | `/stories`, `/me/radar`, `/discovery/trending`, `/discovery/prices`; serviço de mapas |
 | Produto: detalhes, preço, disponibilidade, contato, rota | Pendente | `GET /products/{id}`, `GET /products/{id}/offers` |
 | Perfil da loja | Pendente | `GET /profiles/{slug}` e sub-rotas |
 | Perfil do prestador e pedido de orçamento | Pendente | `GET /profiles/{slug}`, `GET /services/{id}`, `POST /quotes` |

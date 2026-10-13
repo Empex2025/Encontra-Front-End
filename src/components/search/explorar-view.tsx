@@ -3,8 +3,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   LayoutGrid,
-  MapPin,
-  RotateCw,
   Ruler,
   Search,
   SearchX,
@@ -15,18 +13,17 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { OPEN_LOCATION_EVENT } from "@/components/layout/location-picker";
+import { ErrorState } from "@/components/ui/error-state";
+import { NeedLocation } from "@/components/ui/need-location";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
 import { useSession } from "@/hooks/use-session";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { track } from "@/lib/analytics/track";
-import { ApiError } from "@/lib/api/client";
 import {
   fetchSearch,
   type Kind,
   type Lens,
-  type SearchItem,
   type SearchResponse,
   type Sort,
 } from "@/lib/api/search";
@@ -43,7 +40,7 @@ import {
 import { formatKm } from "@/lib/format";
 
 import { DistanceButton } from "./distance-button";
-import { ResultCard, ResultCardSkeleton } from "./result-card";
+import { ResultCard, ResultCardSkeleton, targetTypeOf } from "./result-card";
 import { WantDialog } from "./want-dialog";
 
 const LENS_LABEL: Record<Lens, string> = {
@@ -363,12 +360,6 @@ export function ExplorarView() {
   );
 }
 
-function targetTypeOf(item: SearchItem) {
-  if (item.type === "product") return "PRODUCT" as const;
-  if (item.type === "service") return "SERVICE" as const;
-  return item.profile?.kind === "provider" ? ("PROVIDER" as const) : ("STORE" as const);
-}
-
 function ResultGrid({ children }: { children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -639,58 +630,6 @@ function FilterRow({
         </button>
       )}
     </div>
-  );
-}
-
-function NeedLocation() {
-  return (
-    <section className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center">
-      <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-text">
-        <MapPin className="size-6" aria-hidden />
-      </span>
-      <h2 className="text-xl font-bold text-text-strong">Onde você quer procurar?</h2>
-      <p className="max-w-md text-text-muted">
-        Precisamos de um bairro, cidade ou da sua localização para mostrar o que está perto e calcular as
-        distâncias.
-      </p>
-      <button
-        type="button"
-        onClick={() => window.dispatchEvent(new Event(OPEN_LOCATION_EVENT))}
-        className="h-11 rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover"
-      >
-        Definir local
-      </button>
-    </section>
-  );
-}
-
-function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
-  const offline = error instanceof ApiError && error.status === 0;
-  return (
-    <section
-      role="alert"
-      className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center"
-    >
-      <h3 className="text-xl font-bold text-text-strong">
-        {offline ? "Sem conexão com o servidor" : "Não foi possível carregar os resultados"}
-      </h3>
-      <p className="max-w-md text-text-muted">
-        {offline
-          ? "Verifique sua internet e tente de novo."
-          : "Não é você, é a gente. Tente de novo em alguns segundos."}
-      </p>
-      {error instanceof ApiError && error.status >= 500 && (
-        <p className="text-xs text-text-subtle">Código do erro: {error.status}</p>
-      )}
-      <button
-        type="button"
-        onClick={onRetry}
-        className="inline-flex h-11 items-center gap-2 rounded-lg border border-primary px-5 text-sm font-bold text-text-strong hover:bg-surface-2"
-      >
-        <RotateCw className="size-4" aria-hidden />
-        Tentar de novo
-      </button>
-    </section>
   );
 }
 

@@ -42,7 +42,16 @@ Código pronto (PR #4), não validado com a API real.
 | Explorar (lista, filtros, ordenação, ampliar raio) | Implementado, não validado | Contrato proposto em `docs/contratos/busca.md`; `GET /search`, `GET /discovery/nearby` (+ contagens dos filtros) e `POST /me/wants` (API). Nome do bairro a partir do GPS depende de `GET /geo/reverse` (API; o seletor de local ainda mostra "Minha localização atual"). |
 | Explorar: mapa | Bloqueado | **Decisão/Externo:** escolher o serviço de mapas (custo, chave de API, termos). Depois, `GET /map`. |
 | Quero em promoção | Implementado, não validado | Corrigido neste PR: o link de login perdia o retorno (parâmetro errado). Agora volta e reabre o pedido. Falta `POST /me/wants` real e "Ver meus pedidos" (Atividade, Fluxo 4). |
-| Home | Pendente | `GET /discovery/home`. Seções sem dados ficam ocultas/estado vazio, nunca inventadas. |
+| Home (busca, atalhos, categorias, blocos de descoberta, cookies) | Implementado, não validado | Contrato em `docs/contratos/home.md`; `GET /discovery/home` e `GET /search/autocomplete` (API). Blocos vazios ficam ocultos. |
+| Home: Stories | Pendente | `GET /stories?preview=1`, `POST /stories/{id}/view`; precisa da tela de Stories. Ordem: seguidos primeiro, depois até 6 não seguidos. |
+| Home: Meu Radar | Pendente | `GET /me/radar`, `POST /me/radar/seen`; depende de alertas e seguir (Fluxo 4). Visitante: convite para criar conta. |
+| Home: Radar do bairro (preços, mais procurados, lugares) | Pendente | `GET /discovery/prices`, `GET /discovery/trending`. Só mostrar com base de cálculo real (DIRETRIZES §9). |
+| Home: mapa de resultados | Bloqueado | Serviço de mapas (ver Explorar: mapa). |
+| Home: abas dentro dos blocos (Ao vivo / Vídeos / Menor preço; Esporte / Moda…; Disponível hoje…) | Decisão | Não feitas: cada bloco mostra até 6 itens e "Ver todos" abre o Explorar com o filtro. Evita duplicar o Explorar; reavaliar com dados reais. |
+| Home: carrossel com setas e "1–6 de 12" | Front | Hoje é rolagem horizontal nativa. Setas só se houver necessidade. |
+| Home: vídeos nos cards de Experiências | Externo | Prototipo não tocava vídeo; depende de armazenamento/streaming de mídia. |
+| Aviso de cookies: página `/institucional/cookies` | Externo | O link "Personalizar ou ler a política" existe; o texto depende da revisão jurídica. |
+| Aviso de cookies: efeito real | Decisão | Hoje "Só os necessários" **para de enviar eventos de uso**; antes de qualquer escolha os eventos continuam sendo enviados. Se preferir o padrão mais restrito (nada enviado até aceitar), é uma linha em `track()`, mas reduz os dados de demanda de visitantes novos. |
 | Stories, Ao vivo, Evento | Pendente | `/stories`, `/lives`, `/happenings` e Socket.IO (API). Hoje `/ao-vivo/{id}` é página provisória. |
 | Raio inicial do protótipo | Decisão | O protótipo ainda começa em 5 km; o código usa 50 km (decisão 8). Atualizar o protótipo. |
 

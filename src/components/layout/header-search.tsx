@@ -8,25 +8,8 @@ import { useCallback, useDeferredValue, useId, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { useDismiss } from "@/components/ui/use-dismiss";
 import { endpoints, queryKeys } from "@/lib/api/endpoints";
+import { addToHistory, HISTORY_SHOWN, readHistory, removeFromHistory } from "@/lib/domain/search-history";
 import { explorarComBusca } from "@/lib/routes";
-
-const HIST_KEY = "encontrae_busca_hist";
-const HIST_MAX = 6;
-
-function readHistory(): string[] {
-  try {
-    const v = JSON.parse(window.localStorage.getItem(HIST_KEY) ?? "[]");
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, HIST_MAX) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeHistory(list: string[]) {
-  try {
-    window.localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, HIST_MAX)));
-  } catch {}
-}
 
 type Row = { text: string; hint?: string; kind: "hist" | "trend" | "sugg" };
 
@@ -63,17 +46,14 @@ export function HeaderSearch({ className }: { className?: string }) {
   const go = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    const next = [t, ...readHistory().filter((h) => h.toLowerCase() !== t.toLowerCase())];
-    writeHistory(next);
+    addToHistory(t);
     setQ("");
     close();
     router.push(explorarComBusca(t));
   };
 
   const removeHist = (text: string) => {
-    const next = readHistory().filter((h) => h !== text);
-    writeHistory(next);
-    setHistory(next);
+    setHistory(removeFromHistory(text).slice(0, HISTORY_SHOWN));
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -114,7 +94,7 @@ export function HeaderSearch({ className }: { className?: string }) {
             setActive(-1);
           }}
           onFocus={() => {
-            setHistory(readHistory());
+            setHistory(readHistory().slice(0, HISTORY_SHOWN));
             setOpen(true);
           }}
           onKeyDown={onKeyDown}

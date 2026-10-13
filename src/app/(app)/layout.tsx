@@ -1,3 +1,4 @@
+import { CookieNotice } from "@/components/home/cookie-notice";
 import { VisitorBar } from "@/components/auth/visitor-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -24,6 +25,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </div>
       <MobileNav />
+      <CookieNotice />
     </>
   );
 }

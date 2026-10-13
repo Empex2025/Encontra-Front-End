@@ -26,7 +26,22 @@ export function resultHref(item: SearchItem) {
   return produtoHref(item.slug);
 }
 
-export function ResultCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
+export function targetTypeOf(item: SearchItem) {
+  if (item.type === "product") return "PRODUCT" as const;
+  if (item.type === "service") return "SERVICE" as const;
+  return item.profile?.kind === "provider" ? ("PROVIDER" as const) : ("STORE" as const);
+}
+
+export function ResultCard({
+  item,
+  onOpen,
+  reason,
+}: {
+  item: SearchItem;
+  onOpen?: () => void;
+  /** Motivo de o item aparecer (ex.: "Mais perto"), vindo do servidor. */
+  reason?: string | null;
+}) {
   const cat = item.categoryId ? categoryById(item.categoryId) : undefined;
   const CatIcon = cat?.icon;
   const pct = item.price ? discountPct(item.price.amountCents, item.price.oldAmountCents) : 0;
@@ -74,6 +89,11 @@ export function ResultCard({ item, onOpen }: { item: SearchItem; onOpen?: () => 
       </div>
 
       <div className="flex flex-1 flex-col gap-2 p-3.5">
+        {reason && (
+          <p className="self-start rounded-full bg-selected px-2 py-0.5 text-[11px] font-bold text-link">
+            {reason}
+          </p>
+        )}
         <p className="text-xs font-semibold text-text-subtle">
           {TYPE_LABEL[item.type]}
           {cat && <span> · {cat.name}</span>}

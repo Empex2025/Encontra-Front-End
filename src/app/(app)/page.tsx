@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { CategoryStrip } from "@/components/home/category-strip";
+import { HomeHero } from "@/components/home/home-hero";
+import { HomeSections } from "@/components/home/home-sections";
 
 export const metadata: Metadata = { title: "Início" };
 
 export default function HomePage() {
   return (
-    <ScreenPending
-      title="Início"
-      purpose="Busca em destaque, Meu Radar, o que está acontecendo perto, produtos, serviços e o que está em alta."
-    />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+      <HomeHero />
+      <CategoryStrip />
+      <HomeSections />
+    </div>
   );
 }
