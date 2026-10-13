@@ -43,7 +43,7 @@ Código pronto (PR #4), não validado com a API real.
 | Explorar: mapa | Bloqueado | **Decisão/Externo:** escolher o serviço de mapas (custo, chave de API, termos). Depois, `GET /map`. |
 | Quero em promoção | Implementado, não validado | Corrigido neste PR: o link de login perdia o retorno (parâmetro errado). Agora volta e reabre o pedido. Falta `POST /me/wants` real e "Ver meus pedidos" (Atividade, Fluxo 4). |
 | Home (busca, atalhos, categorias, blocos de descoberta, cookies) | Implementado, não validado | Contrato em `docs/contratos/home.md`; `GET /discovery/home` e `GET /search/autocomplete` (API). Blocos vazios ficam ocultos. |
-| Home: Stories | Pendente | `GET /stories?preview=1`, `POST /stories/{id}/view`; precisa da tela de Stories. Ordem: seguidos primeiro, depois até 6 não seguidos. |
+| Home: faixa de Stories | Implementado, não validado | `GET /stories?preview=1` (contrato em `docs/contratos/descobrir.md`). Some se não houver stories. |
 | Home: Meu Radar | Pendente | `GET /me/radar`, `POST /me/radar/seen`; depende de alertas e seguir (Fluxo 4). Visitante: convite para criar conta. |
 | Home: Radar do bairro (preços, mais procurados, lugares) | Pendente | `GET /discovery/prices`, `GET /discovery/trending`. Só mostrar com base de cálculo real (DIRETRIZES §9). |
 | Home: mapa de resultados | Bloqueado | Serviço de mapas (ver Explorar: mapa). |
@@ -52,7 +52,11 @@ Código pronto (PR #4), não validado com a API real.
 | Home: vídeos nos cards de Experiências | Externo | Prototipo não tocava vídeo; depende de armazenamento/streaming de mídia. |
 | Aviso de cookies: página `/institucional/cookies` | Externo | O link "Personalizar ou ler a política" existe; o texto depende da revisão jurídica. |
 | Aviso de cookies: efeito real | Decisão | Hoje "Só os necessários" **para de enviar eventos de uso**; antes de qualquer escolha os eventos continuam sendo enviados. Se preferir o padrão mais restrito (nada enviado até aceitar), é uma linha em `track()`, mas reduz os dados de demanda de visitantes novos. |
-| Stories, Ao vivo, Evento | Pendente | `/stories`, `/lives`, `/happenings` e Socket.IO (API). Hoje `/ao-vivo/{id}` é página provisória. |
+| Stories (visualizador) | Implementado, não validado | `/stories`, `/stories/{id}/view|like|save`, `POST /conversations` com `firstMessage` e `origin`. **Decisão:** no fim da fila aparece "Você viu todos os stories de hoje" (o documento deixava em aberto); "Ver de novo" conta uma volta. Endereço `/stories?perfil=&destaque=&inicio=` (o documento previa `/s/{perfil}-{n}`, que aqui é o prestador). Vídeo de story toca mudo e dura os mesmos 5 s. Responder pede conta. Falta retomar a ação pendente (curtir/salvar/responder) depois do login. "Como chegar" no card "No mapa" não existe (a marcação não traz coordenadas). |
+| Ao vivo | Implementado, não validado | `GET /lives/{id}`, chat por consulta a cada 3 s (`GET|POST /lives/{id}/messages`), curtir, lembrete, outras lives. **Externo:** serviço de streaming (HLS) para o vídeo tocar em todos os navegadores; sem `streamUrl` mostra a capa. **Socket.IO** não feito (consulta periódica). Corações animados respeitam "reduzir movimento". |
+| Evento | Implementado, não validado | `GET /happenings/{id}`, `/attendance`, `calendar.ics`. **Decisão:** "Vou" e "Tenho interesse" são exclusivos. Mini mapa não existe (mapa bloqueado): mostra endereço e "Como chegar" (Google Maps). Aviso 1 h antes é do back-end. |
+| Meu Radar (Home) | Pendente | Depende de `GET /me/radar` e da especificação detalhada; não iniciado. |
+| Denunciar story/live/evento | Implementado | Tipos `story`, `live`, `evento` em `POST /reports`. |
 | Raio inicial do protótipo | Decisão | O protótipo ainda começa em 5 km; o código usa 50 km (decisão 8). Atualizar o protótipo. |
 
 ## Fluxo 3 · Decidir

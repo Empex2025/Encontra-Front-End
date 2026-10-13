@@ -17,7 +17,9 @@ const TYPE_LABEL: Record<ReportType, string> = {
   loja: "Loja",
   produto: "Produto ou oferta",
   avaliacao: "Avaliação",
-  story: "Story ou live",
+  story: "Story",
+  live: "Live",
+  evento: "Evento",
   prestador: "Prestador de serviço",
   outro: "Outro",
 };

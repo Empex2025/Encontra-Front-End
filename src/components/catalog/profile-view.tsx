@@ -18,7 +18,7 @@ import { ApiError } from "@/lib/api/client";
 import { CATEGORIES } from "@/lib/domain/categories";
 import { markViewed } from "@/lib/domain/recently-viewed";
 import { formatCount, formatKm, formatTimeAgo } from "@/lib/format";
-import { avaliarHref, denunciarHref, lojaHref, prestadorHref, routes } from "@/lib/routes";
+import { avaliarHref, denunciarHref, lojaHref, prestadorHref, routes, storiesHref } from "@/lib/routes";
 import { storeMessage } from "@/lib/domain/whatsapp";
 
 import { Avatar } from "./avatar";
@@ -138,11 +138,16 @@ function ProfileContent({ profile: p }: { profile: Profile }) {
       {p.highlights.length > 0 && (
         <ul className="flex gap-4 overflow-x-auto pb-1" aria-label="Destaques">
           {p.highlights.map((h) => (
-            <li key={h.id} className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center">
-              <span className={cn("rounded-full p-0.5", h.seen ? "bg-border" : "bg-primary")}>
-                <Avatar name={h.label} url={h.coverUrl} size={64} />
-              </span>
-              <span className="w-full truncate text-xs text-text-muted">{h.label}</span>
+            <li key={h.id} className="w-20 shrink-0">
+              <Link
+                href={storiesHref({ perfil: p.slug, destaque: h.id })}
+                className="flex flex-col items-center gap-1.5 text-center"
+              >
+                <span className={cn("rounded-full p-0.5", h.seen ? "bg-border" : "bg-primary")}>
+                  <Avatar name={h.label} url={h.coverUrl} size={64} />
+                </span>
+                <span className="w-full truncate text-xs text-text-muted">{h.label}</span>
+              </Link>
             </li>
           ))}
         </ul>

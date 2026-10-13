@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { LiveView } from "@/components/live/live-view";
 
 export const metadata: Metadata = { title: "Ao vivo" };
 
-export default function AoVivoPage() {
-  return <ScreenPending title="Ao vivo" purpose="Assistir à live da loja, com chat e produtos em destaque." />;
+export default async function AoVivoPage({ params }: PageProps<"/ao-vivo/[id]">) {
+  const { id } = await params;
+  return <LiveView id={id} />;
 }

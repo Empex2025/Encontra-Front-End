@@ -29,7 +29,16 @@ export const actions = {
   }) => api("/me/alerts", alertSchema, { method: "POST", body }),
   deleteAlert: (id: string) => api(`/me/alerts/${seg(id)}`, none, { method: "DELETE" }),
   claimCoupon: (id: string) => api(`/coupons/${seg(id)}/claim`, couponSchema, { method: "POST" }),
-  startConversation: (body: { profileId: string; productId?: string; serviceId?: string; draft?: string }) =>
+  startConversation: (body: {
+    profileId: string;
+    productId?: string;
+    serviceId?: string;
+    draft?: string;
+    /** Mensagem enviada na hora (resposta a story). Diferente de `draft`, que só preenche o campo. */
+    firstMessage?: string;
+    /** De onde veio o contato (story, live ou evento). */
+    origin?: { kind: "story" | "live" | "happening"; id: string };
+  }) =>
     api("/conversations", z.object({ id: z.string() }), { method: "POST", body }),
   createQuote: (body: {
     profileId: string;

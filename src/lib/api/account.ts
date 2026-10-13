@@ -149,7 +149,16 @@ const legalIndexSchema = z.object({
   items: z.array(z.object({ doc: z.string(), title: z.string() })),
 });
 
-export const REPORT_TYPES = ["loja", "produto", "avaliacao", "story", "prestador", "outro"] as const;
+export const REPORT_TYPES = [
+  "loja",
+  "produto",
+  "avaliacao",
+  "story",
+  "live",
+  "evento",
+  "prestador",
+  "outro",
+] as const;
 export type ReportType = (typeof REPORT_TYPES)[number];
 export const REPORT_REASONS = [
   "Golpe ou fraude",

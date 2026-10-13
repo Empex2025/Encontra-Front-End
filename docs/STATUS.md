@@ -24,7 +24,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Explorar: busca, resultados, filtros, ordenação, ampliar raio | Implementado (conferido com tipos, lint, build e navegador contra um servidor de teste isolado; **não** validado com a API real). Contrato proposto em `docs/contratos/busca.md` | `GET /search`, `GET /discovery/nearby` (+ contagens dos filtros), `POST /me/wants` |
 | Explorar: mapa | Bloqueado | Escolha do serviço de mapas; `GET /map` |
 | Home: busca em destaque (histórico, atalhos, buscas populares), categorias (CAT12), blocos "Acontecendo", Produtos, Serviços e Experiências perto de você (blocos vazios ficam ocultos), aviso de cookies | Implementado (conferido com tipos, lint, 25 testes, build e navegador contra servidor de teste isolado, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/home.md` | `GET /discovery/home`, `GET /search/autocomplete` |
-| Home: Stories, Meu Radar, Radar do bairro (preços, mais procurados, lugares) e mapa de resultados | Pendente / mapa Bloqueado | `/stories`, `/me/radar`, `/discovery/trending`, `/discovery/prices`; serviço de mapas |
+| Home: faixa de Stories | Implementado (tipos, lint, testes e navegador contra servidor de teste; **não** validado com a API real). Contrato em `docs/contratos/descobrir.md` | `GET /stories?preview=1` |
+| Home: Meu Radar, Radar do bairro (preços, mais procurados, lugares) e mapa de resultados | Pendente / mapa Bloqueado | `/me/radar`, `/discovery/trending`, `/discovery/prices`; serviço de mapas |
 | Produto: detalhes, preço, disponibilidade, quantidade, mensagem pronta, Avise-me, contato, comparar, cupom, avaliações | Implementado (tipos, lint, 46 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/decidir.md` | `GET /products/{slug}`, `/related`, `/reviews` |
 | Perfil da loja (fotos, produtos, ofertas, avaliações, sobre) | Implementado (idem; **não** validado com a API real) | `GET /profiles/{slug}` e sub-rotas |
 | Perfil do prestador e pedido de orçamento | Implementado (idem) | `GET /profiles/{slug}`, `POST /quotes` |
@@ -49,7 +50,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Comparar: pesquisa e bandeja "Sua comparação" | Implementado (idem) | `GET /search`; mapa depende do serviço de mapas |
 | Favoritos, listas, seguir | Implementado (idem) | `/me/favorites`, `/me/following`, `/me/lists`, `/profiles/{id}/follow` |
 | Alertas ("Avise-me", gestão) e "Quero em promoção" (Atividade) | Implementado (idem) | `/me/alerts`, `/me/wants` |
-| Stories, Ao vivo, Evento | Pendente | `/stories`, `/lives`, `/happenings` + Socket.IO |
+| Stories (visualizador), Ao vivo (chat por consulta periódica) e Evento | Implementado (idem). Socket.IO e streaming de vídeo dependem do back-end/serviço | `/stories`, `/lives`, `/happenings` |
 | Compartilhar e página pública com prévia | Pendente | `GET /share/{type}/{id}` |
 
 ## Contato e conta (transversal)
