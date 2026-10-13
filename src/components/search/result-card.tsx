@@ -1,6 +1,7 @@
 import { BadgeCheck, House, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 
+import { CompareButton } from "@/components/comparison/compare-button";
 import { cn } from "@/components/ui/cn";
 import type { SearchItem } from "@/lib/api/search";
 import { categoryById } from "@/lib/domain/categories";
@@ -154,6 +155,9 @@ export function ResultCard({ item, onOpen }: { item: SearchItem; onOpen?: () => 
               </span>
             )}
           </div>
+        </div>
+        <div className="pt-1">
+          <CompareButton item={item} />
         </div>
       </div>
     </article>

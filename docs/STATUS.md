@@ -44,7 +44,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Tela / funcionalidade | Estado | Depende de |
 |---|---|---|
 | Ofertas & Promoções, cupons | Pendente | `GET /offers`, `GET /coupons`, `POST /coupons/{id}/claim` |
-| Comparar (seleção e lado a lado) | Pendente | `/me/comparisons`, catálogo canônico |
+| Comparar: quadro lado a lado (até 3 itens escolhidos pelo usuário, prioridades, "só o que é diferente") e botão "Comparar" nos cards | Implementado (conferido com tipos, lint, build, 11 testes da lógica e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/comparar.md`; a lista de itens fica no navegador | `GET /comparisons/view`, campo `group` nos itens da busca |
+| Comparar: tela de pesquisa e bandeja "Sua comparação" (CompararSelecao), mapa | Pendente | Escolha do serviço de mapas (mapa) |
 | Favoritos, listas, seguir | Pendente | `/me/favorites`, `/me/lists`, `/profiles/{id}/follow` |
 | Alertas e "Quero em promoção" | Pendente | `/me/alerts`, `/me/wants` |
 | Stories, Ao vivo, Evento | Pendente | `/stories`, `/lives`, `/happenings` + Socket.IO |

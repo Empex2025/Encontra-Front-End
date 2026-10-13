@@ -32,6 +32,8 @@ export const searchItemSchema = z.object({
     })
     .nullable(),
   categoryId: categoryId.nullable(),
+  /** Grupo comparável (mais fino que a categoria). Contrato: docs/contratos/comparar.md */
+  group: z.object({ id: z.string(), label: z.string() }).nullable().optional(),
   imageUrl: z.string().nullable(),
   distanceKm: z.number().nonnegative().nullable(),
   neighborhood: z.string().nullable(),
