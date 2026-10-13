@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { ProfileView } from "@/components/catalog/profile-view";
 
 export const metadata: Metadata = { title: "Prestador" };
 
-export default function PrestadorPage() {
-  return <ScreenPending title="Prestador" purpose="Perfil do prestador: serviços e preços, área atendida, avaliações e pedido de orçamento." />;
+export default async function PrestadorPage({ params }: PageProps<"/s/[slug]">) {
+  const { slug } = await params;
+  return <ProfileView slug={slug} expected="provider" />;
 }

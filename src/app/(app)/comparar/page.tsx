@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ComparisonPicker } from "@/components/comparison/comparison-picker";
 import { ComparisonBoard } from "@/components/comparison/comparison-board";
 
 export const metadata: Metadata = {
@@ -10,8 +11,9 @@ export const metadata: Metadata = {
 
 export default function CompararPage() {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
       <h1 className="text-2xl font-bold text-text-strong">Comparar</h1>
+      <ComparisonPicker />
       <ComparisonBoard />
     </div>
   );

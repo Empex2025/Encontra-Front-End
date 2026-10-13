@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { ProductView } from "@/components/catalog/product-view";
 
 export const metadata: Metadata = { title: "Produto" };
 
-export default function ProdutoPage() {
-  return <ScreenPending title="Produto" purpose="Detalhes, preço, disponibilidade, onde comprar perto e contato direto com a loja." />;
+export default async function ProdutoPage({ params }: PageProps<"/p/[slug]">) {
+  const { slug } = await params;
+  return <ProductView slug={slug} />;
 }

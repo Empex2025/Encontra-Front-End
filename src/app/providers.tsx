@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
 import { AuthInviteProvider } from "@/components/auth/auth-invite";
+import { ToastProvider } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
 
 let browserQueryClient: QueryClient | undefined;
@@ -31,7 +32,9 @@ function getQueryClient() {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={getQueryClient()}>
-      <AuthInviteProvider>{children}</AuthInviteProvider>
+      <ToastProvider>
+        <AuthInviteProvider>{children}</AuthInviteProvider>
+      </ToastProvider>
     </QueryClientProvider>
   );
 }
