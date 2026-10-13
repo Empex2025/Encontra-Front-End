@@ -24,7 +24,7 @@ Código pronto (PR #4), não validado com a API real.
 
 | Pendência | Motivo | Detalhe |
 |---|---|---|
-| Retomar a ação pendente depois do login | Front | A infraestrutura existe (`savePendingAction` / `takePendingAction`). **Só "Quero em promoção" retoma** (reabre o pedido, sem enviar sozinho). Favoritar, seguir, conversar, avaliar, alerta, cupom, orçamento, salvar comparação, reservar, curtir, útil, comentar, confirmar presença, interesse e lembrete retomam quando cada tela existir. Cada tela nova deve chamar `takePendingAction("tipo")` ao montar. |
+| Retomar a ação pendente depois do login | Front | **Retomam sozinhos:** favoritar, seguir, conversar, cupom, alerta, "Quero em promoção", "útil", avaliar (abre o formulário), orçamento (o pedido digitado volta pronto, só na aba, e a pessoa confere e envia), lembrete e curtir de Ao vivo, "vou" e "interesse" de Evento. **Não retomam:** curtir/salvar/responder Stories (a fila muda depois do login), comentar na live (o texto digitado se perde), salvar comparação e reservar (telas sem esse fluxo). |
 | Voltar do navegador no cadastro | Front | O cadastro é uma rota só (`/cadastro`, documento ajustado em 12/10); o botão voltar do navegador sai do cadastro em vez de voltar uma etapa. |
 | Código por SMS de verdade | Externo | Precisa de provedor de SMS contratado e configurado no back-end. No teste, o código "123456" era do servidor de teste. |
 | Recuperar senha por e-mail | Externo | Precisa de serviço de e-mail. A tela oferece o canal; o envio é do back-end. |
@@ -44,8 +44,8 @@ Código pronto (PR #4), não validado com a API real.
 | Quero em promoção | Implementado, não validado | Corrigido neste PR: o link de login perdia o retorno (parâmetro errado). Agora volta e reabre o pedido. Falta `POST /me/wants` real e "Ver meus pedidos" (Atividade, Fluxo 4). |
 | Home (busca, atalhos, categorias, blocos de descoberta, cookies) | Implementado, não validado | Contrato em `docs/contratos/home.md`; `GET /discovery/home` e `GET /search/autocomplete` (API). Blocos vazios ficam ocultos. |
 | Home: faixa de Stories | Implementado, não validado | `GET /stories?preview=1` (contrato em `docs/contratos/descobrir.md`). Some se não houver stories. |
-| Home: Meu Radar | Pendente | `GET /me/radar`, `POST /me/radar/seen`; depende de alertas e seguir (Fluxo 4). Visitante: convite para criar conta. |
-| Home: Radar do bairro (preços, mais procurados, lugares) | Pendente | `GET /discovery/prices`, `GET /discovery/trending`. Só mostrar com base de cálculo real (DIRETRIZES §9). |
+| Home: Meu Radar | Implementado, não validado | `GET /me/radar`, `POST /me/radar/seen`. Abas, avisos (até 8), "visto" otimista, linha "Acompanha…" (só o que não é zero), visitante com convite e só Novidades e Preços. O número da manchete conta só os avisos mostrados. Destino do aviso só vale se for caminho interno. Contrato em `docs/contratos/radar.md`. |
+| Home: Radar do bairro (preços, mais procurados, lugares) | Implementado, não validado | `GET /discovery/prices`, `GET /discovery/trending`. Cada coluna só aparece com dados; preço exige `basis` (base de cálculo); o nome do bairro vem da API (nada fixo). Seção inteira some se tudo vier vazio. "Ver no mapa ›" não existe (mapa bloqueado). |
 | Home: mapa de resultados | Bloqueado | Serviço de mapas (ver Explorar: mapa). |
 | Home: abas dentro dos blocos (Ao vivo / Vídeos / Menor preço; Esporte / Moda…; Disponível hoje…) | Decisão | Não feitas: cada bloco mostra até 6 itens e "Ver todos" abre o Explorar com o filtro. Evita duplicar o Explorar; reavaliar com dados reais. |
 | Home: carrossel com setas e "1–6 de 12" | Front | Hoje é rolagem horizontal nativa. Setas só se houver necessidade. |
@@ -55,7 +55,7 @@ Código pronto (PR #4), não validado com a API real.
 | Stories (visualizador) | Implementado, não validado | `/stories`, `/stories/{id}/view|like|save`, `POST /conversations` com `firstMessage` e `origin`. **Decisão:** no fim da fila aparece "Você viu todos os stories de hoje" (o documento deixava em aberto); "Ver de novo" conta uma volta. Endereço `/stories?perfil=&destaque=&inicio=` (o documento previa `/s/{perfil}-{n}`, que aqui é o prestador). Vídeo de story toca mudo e dura os mesmos 5 s. Responder pede conta. Falta retomar a ação pendente (curtir/salvar/responder) depois do login. "Como chegar" no card "No mapa" não existe (a marcação não traz coordenadas). |
 | Ao vivo | Implementado, não validado | `GET /lives/{id}`, chat por consulta a cada 3 s (`GET|POST /lives/{id}/messages`), curtir, lembrete, outras lives. **Externo:** serviço de streaming (HLS) para o vídeo tocar em todos os navegadores; sem `streamUrl` mostra a capa. **Socket.IO** não feito (consulta periódica). Corações animados respeitam "reduzir movimento". |
 | Evento | Implementado, não validado | `GET /happenings/{id}`, `/attendance`, `calendar.ics`. **Decisão:** "Vou" e "Tenho interesse" são exclusivos. Mini mapa não existe (mapa bloqueado): mostra endereço e "Como chegar" (Google Maps). Aviso 1 h antes é do back-end. |
-| Meu Radar (Home) | Pendente | Depende de `GET /me/radar` e da especificação detalhada; não iniciado. |
+| Meu Radar (Home) | Implementado, não validado | Ver linha "Home: Meu Radar" acima. Falta só o estado de erro com esqueleto específico (hoje o painel some se a chamada falhar). |
 | Denunciar story/live/evento | Implementado | Tipos `story`, `live`, `evento` em `POST /reports`. |
 | Raio inicial do protótipo | Decisão | O protótipo ainda começa em 5 km; o código usa 50 km (decisão 8). Atualizar o protótipo. |
 
@@ -73,9 +73,9 @@ Código pronto (PR #6), **não validado com a API real**. Contratos: `docs/contr
 | Perfil do prestador e orçamento | Implementado | `POST /quotes`. Mapa da área de atendimento não existe (mapa bloqueado). |
 | Ofertas, cupom | Implementado | `GET /offers` (contrato novo, em `decidir.md`) e `POST /coupons/{id}/claim`. Cupons resgatados aparecem em Atividade (Fluxo 4). "Mapa (camada ofertas)" bloqueado. |
 | Contato: WhatsApp, telefone, rota | Implementado | WhatsApp abre `wa.me` só se o perfil tiver número. Telefone não é exibido (o documento prevê só chat e WhatsApp). "Como chegar" abre o Google Maps no navegador (não depende de chave); trocar se for escolhido outro serviço de mapas. |
-| Páginas públicas com SEO (título e prévia ao compartilhar) | Front/API | Produto, loja e prestador são renderizados no navegador. Para título, descrição, imagem de prévia e indexação é preciso buscar os dados no servidor (`BACKEND_URL` em tempo de execução) e gerar `generateMetadata`. Fica para quando a API existir. |
+| Páginas públicas com SEO (título e prévia ao compartilhar) | Implementado, não validado | `/p`, `/l`, `/s` e `/o` geram título, descrição, imagem (Open Graph), URL canônica e dados estruturados (JSON-LD) **no servidor**, lendo as rotas públicas sem cookies (`BACKEND_URL`); link inexistente dá 404 de verdade. Precisa de `NEXT_PUBLIC_SITE_URL` para URLs absolutas. **Falta:** `sitemap.xml` e `robots.txt` (dependem de uma lista de URLs vinda do back-end, ver `docs/contratos/oferta.md`) e SEO das páginas por categoria/bairro (não definidas no documento). |
 | Avaliar, denunciar, compartilhar (links) | Pendente | Os botões levam a `/avaliar`, `/denunciar` (Fluxos 4 e 5). |
-| Retomar ação pendente (favoritar, seguir, conversar, alerta, cupom, orçamento) | Front | O convite abre e leva ao login, mas só "Quero em promoção" retoma sozinho. Falta chamar `takePendingAction` nas telas novas. |
+| Retomar ação pendente | Front | Ver Fluxo 1: quase tudo retoma; exceções listadas lá. |
 
 ## Fluxo 4 · Contato e acompanhamento
 
@@ -88,8 +88,8 @@ Código pronto (PR #7), **não validado com a API real**. Contrato: `docs/contra
 | Notificações e preferências | Implementado | `/notifications…`, `/me/notification-prefs` (API). O envio por e-mail e WhatsApp é do back-end (Externo: contas). Push do navegador não faz parte do escopo. |
 | Atividade (orçamentos, pedidos, avaliações, cupons, vistos) | Implementado | `/me/quotes`, `/quotes/{id}/accept|cancel`, `/me/wants`, `/me/reviews`, `/me/coupons`, `GET /recent` (novo). "Vistos" fica só no navegador. "Ver no mapa" nos pedidos depende do mapa (bloqueado). |
 | Avaliar | Implementado | `GET /review-targets/{tipo}/{slug}`, `POST /reviews`, `POST /uploads/presign`. Rascunho fica só no navegador e não guarda as fotos. Duração do vídeo é conferida no navegador e **deve ser conferida de novo no servidor**. Moderação (pendente até 24 h) é do back-end. |
-| Compartilhado (página pública com prévia) | Pendente | `GET /share/{type}/{id}`; exige renderização no servidor (prévia ao colar o link). Junto com o SEO do Fluxo 3. |
-| Retomar ação depois do login | Implementado em parte | Retomam sozinhos: favoritar, seguir, conversar, pegar cupom, criar alerta (abre a janela). **Não retomam:** pedir orçamento, "útil" e avaliar (o formulário depende de dados que se perdem). |
+| Compartilhado (página pública com prévia) | Implementado, não validado | Era isto: a página que abre quando alguém recebe um link de produto, loja, prestador ou oferta. `/p`, `/l`, `/s` já eram públicas; foi criada `/o/{slug}` (contagem regressiva, cupom, contato, rota, "Oferta encerrada", "Este link não está mais disponível") e a prévia no servidor. **Dúvida de produto:** o documento não define página pública para *lista* compartilhada (Favoritos › Listas); o link vem de `POST /me/lists/{id}/share` e hoje não há tela para quem o abre. Ver decisões abertas. |
+| Retomar ação depois do login | Implementado | Agora também "útil", avaliar e orçamento (ver Fluxo 1). |
 | Avaliar a partir de Orçamento concluído | Front | O botão leva a `/avaliar?tipo=prestador`; o servidor precisa aceitar avaliação de prestador após orçamento concluído. |
 | Atalhos de teclado, notificação do navegador | Front/Decisão | Não feitos. |
 
@@ -116,8 +116,8 @@ Código pronto (PR #8), **não validado com a API real** (testado no navegador c
 | Erro 500 | Implementado | "ref." é o código (digest) do Next; não há ainda como cruzar com o log do back-end. |
 | Sem internet | Implementado | Faixa e nova tentativa a cada 10 s via `GET /status`; ao voltar, refaz as consultas. Não há tela dedicada "sem internet" para páginas que nunca carregaram (só a faixa). |
 | Manutenção | Implementado | Tela cheia quando o servidor responde 503 com `MAINTENANCE`. "Me avise quando voltar" → `POST /status/notify`. |
-| Regras de carregamento (esqueleto ≤ 300 ms, > 8 s vira "Algo deu errado") | Pendente | Cada tela tem seu estado de carregamento próprio; não há limite geral de 8 s. Fazer junto com a validação na API real. |
-| "Oferta encerrada" (cupom/live) | Pendente | Depende da tela de oferta (`/o`) e de Ao vivo, que ainda não existem. |
+| Regras de carregamento (esqueleto ≤ 300 ms, > 8 s vira "Algo deu errado") | Implementado, não validado | Toda leitura (GET) sem resposta em 8 s vira erro "Algo deu errado" com "Tentar de novo" (`src/lib/api/client.ts`, 4 testes). Escrita não tem limite (pode ter sido concluída). Esqueleto em ≤ 300 ms continua sendo o de cada tela. |
+| "Oferta encerrada" (cupom/live) | Implementado em `/o`; Ao vivo já tem estado "encerrada" | Cupom encerrado dentro do Produto/Evento segue o texto de validade. |
 | Estados vazios com próximo passo | Parcial | Feitos nas telas dos fluxos anteriores e nas novas; revisar todos com dados reais. |
 | Área do lojista | Fora do escopo | Aparece "em breve" no rodapé. |
 

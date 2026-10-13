@@ -25,12 +25,13 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Explorar: mapa | Bloqueado | Escolha do serviço de mapas; `GET /map` |
 | Home: busca em destaque (histórico, atalhos, buscas populares), categorias (CAT12), blocos "Acontecendo", Produtos, Serviços e Experiências perto de você (blocos vazios ficam ocultos), aviso de cookies | Implementado (conferido com tipos, lint, 25 testes, build e navegador contra servidor de teste isolado, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/home.md` | `GET /discovery/home`, `GET /search/autocomplete` |
 | Home: faixa de Stories | Implementado (tipos, lint, testes e navegador contra servidor de teste; **não** validado com a API real). Contrato em `docs/contratos/descobrir.md` | `GET /stories?preview=1` |
-| Home: Meu Radar, Radar do bairro (preços, mais procurados, lugares) e mapa de resultados | Pendente / mapa Bloqueado | `/me/radar`, `/discovery/trending`, `/discovery/prices`; serviço de mapas |
+| Home: Meu Radar e Radar do bairro (preços, mais procurados, lugares) | Implementado (tipos, lint, testes e navegador contra servidor de teste, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/radar.md` | `GET /me/radar`, `POST /me/radar/seen`, `GET /discovery/trending`, `GET /discovery/prices` |
+| Home: mapa de resultados | Bloqueado | Escolha do serviço de mapas |
 | Produto: detalhes, preço, disponibilidade, quantidade, mensagem pronta, Avise-me, contato, comparar, cupom, avaliações | Implementado (tipos, lint, 46 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/decidir.md` | `GET /products/{slug}`, `/related`, `/reviews` |
 | Perfil da loja (fotos, produtos, ofertas, avaliações, sobre) | Implementado (idem; **não** validado com a API real) | `GET /profiles/{slug}` e sub-rotas |
 | Perfil do prestador e pedido de orçamento | Implementado (idem) | `GET /profiles/{slug}`, `POST /quotes` |
 | Contato: chat, WhatsApp, rota | Implementado (idem) | dados do perfil + `POST /conversations`, `POST /tracking` |
-| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Retomada da ação pendente após o login: só "Quero em promoção" por enquanto; as demais telas retomam quando existirem (detalhes em `docs/PENDENCIAS.md`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
+| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Retomada da ação pendente após o login: funciona em quase todas as ações (exceções em `docs/PENDENCIAS.md`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
 
 ## Fase 2 — Confiar
 
@@ -51,7 +52,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Favoritos, listas, seguir | Implementado (idem) | `/me/favorites`, `/me/following`, `/me/lists`, `/profiles/{id}/follow` |
 | Alertas ("Avise-me", gestão) e "Quero em promoção" (Atividade) | Implementado (idem) | `/me/alerts`, `/me/wants` |
 | Stories (visualizador), Ao vivo (chat por consulta periódica) e Evento | Implementado (idem). Socket.IO e streaming de vídeo dependem do back-end/serviço | `/stories`, `/lives`, `/happenings` |
-| Compartilhar e página pública com prévia | Pendente | `GET /share/{type}/{id}` |
+| Compartilhado: página pública `/o/{slug}` (oferta) e prévia de links no servidor em `/p`, `/l`, `/s`, `/o` (Open Graph, JSON-LD, 404 real) | Implementado (tipos, lint, testes, build e navegador contra servidor de teste; **não** validado com a API real). Contrato em `docs/contratos/oferta.md`. Faltam `sitemap.xml`/`robots.txt` (dependem do back-end) | `GET /offers/{slug}`, rotas públicas sem sessão, `NEXT_PUBLIC_SITE_URL` |
 
 ## Contato e conta (transversal)
 
@@ -62,7 +63,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Minha atividade | Implementado (idem) | `/me/quotes`, `/me/wants`, `/me/reviews`, `/me/coupons`, `/me/activity/summary`, `/recent` |
 | Minha Conta (perfil, endereços, interesses, notificações, privacidade e segurança, excluir conta, configurações, sair) | Implementado (conferido com tipos, lint, 83 testes, build e navegador contra servidor de teste isolado, desktop e celular; **não** validado com a API real). Contrato em `docs/contratos/conta.md` | `/me/profile`, `PATCH /me`, `/me/addresses`, `/me/interests`, `/me/notification-prefs`, `/me/sessions`, `/me/search-history`, `/me/export`, `/me/deletion`, `/auth/logout` |
 | Ajuda (FAQ, fale conosco) e Institucional (sobre, termos, privacidade, cookies com controles reais, avaliações) | Implementado (idem). Textos jurídicos e de ajuda vêm da API; nada fixo no código | `GET /help/faq`, `POST /help/contact`, `GET /legal/{doc}` |
-| Telas de sistema (404 com sugestões, erro 500, faixa sem internet, manutenção) | Implementado (idem). Faltam: limite de 8 s de carregamento e "Oferta encerrada" (dependem de telas futuras) | `GET /status`, `POST /status/notify` |
+| Telas de sistema (404 com sugestões, erro 500, faixa sem internet, manutenção, limite de 8 s nas leituras, "Oferta encerrada") | Implementado (idem) | `GET /status`, `POST /status/notify` |
 
 ## Fase 4 — Inteligência
 
@@ -75,3 +76,5 @@ Fora do escopo do app do consumidor por enquanto. O registro de eventos (acima) 
 3. Contas de serviços: SMS, e-mail, armazenamento de fotos, hospedagem.
 4. Revisão jurídica: termos, privacidade, prazos da LGPD.
 5. Logo em vetor (SVG).
+6. Serviço de streaming (HLS) e Socket.IO (tempo real).
+7. `NEXT_PUBLIC_SITE_URL` e lista de URLs públicas para `sitemap.xml`.
