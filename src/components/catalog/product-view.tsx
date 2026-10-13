@@ -13,6 +13,7 @@ import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useComparisonSelection } from "@/hooks/use-comparison-selection";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { track } from "@/lib/analytics/track";
@@ -102,6 +103,8 @@ function ProductContent({ product: p }: { product: Product }) {
     if (!requireAuth("alert", p.id)) return;
     setAlertOpen({ conditions, size: forSize });
   };
+
+  useResumeAction("alert", p.id, () => setAlertOpen({ conditions: ["price_drop"], size }));
 
   const ask = useMutation({
     mutationFn: (draft: string) =>

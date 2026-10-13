@@ -1,5 +1,5 @@
 /** "Vistos recentemente": até 20, sem repetir, mais novo primeiro. Só neste navegador (conveniência). */
-export type ViewedRef = { type: "product" | "store" | "provider"; slug: string };
+export type ViewedRef = { type: "product" | "store" | "provider"; slug: string; at?: string };
 export const VIEWED_MAX = 20;
 const KEY = "encontrae_vistos";
 
@@ -16,6 +16,7 @@ export function readViewed(): ViewedRef[] {
         (x): x is ViewedRef =>
           !!x && typeof x.slug === "string" && ["product", "store", "provider"].includes(x.type),
       )
+      .map((x) => ({ type: x.type, slug: x.slug, ...(typeof x.at === "string" ? { at: x.at } : {}) }))
       .slice(0, VIEWED_MAX);
   } catch {
     return [];
@@ -24,6 +25,15 @@ export function readViewed(): ViewedRef[] {
 
 export function markViewed(ref: ViewedRef) {
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(mergeViewed(readViewed(), ref)));
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify(mergeViewed(readViewed(), { ...ref, at: new Date().toISOString() })),
+    );
+  } catch {}
+}
+
+export function clearViewed() {
+  try {
+    window.localStorage.removeItem(KEY);
   } catch {}
 }

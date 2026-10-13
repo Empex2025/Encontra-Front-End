@@ -19,7 +19,7 @@ export function AuthGate({ area, children }: { area: LockedArea; children: React
       </p>
     );
   if (me || (isError && !isGuest)) return <>{children}</>;
-  const back = encodeURIComponent(pathname);
+  const back = encodeURIComponent(pathname + (typeof window === "undefined" ? "" : window.location.search));
   return (
     <section className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
       <span className="flex size-14 items-center justify-center rounded-2xl bg-selected text-link">

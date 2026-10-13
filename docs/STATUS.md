@@ -35,8 +35,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 | Tela / funcionalidade | Estado | Depende de |
 |---|---|---|
-| Avaliações (ler, filtrar, "útil") | Pendente | `GET /…/reviews`, `POST /reviews/{id}/helpful` |
-| Avaliar (fotos, vídeo, checagem) | Pendente | `POST /reviews`, `POST /uploads/presign` |
+| Avaliações (ler, filtrar, "útil") | Implementado (tipos, lint, testes e navegador contra servidor de teste; **não** validado com a API real) | `GET /…/reviews`, `POST /reviews/{id}/helpful` |
+| Avaliar (fotos, vídeo, checagem, rascunho) | Implementado (idem). Contrato em `docs/contratos/acompanhar.md` | `GET /review-targets/…`, `POST /reviews`, `POST /uploads/presign` |
 | Sinais de confiança (verificado, atualizado em, disponibilidade informada) | Pendente | campos no perfil e na oferta |
 | Denunciar | Pendente | `POST /reports` |
 
@@ -47,8 +47,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Ofertas & Promoções, cupons | Implementado (idem) | `GET /offers`, `POST /coupons/{id}/claim` |
 | Comparar: quadro lado a lado (até 3 itens escolhidos pelo usuário, prioridades, "só o que é diferente") e botão "Comparar" nos cards | Implementado (conferido com tipos, lint, build, 11 testes da lógica e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/comparar.md`; a lista de itens fica no navegador | `GET /comparisons/view`, campo `group` nos itens da busca |
 | Comparar: pesquisa e bandeja "Sua comparação" | Implementado (idem) | `GET /search`; mapa depende do serviço de mapas |
-| Favoritos, listas, seguir | Pendente | `/me/favorites`, `/me/lists`, `/profiles/{id}/follow` |
-| Alertas e "Quero em promoção" | Pendente | `/me/alerts`, `/me/wants` |
+| Favoritos, listas, seguir | Implementado (idem) | `/me/favorites`, `/me/following`, `/me/lists`, `/profiles/{id}/follow` |
+| Alertas ("Avise-me", gestão) e "Quero em promoção" (Atividade) | Implementado (idem) | `/me/alerts`, `/me/wants` |
 | Stories, Ao vivo, Evento | Pendente | `/stories`, `/lives`, `/happenings` + Socket.IO |
 | Compartilhar e página pública com prévia | Pendente | `GET /share/{type}/{id}` |
 
@@ -56,9 +56,9 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 | Tela / funcionalidade | Estado | Depende de |
 |---|---|---|
-| Conversas (chat próprio) | Pendente | `/conversations`, Socket.IO |
-| Notificações e preferências | Pendente | `/notifications`, `/me/notification-prefs` |
-| Minha atividade | Pendente | `/quotes`, `/me/wants`, `/me/reviews`, `/me/coupons`, `/me/activity` |
+| Conversas (chat próprio: lista, conversa, foto, silenciar, bloquear, denunciar, apagar) | Implementado (idem; atualização por consulta periódica, sem Socket.IO) | `/conversations…`, `/uploads/presign` |
+| Notificações e preferências | Implementado (idem) | `/notifications…`, `/me/notification-prefs` |
+| Minha atividade | Implementado (idem) | `/me/quotes`, `/me/wants`, `/me/reviews`, `/me/coupons`, `/me/activity/summary`, `/recent` |
 | Minha Conta (perfil, endereços, interesses, sessões, LGPD) | Pendente | `/me/*` |
 | Ajuda, Institucional | Pendente | `/help/*`, `/legal/{doc}` |
 | Telas de sistema (404, erro, sem internet, manutenção) | Pendente | `GET /status` |

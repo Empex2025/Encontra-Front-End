@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AuthGate } from "@/components/auth/auth-gate";
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { FavoritesView } from "@/components/favorites/favorites-view";
 
-export const metadata: Metadata = { title: "Meus Favoritos" };
+export const metadata: Metadata = { title: "Meus Favoritos", robots: { index: false, follow: false } };
 
 export default function FavoritosPage() {
   return (
     <AuthGate area="favoritos">
-      <ScreenPending
-        title="Meus Favoritos"
-        purpose="O que você salvou e acompanha: itens, lojas e prestadores que segue, listas e alertas."
-      />
+      <Suspense>
+        <FavoritesView />
+      </Suspense>
     </AuthGate>
   );
 }

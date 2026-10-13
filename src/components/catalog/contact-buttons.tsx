@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { MessageCircle, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { cn } from "@/components/ui/cn";
 import { useToast } from "@/components/ui/toast";
@@ -45,6 +46,8 @@ export function ContactButtons({
     onSuccess: (c) => router.push(conversaHref(c.id)),
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível abrir a conversa.", "info"),
   });
+
+  useResumeAction("chat", profile.id, () => chat.mutate());
 
   const wa = whatsappUrl(profile.whatsapp, whatsappText);
 

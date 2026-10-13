@@ -75,17 +75,19 @@ Código pronto (PR #6), **não validado com a API real**. Contratos: `docs/contr
 
 ## Fluxo 4 · Contato e acompanhamento
 
-Tudo pendente.
+Código pronto (PR #7), **não validado com a API real**. Contrato: `docs/contratos/acompanhar.md`. Conferido com tipos, lint, 69 testes e navegador contra servidor de teste descartável (desktop e celular).
 
-| Tela | Pendência |
-|---|---|
-| Conversas (chat próprio) | API `/conversations` + Socket.IO. Hoje a tela só mostra o bloqueio de visitante. |
-| Notificações e preferências | API `/notifications`, `/me/notification-prefs`. Web push/e-mail: serviço externo. |
-| Favoritos, listas, seguir | API `/me/favorites`, `/me/lists`, `/profiles/{id}/follow`. Retomar a ação pendente (ver Fluxo 1). |
-| Alertas | API `/me/alerts`. Não prometer monitoramento de preço ou estoque sem fonte confiável (DIRETRIZES §11). |
-| Atividade | API `/quotes`, `/me/wants`, `/me/reviews`, `/me/coupons`, `/me/activity`. |
-| Avaliar (fotos, vídeo) | API `POST /reviews`, `POST /uploads/presign`; **Externo:** armazenamento de arquivos. |
-| Compartilhar e página pública com prévia | API `GET /share/{type}/{id}`; SEO e prévia exigem renderização no servidor. |
+| Tela | Estado | Pendência |
+|---|---|---|
+| Favoritos (itens, lojas, listas, alertas) | Implementado | `/me/favorites`, `/me/following`, `/me/lists…`, `/me/alerts` (API). Lista compartilhada: o link abre uma página pública que **ainda não existe** (ver "Compartilhado"). Comentar numa lista compartilhada depende da página pública. O faixa "{N} lojas com novidades" depende de `news` real vinda do servidor. |
+| Conversas | Implementado | `/conversations…` (API). **Tempo real não existe**: o front consulta a cada 5 s (conversa aberta) e 30 s (lista); "digitando…" e "online" só aparecem se o servidor mandar. Socket.IO é melhoria futura. Envio de foto exige `POST /uploads/presign` e armazenamento (Externo). |
+| Notificações e preferências | Implementado | `/notifications…`, `/me/notification-prefs` (API). O envio por e-mail e WhatsApp é do back-end (Externo: contas). Push do navegador não faz parte do escopo. |
+| Atividade (orçamentos, pedidos, avaliações, cupons, vistos) | Implementado | `/me/quotes`, `/quotes/{id}/accept|cancel`, `/me/wants`, `/me/reviews`, `/me/coupons`, `GET /recent` (novo). "Vistos" fica só no navegador. "Ver no mapa" nos pedidos depende do mapa (bloqueado). |
+| Avaliar | Implementado | `GET /review-targets/{tipo}/{slug}`, `POST /reviews`, `POST /uploads/presign`. Rascunho fica só no navegador e não guarda as fotos. Duração do vídeo é conferida no navegador e **deve ser conferida de novo no servidor**. Moderação (pendente até 24 h) é do back-end. |
+| Compartilhado (página pública com prévia) | Pendente | `GET /share/{type}/{id}`; exige renderização no servidor (prévia ao colar o link). Junto com o SEO do Fluxo 3. |
+| Retomar ação depois do login | Implementado em parte | Retomam sozinhos: favoritar, seguir, conversar, pegar cupom, criar alerta (abre a janela). **Não retomam:** pedir orçamento, "útil" e avaliar (o formulário depende de dados que se perdem). |
+| Avaliar a partir de Orçamento concluído | Front | O botão leva a `/avaliar?tipo=prestador`; o servidor precisa aceitar avaliação de prestador após orçamento concluído. |
+| Atalhos de teclado, notificação do navegador | Front/Decisão | Não feitos. |
 
 ## Fluxo 5 · Conta, suporte e sistema
 

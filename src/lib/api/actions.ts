@@ -15,7 +15,7 @@ export const actions = {
     api(`/profiles/${seg(profileId)}/follow`, none, { method: on ? "POST" : "DELETE" }),
   setBell: (profileId: string, enabled: boolean) =>
     api(`/profiles/${seg(profileId)}/bell`, none, { method: "PUT", body: { enabled } }),
-  favorite: (type: "product" | "profile", id: string, on: boolean) =>
+  favorite: (type: "product" | "service" | "profile", id: string, on: boolean) =>
     on
       ? api("/me/favorites", none, { method: "POST", body: { type, id } })
       : api(`/me/favorites/${type}/${seg(id)}`, none, { method: "DELETE" }),

@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Ticket } from "lucide-react";
 import { useState } from "react";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { useToast } from "@/components/ui/toast";
 import { actions } from "@/lib/api/actions";
@@ -40,6 +41,10 @@ export function CouponCard({ coupon, productTitle }: { coupon: Coupon; productTi
       if (e instanceof ApiError && e.code === "COUPON_ALREADY_CLAIMED") setClaimed(true);
       toast(e instanceof Error ? e.message : "Não foi possível pegar o cupom.", "info");
     },
+  });
+
+  useResumeAction("coupon", coupon.id, () => {
+    if (!claimed) claim.mutate();
   });
 
   return (

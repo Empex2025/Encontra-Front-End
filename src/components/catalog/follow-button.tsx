@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Bell, BellOff, Check, Plus } from "lucide-react";
 import { useState } from "react";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { cn } from "@/components/ui/cn";
 import { useToast } from "@/components/ui/toast";
@@ -45,6 +46,10 @@ export function FollowButton({
       onFollowersChange?.(next ? -1 : 1);
       toast(e instanceof Error ? e.message : "Não foi possível seguir agora.", "info");
     },
+  });
+
+  useResumeAction("follow", profile.id, () => {
+    if (!following) follow.mutate(true);
   });
 
   const bellMut = useMutation({

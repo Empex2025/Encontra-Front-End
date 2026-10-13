@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Heart } from "lucide-react";
 import { useState } from "react";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { cn } from "@/components/ui/cn";
 import { useToast } from "@/components/ui/toast";
@@ -43,6 +44,10 @@ export function FavoriteButton({
       setOn(!next);
       toast(e instanceof Error ? e.message : "Não foi possível salvar agora.", "info");
     },
+  });
+
+  useResumeAction("favorite", id, () => {
+    if (!on) m.mutate(true);
   });
 
   return (

@@ -62,6 +62,8 @@ export function useComparisonSelection() {
   }, []);
   const remove = useCallback((ref: string) => write(read().filter((e) => e.ref !== ref)), []);
   const clear = useCallback(() => write([]), []);
+  /** Troca a comparação inteira (ex.: "Comparar N desta lista"). */
+  const replace = useCallback((entries: CompareEntry[]) => write(entries.slice(0, MAX_COMPARE)), []);
 
-  return { list, toggle, remove, clear };
+  return { list, toggle, remove, clear, replace };
 }
