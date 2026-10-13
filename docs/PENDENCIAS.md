@@ -25,8 +25,7 @@ Código pronto (PR #4), não validado com a API real.
 | Pendência | Motivo | Detalhe |
 |---|---|---|
 | Retomar a ação pendente depois do login | Front | A infraestrutura existe (`savePendingAction` / `takePendingAction`). **Só "Quero em promoção" retoma** (reabre o pedido, sem enviar sozinho). Favoritar, seguir, conversar, avaliar, alerta, cupom, orçamento, salvar comparação, reservar, curtir, útil, comentar, confirmar presença, interesse e lembrete retomam quando cada tela existir. Cada tela nova deve chamar `takePendingAction("tipo")` ao montar. |
-| Rota `/recuperar-senha` | Decisão | O documento sugere `/recuperar-senha`; foi feita em `/entrar/recuperar`. Decidir se renomeamos (é só rota) ou ajustamos o documento. |
-| Cadastro em `/cadastro/*` | Decisão | O documento sugere uma rota por etapa; foi feita uma só rota `/cadastro` com as 4 etapas em estado. Voltar do navegador sai do cadastro em vez de voltar uma etapa. |
+| Voltar do navegador no cadastro | Front | O cadastro é uma rota só (`/cadastro`, documento ajustado em 12/10); o botão voltar do navegador sai do cadastro em vez de voltar uma etapa. |
 | Código por SMS de verdade | Externo | Precisa de provedor de SMS contratado e configurado no back-end. No teste, o código "123456" era do servidor de teste. |
 | Recuperar senha por e-mail | Externo | Precisa de serviço de e-mail. A tela oferece o canal; o envio é do back-end. |
 | Bloqueios e limites (5 erros, 15 min, 60 s de reenvio, tentativas de login) | API | A tela só exibe o que o servidor responder. A regra em si ainda não foi testada de verdade. |
