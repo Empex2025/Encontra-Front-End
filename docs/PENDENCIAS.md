@@ -51,7 +51,7 @@ Código pronto (PR #4), não validado com a API real.
 | Home: carrossel com setas e "1–6 de 12" | Front | Hoje é rolagem horizontal nativa. Setas só se houver necessidade. |
 | Home: vídeos nos cards de Experiências | Externo | Prototipo não tocava vídeo; depende de armazenamento/streaming de mídia. |
 | Aviso de cookies: página `/institucional/cookies` | Externo | O link "Personalizar ou ler a política" existe; o texto depende da revisão jurídica. |
-| Aviso de cookies: efeito real | Decisão | Hoje "Só os necessários" **para de enviar eventos de uso**; antes de qualquer escolha os eventos continuam sendo enviados. Se preferir o padrão mais restrito (nada enviado até aceitar), é uma linha em `track()`, mas reduz os dados de demanda de visitantes novos. |
+| Aviso de cookies: efeito real | Implementado | Decidido em 13/10: eventos de uso só são enviados depois de "Aceitar todos"; sem escolha ou com "Só os necessários", nada é enviado. Confirmar com advogado. |
 | Stories (visualizador) | Implementado, não validado | `/stories`, `/stories/{id}/view|like|save`, `POST /conversations` com `firstMessage` e `origin`. **Decisão:** no fim da fila aparece "Você viu todos os stories de hoje" (o documento deixava em aberto); "Ver de novo" conta uma volta. Endereço `/stories?perfil=&destaque=&inicio=` (o documento previa `/s/{perfil}-{n}`, que aqui é o prestador). Vídeo de story toca mudo e dura os mesmos 5 s. Responder pede conta. Falta retomar a ação pendente (curtir/salvar/responder) depois do login. "Como chegar" no card "No mapa" não existe (a marcação não traz coordenadas). |
 | Ao vivo | Implementado, não validado | `GET /lives/{id}`, chat por consulta a cada 3 s (`GET|POST /lives/{id}/messages`), curtir, lembrete, outras lives. **Externo:** serviço de streaming (HLS) para o vídeo tocar em todos os navegadores; sem `streamUrl` mostra a capa. **Socket.IO** não feito (consulta periódica). Corações animados respeitam "reduzir movimento". |
 | Evento | Implementado, não validado | `GET /happenings/{id}`, `/attendance`, `calendar.ics`. **Decisão:** "Vou" e "Tenho interesse" são exclusivos. Mini mapa não existe (mapa bloqueado): mostra endereço e "Como chegar" (Google Maps). Aviso 1 h antes é do back-end. |
@@ -67,14 +67,14 @@ Código pronto (PR #6), **não validado com a API real**. Contratos: `docs/contr
 |---|---|---|
 | Comparar (lado a lado) | Implementado | `GET /comparisons/view` e o campo `group` nos itens da busca (API). A lista fica no navegador. |
 | Comparar: pesquisa e bandeja "Sua comparação" | Implementado | Usa `GET /search`. Falta o mapa (bloqueado). |
-| "Salvar comparação" na conta | Decisão | O convite existe (`saveComparison`), mas a decisão 5 diz que a lista fica só no navegador. Decidir se haverá salvar em Favoritos. |
+| "Salvar comparação" na conta | Implementado | Decidido em 13/10 e feito (PR #14); contrato em `docs/contratos/comparacoes-salvas.md`. |
 | Produto | Implementado | `GET /products/{slug}` (+ `/related`, `/reviews`). "Ver no mapa" abre o Explorar (mapa bloqueado). Vários-lojas (`/products/{id}/offers`) não entrou: o contrato novo traz `sameLine` e `related`. |
 | Perfil da loja | Implementado | `GET /profiles/{slug}` e `/products`, `/posts`, `/offers`, `/reviews`. Visualizador de fotos simples (sem curtir/comentar: depende de `POST /posts/{id}/like` e comentários, Fluxo 4). Destaques (stories) só aparecem como círculos: abrir depende da tela de Stories. |
 | Perfil do prestador e orçamento | Implementado | `POST /quotes`. Mapa da área de atendimento não existe (mapa bloqueado). |
 | Ofertas, cupom | Implementado | `GET /offers` (contrato novo, em `decidir.md`) e `POST /coupons/{id}/claim`. Cupons resgatados aparecem em Atividade (Fluxo 4). "Mapa (camada ofertas)" bloqueado. |
 | Contato: WhatsApp, telefone, rota | Implementado | WhatsApp abre `wa.me` só se o perfil tiver número. Telefone não é exibido (o documento prevê só chat e WhatsApp). "Como chegar" abre o Google Maps no navegador (não depende de chave); trocar se for escolhido outro serviço de mapas. |
 | Páginas públicas com SEO (título e prévia ao compartilhar) | Implementado, não validado | `/p`, `/l`, `/s` e `/o` geram título, descrição, imagem (Open Graph), URL canônica e dados estruturados (JSON-LD) **no servidor**, lendo as rotas públicas sem cookies (`BACKEND_URL`); link inexistente dá 404 de verdade. Precisa de `NEXT_PUBLIC_SITE_URL` para URLs absolutas. **Falta:** `sitemap.xml` e `robots.txt` (dependem de uma lista de URLs vinda do back-end, ver `docs/contratos/oferta.md`) e SEO das páginas por categoria/bairro (não definidas no documento). |
-| Avaliar, denunciar, compartilhar (links) | Pendente | Os botões levam a `/avaliar`, `/denunciar` (Fluxos 4 e 5). |
+| Avaliar, denunciar, compartilhar (links) | Implementado | Fluxos 4 e 5. |
 | Retomar ação pendente | Front | Ver Fluxo 1: quase tudo retoma; exceções listadas lá. |
 
 ## Fluxo 4 · Contato e acompanhamento
@@ -110,8 +110,8 @@ Código pronto (PR #8), **não validado com a API real** (testado no navegador c
 | "Tem um negócio?" | Bloqueado | Área do lojista fora do escopo: o cartão diz "em breve". |
 | Central de Ajuda (busca, categorias, "ajudou?") e Fale conosco | Implementado | `GET /help/faq` (todo o texto, inclusive horários, vem do servidor), `/help/faq/{id}/feedback`, `POST /help/contact` e `purpose:"help"` em `/uploads/presign`. Visitante pode usar. Cada resposta ajudou conta uma vez só **por clique no mesmo carregamento** (o servidor precisa impedir repetição). |
 | Institucional (sobre, termos, privacidade, cookies, avaliações) | Implementado | `GET /legal/{doc}`: **nenhum texto jurídico está no código**. Sem a API ou sem revisão jurídica, a tela mostra erro/carregando. |
-| Cookies: controles reais | Implementado | Mesma escolha do aviso da Home. Desempenho e Personalização andam juntos porque o app só tem uma chave de medição. |
-| Denunciar (loja, produto, avaliação, prestador, story/live, outro) | Implementado | `GET /reports/target`, `POST /reports`. Denunciar **story/live e conversa** não tem ponto de entrada ainda (telas de Stories/Ao vivo pendentes). A denúncia de conversa continua usando o fluxo próprio do chat. |
+| Cookies: controles reais | Implementado | Mesma escolha do aviso da Home (medição só depois de aceitar). Desempenho e Personalização andam juntos porque o app só tem uma chave de medição. |
+| Denunciar (loja, produto, avaliação, prestador, story/live, outro) | Implementado | `GET /reports/target`, `POST /reports`. A denúncia de conversa continua usando o fluxo próprio do chat. |
 | 404 | Implementado | Sugestões saem de `GET /discovery/home`; sem local ou sem dados somem. |
 | Erro 500 | Implementado | "ref." é o código (digest) do Next; não há ainda como cruzar com o log do back-end. |
 | Sem internet | Implementado | Faixa e nova tentativa a cada 10 s via `GET /status`; ao voltar, refaz as consultas. Não há tela dedicada "sem internet" para páginas que nunca carregaram (só a faixa). |
