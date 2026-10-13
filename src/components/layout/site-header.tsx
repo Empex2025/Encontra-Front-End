@@ -23,23 +23,23 @@ export function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-header-border bg-header">
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:h-[84px] lg:gap-4 lg:px-10">
         <div className="flex min-w-0 items-center gap-1 lg:gap-4">
-          <span className="sm:hidden">
+          <span className="shrink-0 sm:hidden">
             <Logo compact />
           </span>
-          <span className="hidden sm:block">
+          <span className="hidden shrink-0 sm:block">
             <Logo />
           </span>
           <LocationPicker />
         </div>
 
-        {showSearch && <HeaderSearch className="mx-auto hidden w-full max-w-xl md:block" />}
+        {showSearch && <HeaderSearch className="mx-auto hidden w-full max-w-xl min-w-0 lg:block" />}
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
           {showSearch && (
             <Link
               href={routes.explorar}
               aria-label="Buscar"
-              className="flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10 md:hidden"
+              className="flex size-11 items-center justify-center rounded-full text-white hover:bg-white/10 lg:hidden"
             >
               <Search className="size-5" aria-hidden />
             </Link>

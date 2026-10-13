@@ -79,18 +79,20 @@ export function LocationPicker() {
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative min-w-0 md:shrink-0">
       <button
         type="button"
         onClick={() => (open ? close() : openPanel())}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-10 max-w-[44vw] items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-white hover:bg-white/10 lg:max-w-none lg:rounded-l-none lg:border-l lg:border-header-border lg:px-4"
+        className="flex h-10 max-w-[44vw] min-w-0 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-white hover:bg-white/10 md:max-w-[16rem] lg:rounded-l-none lg:border-l lg:border-header-border lg:px-4"
       >
         <MapPin className="size-4 shrink-0 text-amber-400" aria-hidden />
         <span className="sr-only">Localização: </span>
         <span className="truncate">{location.label || "Definir local"}</span>
-        <span className="hidden text-navy-200 sm:inline">· {location.radiusKm} km</span>
+        <span className="hidden shrink-0 whitespace-nowrap text-navy-200 sm:inline">
+          · {location.radiusKm} km
+        </span>
         <ChevronDown className="size-3.5 shrink-0 text-navy-200" aria-hidden />
       </button>
 

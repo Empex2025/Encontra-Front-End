@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { OPEN_LOCATION_EVENT } from "@/components/layout/location-picker";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
+import { useSession } from "@/hooks/use-session";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { track } from "@/lib/analytics/track";
 import { ApiError } from "@/lib/api/client";
@@ -29,6 +30,7 @@ import {
   type SearchResponse,
   type Sort,
 } from "@/lib/api/search";
+import { takePendingAction } from "@/lib/domain/auth-actions";
 import { CATEGORIES } from "@/lib/domain/categories";
 import { RADIUS_STEPS } from "@/lib/domain/radius";
 import {
@@ -79,6 +81,11 @@ export function ExplorarView() {
   const [widened, setWidened] = useState<{ q: string; km: number } | null>(null);
   const radiusKm = widened && widened.q === state.q ? widened.km : location.radiusKm;
   const [wantOpen, setWantOpen] = useState(false);
+  const { me } = useSession();
+  // Quem pediu "Quero em promoção" sem conta volta aqui depois de entrar: reabre o pedido, sem enviar sozinho.
+  useEffect(() => {
+    if (me && takePendingAction("want")) queueMicrotask(() => setWantOpen(true));
+  }, [me]);
 
   const isSearch = state.q.length > 0;
   const hasPlace = location.lat !== null || location.label.trim().length > 0;

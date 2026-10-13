@@ -2,7 +2,7 @@
 
 Atualizada a cada entrega. Estados: **Pendente** · **Em implementação** · **Implementado** (código pronto, conferido com build/lint/tipos) · **Validado** (testado de ponta a ponta com a API real) · **Bloqueado** (depende de algo externo).
 
-Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases: `docs/DIRETRIZES.md` §13.
+Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases: `docs/DIRETRIZES.md` §13. O que falta, por fluxo e com o motivo: `docs/PENDENCIAS.md`.
 
 > **Situação do back-end (09/10/2026):** o contrato `/api/v1` está descrito na aba "Pedido ao back-end". Nenhuma rota `/api/v1` foi publicada ainda, então **nada pode ser "Validado"** por enquanto. Este repositório não tem acesso ao repositório do back-end; a última leitura dele é de 30/09/2026.
 
@@ -28,7 +28,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Perfil da loja | Pendente | `GET /profiles/{slug}` e sub-rotas |
 | Perfil do prestador e pedido de orçamento | Pendente | `GET /profiles/{slug}`, `GET /services/{id}`, `POST /quotes` |
 | Contato: WhatsApp, telefone, rota | Pendente | dados do perfil + `POST /tracking` |
-| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Falta: cada tela futura retomar a ação pendente após o login (`takePendingAction`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
+| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Retomada da ação pendente após o login: só "Quero em promoção" por enquanto; as demais telas retomam quando existirem (detalhes em `docs/PENDENCIAS.md`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
 
 ## Fase 2 — Confiar
 

@@ -9,6 +9,7 @@ import { cn } from "@/components/ui/cn";
 import { useSession } from "@/hooks/use-session";
 import { ApiError } from "@/lib/api/client";
 import { createWant, type Want } from "@/lib/api/search";
+import { savePendingAction } from "@/lib/domain/auth-actions";
 import { routes } from "@/lib/routes";
 
 const KMS = [1, 3, 5, 10] as const;
@@ -89,7 +90,8 @@ export function WantDialog({
               oferta.
             </p>
             <Link
-              href={`${routes.entrar}?volta=${encodeURIComponent(returnTo)}`}
+              href={`${routes.entrar}?voltar=${encodeURIComponent(returnTo)}`}
+              onClick={() => savePendingAction({ type: "want", returnTo })}
               className="flex h-11 items-center justify-center rounded-lg bg-primary text-sm font-bold text-on-primary hover:bg-primary-hover"
             >
               Entrar ou criar conta grátis
