@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ErrorState } from "@/components/ui/error-state";
 import { Chip } from "@/components/ui/chip";
@@ -38,6 +39,7 @@ export function ReviewsPanel({
 }) {
   const router = useRouter();
   const requireAuth = useRequireAuth();
+  useResumeAction("review", undefined, () => router.push(reviewHref));
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState<ReviewSort>("recent");
 
@@ -186,6 +188,9 @@ function ReviewItem({ review, reportKind }: { review: Review; reportKind?: boole
       setOn(!next);
       setCount((c) => c + (next ? -1 : 1));
     },
+  });
+  useResumeAction("helpful", review.id, () => {
+    if (!on) m.mutate(true);
   });
 
   return (

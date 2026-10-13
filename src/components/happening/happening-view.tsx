@@ -5,6 +5,7 @@ import { ArrowLeft, CalendarPlus, Flag, MapPin, Navigation } from "lucide-react"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ShareButton } from "@/components/catalog/share-button";
 import { cn } from "@/components/ui/cn";
@@ -116,6 +117,11 @@ function Content({ ev }: { ev: Happening }) {
     const previous = ev.myAttendance;
     mark.mutate({ kind: previous === kind ? null : kind, previous });
   };
+  const markIfNot = (kind: "going" | "interested") => {
+    if (ev.myAttendance !== kind) mark.mutate({ kind, previous: ev.myAttendance });
+  };
+  useResumeAction("attend", ev.id, () => markIfNot("going"));
+  useResumeAction("interest", ev.id, () => markIfNot("interested"));
 
   const claim = useMutation({
     mutationFn: (couponId: string) => actions.claimCoupon(couponId),

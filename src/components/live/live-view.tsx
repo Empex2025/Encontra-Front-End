@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ShareButton } from "@/components/catalog/share-button";
 import { cn } from "@/components/ui/cn";
@@ -114,6 +115,9 @@ function Content({ live }: { live: Live }) {
       toast(e instanceof Error ? e.message : "Não foi possível atualizar.", "info");
     },
   });
+  useResumeAction("reminder", live.id, () => {
+    if (!hasReminder) remind.mutate(true);
+  });
 
   const [extraLikes, setExtraLikes] = useState(0);
   const [hearts, setHearts] = useState<number[]>([]);
@@ -130,6 +134,7 @@ function Content({ live }: { live: Live }) {
     window.setTimeout(() => setHearts((l) => l.filter((x) => x !== h)), HEART_MS);
     like.mutate();
   };
+  useResumeAction("like", live.id, tapLike);
 
   const chat = useMutation({
     mutationFn: () =>

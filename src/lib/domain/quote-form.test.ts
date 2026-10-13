@@ -18,3 +18,44 @@ describe("validateQuote", () => {
     expect(validateQuote({ ...ok, details: "x".repeat(401) }).details).toBeTruthy();
   });
 });
+
+import { quoteDraftKey, saveQuoteDraft, takeQuoteDraft } from "./quote-form";
+import { beforeEach, vi } from "vitest";
+
+describe("rascunho do pedido", () => {
+  beforeEach(() => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("window", {
+      sessionStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+      },
+    });
+  });
+  it("volta uma vez e some", () => {
+    saveQuoteDraft("p1", {
+      serviceId: "s1",
+      when: "today",
+      neighborhood: "Farol",
+      details: "troca de chuveiro",
+    });
+    expect(takeQuoteDraft("p1")).toEqual({
+      serviceId: "s1",
+      when: "today",
+      neighborhood: "Farol",
+      details: "troca de chuveiro",
+    });
+    expect(takeQuoteDraft("p1")).toBeNull();
+  });
+  it("ignora lixo e prazo inválido", () => {
+    window.sessionStorage.setItem(
+      quoteDraftKey("p2"),
+      JSON.stringify({ serviceId: 5, when: "xx", details: "a".repeat(999) }),
+    );
+    const d = takeQuoteDraft("p2");
+    expect(d?.serviceId).toBeNull();
+    expect(d?.when).toBe("");
+    expect(d?.details.length).toBe(400);
+  });
+});

@@ -5,6 +5,8 @@ import { BadgeCheck, Clock, Home, MapPin, ShieldCheck, ThumbsUp, Wrench } from "
 import { useState } from "react";
 
 import { useRequireAuth } from "@/components/auth/auth-invite";
+import { useSession } from "@/hooks/use-session";
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { cn } from "@/components/ui/cn";
 import { useToast } from "@/components/ui/toast";
 import { track } from "@/lib/analytics/track";
@@ -12,7 +14,13 @@ import { actions } from "@/lib/api/actions";
 import type { ProviderData, Profile } from "@/lib/api/catalog";
 import { ApiError } from "@/lib/api/client";
 import { formatMoney } from "@/lib/format";
-import { validateQuote, WHEN_OPTIONS, type QuoteWhen } from "@/lib/domain/quote-form";
+import {
+  saveQuoteDraft,
+  takeQuoteDraft,
+  validateQuote,
+  WHEN_OPTIONS,
+  type QuoteWhen,
+} from "@/lib/domain/quote-form";
 import { providerMessage, whatsappUrl } from "@/lib/domain/whatsapp";
 import { avaliarHref, conversaHref } from "@/lib/routes";
 import { useRouter } from "next/navigation";
@@ -229,6 +237,7 @@ function QuoteForm({
   onService: (id: string | null) => void;
 }) {
   const requireAuth = useRequireAuth();
+  const { me } = useSession();
   const router = useRouter();
   const toast = useToast();
   const [when, setWhen] = useState<QuoteWhen | "">("");
@@ -263,7 +272,21 @@ function QuoteForm({
     },
   });
 
+  // quem não tem conta perde a página ao entrar: o pedido digitado volta pronto para conferir e enviar
+  useResumeAction("quote", p.id, () => {
+    const d = takeQuoteDraft(p.id);
+    if (d) {
+      if (d.serviceId) onService(d.serviceId);
+      setWhen(d.when);
+      setNeighborhood(d.neighborhood);
+      setDetails(d.details);
+    }
+    toast("Você entrou. Confira o pedido e envie.");
+    document.getElementById("orcamento")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
   const submit = (via: "chat" | "whatsapp") => {
+    if (!me) saveQuoteDraft(p.id, { serviceId, when, neighborhood, details });
     if (!requireAuth("quote", p.id)) return;
     const errs = validateQuote({ serviceId, when, neighborhood, details, needsNeighborhood });
     setErrors(errs);
