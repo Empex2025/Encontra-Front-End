@@ -141,3 +141,13 @@ Código pronto (PR #8), **não validado com a API real** (testado no navegador c
 - Stories duram 24 h: o front esconde o que passou disso (destaques são permanentes); o servidor deve parar de enviar.
 - Cookies: medição de uso só depois de "Aceitar todos" (sem escolha = sem eventos).
 - Abas dentro dos blocos da Home: adiadas até haver volume de dados.
+
+
+## Acréscimos da auditoria de 14/10/2026
+
+- Back-end: campos opcionais `stock.updatedAt` (produto), `updatedAt` (perfil) e `profile.verification` (oferta) — sem eles o front mostra "Não informado" (contrato em `docs/contratos/decidir.md`).
+- Cadastro grava endereço e depois o local; se o segundo falhar e a pessoa tentar de novo, o endereço pode ser gravado duas vezes (idempotência no back-end).
+- Texto de exclusão (30 dias) e tempos do código SMS (5 min, bloqueio de 15 min) estão fixos no front e precisam de revisão jurídica.
+- Erro de `/me/location` não se distingue de "sem local definido" no cabeçalho.
+- "Reservar" aparece nas ações do convite de login, mas não há tela de reserva.
+- Player de live sem `streamUrl` e Socket.IO seguem dependendo de serviço externo; mapa depende do provedor e de `GET /map` (`ui/map-panel.tsx` é o ponto de troca).
