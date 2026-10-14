@@ -9,14 +9,15 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { ResultCard, ResultCardSkeleton, targetTypeOf } from "@/components/search/result-card";
 import { cn } from "@/components/ui/cn";
-import { ErrorState } from "@/components/ui/error-state";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { track } from "@/lib/analytics/track";
 import { catalog, type Post, type Profile } from "@/lib/api/catalog";
 import { ApiError } from "@/lib/api/client";
 import { CATEGORIES } from "@/lib/domain/categories";
+import { routeUrl } from "@/lib/domain/offer";
 import { markViewed } from "@/lib/domain/recently-viewed";
+import { cnpjSignal, textSignal, updatedSignal, verificationSignal } from "@/lib/domain/trust";
 import { formatCount, formatKm, formatTimeAgo } from "@/lib/format";
 import { avaliarHref, denunciarHref, lojaHref, prestadorHref, routes, storiesHref } from "@/lib/routes";
 import { storeMessage } from "@/lib/domain/whatsapp";
@@ -27,8 +28,10 @@ import { CouponCard } from "./coupon-card";
 import { FollowButton } from "./follow-button";
 import { ProviderBody } from "./provider-view";
 import { ReviewsPanel } from "./reviews-panel";
+import { BlockSkeleton, CardsSkeleton, EmptyNote, PageError, Section, SectionError } from "./section-state";
 import { ShareButton } from "./share-button";
 import { StatusLine } from "./status-line";
+import { TrustSignals } from "./trust-signals";
 
 /** Carrega o perfil e escolhe o layout: loja (/l) ou prestador (/s). Endereço trocado redireciona. */
 export function ProfileView({ slug, expected }: { slug: string; expected: "store" | "provider" }) {
@@ -46,7 +49,15 @@ export function ProfileView({ slug, expected }: { slug: string; expected: "store
   if (q.isPending) return <ProfileSkeleton />;
   if (q.isError) {
     if (q.error instanceof ApiError && q.error.status === 404) return <NotFound />;
-    return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+    return (
+      <PageError
+        what={expected === "provider" ? "o prestador" : "a loja"}
+        error={q.error}
+        onRetry={() => q.refetch()}
+        backHref={routes.explorar}
+        backLabel="Buscar no Explorar"
+      />
+    );
   }
   if (q.data.kind !== expected) return <ProfileSkeleton />;
   return <ProfileContent profile={q.data} />;
@@ -96,16 +107,24 @@ function ProfileContent({ profile: p }: { profile: Profile }) {
             <Stat label="seguidores" value={formatCount(followers)} />
             <Stat
               label={isProvider ? "serviços" : "produtos"}
-              value={formatCount(isProvider ? (p.provider?.services.length ?? 0) : p.stats.products)}
+              value={
+                isProvider
+                  ? p.provider
+                    ? formatCount(p.provider.services.length)
+                    : "—"
+                  : formatCount(p.stats.products)
+              }
             />
             {!isProvider && <Stat label="posts" value={formatCount(p.stats.posts)} />}
-            {p.stats.rating !== null && p.stats.reviewCount > 0 && (
+            {p.stats.rating !== null && p.stats.reviewCount > 0 ? (
               <Stat
                 label={`(${p.stats.reviewCount} avaliações)`}
                 value={`★ ${p.stats.rating.toFixed(1).replace(".", ",")}`}
               />
+            ) : (
+              <Stat label="avaliações" value="—" />
             )}
-            {p.stats.respondsPct !== null && <Stat label="respondem" value={`${p.stats.respondsPct}%`} />}
+            <Stat label="respondem" value={p.stats.respondsPct !== null ? `${p.stats.respondsPct}%` : "—"} />
           </dl>
           {p.bio && <p className="whitespace-pre-line text-text">{p.bio}</p>}
           {p.followedBy && p.followedBy.names.length > 0 && (
@@ -135,28 +154,55 @@ function ProfileContent({ profile: p }: { profile: Profile }) {
         </div>
       </div>
 
-      {p.highlights.length > 0 && (
-        <ul className="flex gap-4 overflow-x-auto pb-1" aria-label="Destaques">
-          {p.highlights.map((h) => (
-            <li key={h.id} className="w-20 shrink-0">
-              <Link
-                href={storiesHref({ perfil: p.slug, destaque: h.id })}
-                className="flex flex-col items-center gap-1.5 text-center"
-              >
-                <span className={cn("rounded-full p-0.5", h.seen ? "bg-border" : "bg-primary")}>
-                  <Avatar name={h.label} url={h.coverUrl} size={64} />
-                </span>
-                <span className="w-full truncate text-xs text-text-muted">{h.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <TrustSignals
+        id="confianca-perfil"
+        description={`O que ${isProvider ? "o prestador" : "a loja"} informou e o que a EncontraÊ conseguiu confirmar.`}
+        signals={[
+          verificationSignal(p.verification),
+          cnpjSignal(p.cnpjVerified),
+          updatedSignal("Perfil atualizado", p.updatedAt),
+          textSignal("Tempo de resposta", p.responseTime),
+          textSignal("Na EncontraÊ desde", p.since.platform),
+          { ...textSignal("Horário", p.status?.text), tone: p.status ? "neutral" : "unknown" },
+        ]}
+      />
+
+      <Section
+        id="destaques"
+        level={3}
+        title="Destaques"
+        description="Coleções de stories fixadas no perfil."
+      >
+        {p.highlights.length > 0 ? (
+          <ul className="flex gap-4 overflow-x-auto pb-1" aria-label="Destaques">
+            {p.highlights.map((h) => (
+              <li key={h.id} className="w-20 shrink-0">
+                <Link
+                  href={storiesHref({ perfil: p.slug, destaque: h.id })}
+                  className="flex flex-col items-center gap-1.5 text-center"
+                >
+                  <span className={cn("rounded-full p-0.5", h.seen ? "bg-border" : "bg-primary")}>
+                    <Avatar name={h.label} url={h.coverUrl} size={64} />
+                  </span>
+                  <span className="w-full truncate text-xs text-text-muted">{h.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-text-muted">
+            {isProvider ? "O prestador" : "A loja"} ainda não publicou destaques.
+          </p>
+        )}
+      </Section>
 
       {isProvider && p.provider ? (
         <ProviderBody profile={p} provider={p.provider} />
       ) : (
-        <StoreTabs profile={p} />
+        <>
+          <StoreTabs profile={p} />
+          <SimilarProfiles profile={p} />
+        </>
       )}
     </article>
   );
@@ -211,11 +257,16 @@ function PostsGrid({ slug }: { slug: string }) {
     initialPageParam: 1,
     getNextPageParam: (last) => (last.page * last.limit < last.total ? last.page + 1 : undefined),
   });
-  if (q.isPending) return <p className="text-text-muted">Carregando…</p>;
-  if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  if (q.isPending) return <BlockSkeleton label="Carregando fotos e vídeos" />;
+  if (q.isError) return <SectionError what="as fotos e vídeos" error={q.error} onRetry={() => q.refetch()} />;
   const posts = q.data.pages.flatMap((pg) => pg.items);
   if (posts.length === 0)
-    return <p className="py-8 text-center text-text-muted">A loja ainda não publicou fotos ou vídeos.</p>;
+    return (
+      <EmptyNote title="A loja ainda não publicou fotos ou vídeos.">
+        Quando publicar, as imagens aparecem aqui em grade. Enquanto isso, veja a aba Loja para conhecer os
+        produtos.
+      </EmptyNote>
+    );
   return (
     <div className="flex flex-col gap-4">
       <ul className="grid grid-cols-3 gap-1.5 sm:gap-2">
@@ -395,11 +446,17 @@ function StoreProducts({ slug }: { slug: string }) {
           ))}
         </div>
       ) : query.isError ? (
-        <ErrorState error={query.error} onRetry={() => query.refetch()} />
+        <SectionError what="os produtos da loja" error={query.error} onRetry={() => query.refetch()} />
       ) : items.length === 0 ? (
-        <p className="py-8 text-center text-text-muted">
-          {q || cat ? "Nenhum produto com esse filtro nesta loja." : "A loja ainda não cadastrou produtos."}
-        </p>
+        <EmptyNote
+          title={
+            q || cat ? "Nenhum produto com esse filtro nesta loja." : "A loja ainda não cadastrou produtos."
+          }
+        >
+          {q || cat
+            ? "Tente outra palavra ou volte para todas as categorias."
+            : "Quando cadastrar, os produtos aparecem aqui com busca, ordenação e categorias."}
+        </EmptyNote>
       ) : (
         <ul className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
           {items.map((item, i) => (
@@ -448,12 +505,17 @@ const chip = (on: boolean) =>
 
 function StoreOffers({ slug, onSeeStore }: { slug: string; onSeeStore: () => void }) {
   const q = useQuery({ queryKey: ["profile", slug, "offers"], queryFn: () => catalog.offers(slug) });
-  if (q.isPending) return <p className="text-text-muted">Carregando…</p>;
-  if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  if (q.isPending) return <BlockSkeleton label="Carregando ofertas" />;
+  if (q.isError) return <SectionError what="as ofertas" error={q.error} onRetry={() => q.refetch()} />;
   const o = q.data;
   const empty = !o.coupon && !o.live && o.upcomingLives.length === 0 && !o.event && o.promoCount === 0;
   if (empty)
-    return <p className="py-8 text-center text-text-muted">Nenhuma oferta ativa desta loja agora.</p>;
+    return (
+      <EmptyNote title="Nenhuma oferta ativa desta loja agora.">
+        Cupons, lives, eventos e produtos em promoção aparecem aqui. Siga a loja para saber primeiro quando
+        houver novidade.
+      </EmptyNote>
+    );
   return (
     <div className="flex flex-col gap-4">
       {o.coupon && <CouponCard coupon={o.coupon} />}
@@ -499,6 +561,13 @@ const DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sáb
 function AboutStore({ profile: p }: { profile: Profile }) {
   const today = new Date().getDay();
   const a = p.address;
+  const route = a
+    ? routeUrl({
+        lat: a.lat,
+        lng: a.lng,
+        address: [a.street, a.neighborhood, a.city].filter(Boolean).join(", ") || null,
+      })
+    : null;
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <section className="flex flex-col gap-2">
@@ -532,9 +601,9 @@ function AboutStore({ profile: p }: { profile: Profile }) {
             {a.distanceKm !== null && (
               <p className="text-sm text-text-muted">{formatKm(a.distanceKm)} de você</p>
             )}
-            {a.lat !== null && a.lng !== null && (
+            {route ? (
               <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${a.lat},${a.lng}`}
+                href={route}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => track({ type: "ROUTE_REQUESTED", targetType: "STORE", targetId: p.id })}
@@ -542,35 +611,49 @@ function AboutStore({ profile: p }: { profile: Profile }) {
               >
                 Como chegar
               </a>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled
+                  aria-describedby="rota-off"
+                  className="self-start rounded-lg border border-border px-4 py-2.5 text-sm font-bold text-text-subtle disabled:cursor-not-allowed"
+                >
+                  Como chegar
+                </button>
+                <p id="rota-off" className="text-xs text-text-muted">
+                  A loja não informou a localização no mapa, então não dá para traçar a rota.
+                </p>
+              </>
             )}
           </>
         ) : (
           <p className="text-text-muted">A loja não informou o endereço.</p>
         )}
       </section>
-      {(p.badges.length > 0 || p.payment.length > 0) && (
-        <section className="flex flex-col gap-2 md:col-span-2">
-          {p.badges.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
-              {p.badges.map((b) => (
-                <li key={b} className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-text-2">
-                  {b}
-                </li>
-              ))}
-            </ul>
-          )}
-          {p.payment.length > 0 && (
-            <p className="text-sm text-text-muted">
-              Formas de pagamento combinadas direto com a loja: {p.payment.join(", ")}.
-            </p>
-          )}
-          <p className="text-xs text-text-subtle">
-            {p.since.business ? `Na praça desde ${p.since.business}. ` : ""}
-            {p.since.platform ? `Na EncontraÊ desde ${p.since.platform}. ` : ""}
-            {p.cnpjVerified ? "CNPJ verificado." : ""}
-          </p>
-        </section>
-      )}
+      <section className="flex flex-col gap-2 md:col-span-2">
+        <h2 className="text-lg font-bold text-text-strong">Selos e pagamento</h2>
+        {p.badges.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {p.badges.map((b) => (
+              <li key={b} className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-text-2">
+                {b}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-text-muted">A loja não informou selos.</p>
+        )}
+        <p className="text-sm text-text-muted">
+          {p.payment.length > 0
+            ? `Formas de pagamento combinadas direto com a loja: ${p.payment.join(", ")}.`
+            : "A loja não informou as formas de pagamento. Combine direto com ela."}
+        </p>
+        <p className="text-xs text-text-subtle">
+          Na praça desde {p.since.business ?? "— (não informado)"}. Na EncontraÊ desde{" "}
+          {p.since.platform ?? "— (não informado)"}.
+        </p>
+      </section>
       <p className="md:col-span-2">
         <Link
           href={denunciarHref("loja", p.slug)}
@@ -588,24 +671,36 @@ export function SimilarProfiles({ profile }: { profile: Profile }) {
     queryKey: ["profile", profile.slug, "similar"],
     queryFn: () => catalog.similar(profile.slug),
   });
-  if (q.isPending || q.isError || q.data.items.length === 0) return null;
-  const name = profile.categoryLabel ?? "profissionais";
+  const isProvider = profile.kind === "provider";
+  const title = isProvider
+    ? `Outros ${profile.categoryLabel ?? "profissionais"} perto de você`
+    : `Outras lojas${profile.categoryLabel ? ` de ${profile.categoryLabel}` : ""} perto de você`;
   return (
-    <section aria-labelledby="similar-title" className="flex flex-col gap-3">
-      <h2 id="similar-title" className="text-xl font-bold text-text-strong">
-        Outros {name} perto de você
-      </h2>
-      <ul className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-3">
-        {q.data.items.slice(0, 3).map((item) => (
-          <li key={item.id}>
-            <ResultCard item={item} />
-          </li>
-        ))}
-      </ul>
-      <Link href={routes.explorar} className="self-start text-sm font-semibold text-link hover:underline">
-        Ver todos no Explorar
-      </Link>
-    </section>
+    <Section
+      id="similar"
+      title={title}
+      description={`${isProvider ? "Prestadores parecidos" : "Lojas parecidas"} para comparar antes de decidir.`}
+      action={{ href: routes.explorar, label: "Ver todos no Explorar" }}
+    >
+      {q.isPending ? (
+        <CardsSkeleton count={3} label="Carregando perfis parecidos" />
+      ) : q.isError ? (
+        <SectionError what="os perfis parecidos" error={q.error} onRetry={() => q.refetch()} />
+      ) : q.data.items.length === 0 ? (
+        <EmptyNote title="Ainda não há perfis parecidos para mostrar.">
+          Quando houver mais {isProvider ? "prestadores" : "lojas"} nesta categoria por perto, eles aparecem
+          aqui.
+        </EmptyNote>
+      ) : (
+        <ul className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-3">
+          {q.data.items.slice(0, 3).map((item) => (
+            <li key={item.id}>
+              <ResultCard item={item} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }
 

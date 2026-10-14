@@ -174,3 +174,11 @@ Resposta: **igual à de `GET /search`** (itens, `total`, `facets.categories` só
 ```
 
 `coupons` = cupons do dia das lojas dentro do raio (até 10). `claimed` considera a pessoa logada; resgate pelo mesmo `POST /coupons/{id}/claim` do Produto. Só entram itens com desconto/oferta ativa de verdade; sem oferta → lista vazia (a tela mostra estado vazio e o convite "Quero em promoção").
+
+## Campos opcionais de confiança (auditoria, 14/10/2026)
+
+Aditivos e opcionais; ausentes, o front mostra "Não informado":
+
+- `GET /products/{slug}` → `stock.updatedAt` (ISO): quando a loja informou a disponibilidade.
+- `GET /profiles/{slug}` → `updatedAt` (ISO): última atualização do perfil pela loja.
+- `GET /offers/{slug}` → `profile.verification` (`verified`/`pending`/`none`).

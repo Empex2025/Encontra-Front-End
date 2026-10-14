@@ -49,6 +49,7 @@ export function ReportForm() {
   });
   const linked = !!paramType && !!targetId && type === paramType;
   const shownName = name || (linked ? (target.data?.name ?? "") : "");
+  const nameLookupFailed = linked && target.isError;
 
   const errors = tried ? validateReport({ type, name: shownName, reason, description }) : {};
 
@@ -127,11 +128,30 @@ export function ReportForm() {
           {type !== "outro" && (
             <TextField
               label="Nome"
-              hint={linked ? undefined : "Nome da loja, do produto ou de quem você está denunciando."}
+              hint={
+                linked && target.isPending
+                  ? "Buscando o nome do item denunciado…"
+                  : linked && !nameLookupFailed
+                    ? undefined
+                    : "Nome da loja, do produto ou de quem você está denunciando."
+              }
               value={shownName}
               error={errors.name}
               onChange={(e) => setName(e.target.value)}
             />
+          )}
+          {nameLookupFailed && (
+            <p role="alert" className="-mt-2 text-sm text-text-muted">
+              Não foi possível buscar o nome do item automaticamente. Digite o nome acima ou{" "}
+              <button
+                type="button"
+                onClick={() => target.refetch()}
+                className="font-semibold text-link hover:underline"
+              >
+                tentar de novo
+              </button>
+              .
+            </p>
           )}
 
           <div className="flex flex-col gap-1.5">

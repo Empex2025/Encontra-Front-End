@@ -3,9 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Flag, ListChecks } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 import { ResultCard } from "@/components/search/result-card";
-import { ErrorState } from "@/components/ui/error-state";
+import { EmptyNote, PageError } from "@/components/catalog/section-state";
+import { Chip } from "@/components/ui/chip";
 import { useSession } from "@/hooks/use-session";
 import { ApiError } from "@/lib/api/client";
 import { shareApi } from "@/lib/api/share";
@@ -13,8 +15,16 @@ import { denunciarHref, routes } from "@/lib/routes";
 import { formatTimeAgo } from "@/lib/format";
 
 /** Página pública de uma lista compartilhada: quem recebe o link vê os itens sem precisar de conta. */
+const TYPE_FILTERS = [
+  { id: "all", label: "Tudo" },
+  { id: "product", label: "Produtos" },
+  { id: "service", label: "Serviços" },
+  { id: "place", label: "Lugares" },
+] as const;
+
 export function SharedListView({ token }: { token: string }) {
   const { isGuest } = useSession();
+  const [type, setType] = useState<(typeof TYPE_FILTERS)[number]["id"]>("all");
   const q = useQuery({
     queryKey: ["shared-list", token],
     queryFn: () => shareApi.list(token),
@@ -31,10 +41,21 @@ export function SharedListView({ token }: { token: string }) {
   }
   if (q.isError) {
     if (q.error instanceof ApiError && q.error.status === 404) return <Gone />;
-    return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+    return (
+      <PageError
+        what="a lista"
+        error={q.error}
+        onRetry={() => q.refetch()}
+        backHref={routes.explorar}
+        backLabel="Buscar perto de você"
+      />
+    );
   }
   const l = q.data;
   const when = formatTimeAgo(l.updatedAt);
+  const shown = type === "all" ? l.items : l.items.filter((it) => it.type === type);
+  const countOf = (t: string) =>
+    t === "all" ? l.items.length : l.items.filter((it) => it.type === t).length;
   return (
     <article className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <header className="flex flex-col gap-1">
@@ -49,13 +70,29 @@ export function SharedListView({ token }: { token: string }) {
         </p>
       </header>
 
+      <div role="group" aria-label="Filtrar itens da lista" className="flex flex-wrap gap-2">
+        {TYPE_FILTERS.map((f) => (
+          <Chip
+            key={f.id}
+            label={f.label}
+            count={countOf(f.id)}
+            size="sm"
+            selected={type === f.id}
+            disabled={f.id !== "all" && countOf(f.id) === 0}
+            onClick={() => setType(f.id)}
+          />
+        ))}
+      </div>
+
       {l.items.length === 0 ? (
-        <p className="rounded-2xl border border-border bg-surface p-6 text-text-muted">
-          Esta lista ainda não tem itens.
-        </p>
+        <EmptyNote title="Esta lista ainda não tem itens.">
+          Quem criou a lista ainda não adicionou produtos, serviços ou lugares. Volte mais tarde.
+        </EmptyNote>
+      ) : shown.length === 0 ? (
+        <EmptyNote title="Nenhum item neste filtro.">Escolha “Tudo” para ver a lista completa.</EmptyNote>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {l.items.map((it) => (
+          {shown.map((it) => (
             <li key={`${it.type}-${it.id}`}>
               <ResultCard item={it} />
             </li>

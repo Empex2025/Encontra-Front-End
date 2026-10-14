@@ -7,7 +7,15 @@ export const metadata: Metadata = { title: "Denunciar" };
 
 export default function DenunciarPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <div
+          aria-busy="true"
+          aria-label="Carregando formulário de denúncia"
+          className="mx-auto h-96 max-w-xl animate-pulse rounded-2xl bg-surface-2"
+        />
+      }
+    >
       <ReportForm />
     </Suspense>
   );
