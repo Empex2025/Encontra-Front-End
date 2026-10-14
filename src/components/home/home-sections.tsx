@@ -1,13 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Compass } from "lucide-react";
 import Link from "next/link";
 
+import { EmptyBlock } from "./empty-block";
 import { ErrorState } from "@/components/ui/error-state";
 import { NeedLocation } from "@/components/ui/need-location";
 import { ResultCard, ResultCardSkeleton, targetTypeOf } from "@/components/search/result-card";
-import { OPEN_LOCATION_EVENT } from "@/components/layout/location-picker";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { track } from "@/lib/analytics/track";
 import { fetchHome, type HomeSectionId } from "@/lib/api/home";
@@ -39,7 +38,27 @@ const SECTIONS: Record<HomeSectionId, { title: string; subtitle: string; href: s
 };
 const ORDER: HomeSectionId[] = ["happening", "products", "services", "experiences"];
 
-/** Blocos de descoberta. Só aparece o que o servidor trouxe; bloco sem itens fica oculto (nunca preenchido à mão). */
+function EmptyBlocks({ withLocation }: { withLocation: boolean }) {
+  return (
+    <div className="flex flex-col gap-8">
+      {ORDER.map((id) => (
+        <EmptyBlock
+          key={id}
+          id={`home-${id}`}
+          title={SECTIONS[id].title}
+          subtitle={SECTIONS[id].subtitle}
+          message={
+            withLocation
+              ? "Ainda não há itens aqui. Amplie o raio ou busque por algo específico."
+              : "Defina seu local para ver o que está perto de você."
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Blocos de descoberta. Só mostra o que o servidor trouxe; sem itens, o bloco fica com estado vazio (nunca preenchido à mão). */
 export function HomeSections() {
   const { location, isLoading: locLoading } = useUserLocation();
   const hasPlace = location.lat !== null || location.label.trim().length > 0;
@@ -51,7 +70,14 @@ export function HomeSections() {
     enabled: !locLoading && hasPlace,
   });
 
-  if (!locLoading && !hasPlace) return <NeedLocation />;
+  if (!locLoading && !hasPlace) {
+    return (
+      <div className="flex flex-col gap-8">
+        <NeedLocation />
+        <EmptyBlocks withLocation={false} />
+      </div>
+    );
+  }
 
   if (locLoading || home.isPending) {
     return (
@@ -65,41 +91,20 @@ export function HomeSections() {
     );
   }
 
-  if (home.isError) return <ErrorState error={home.error} onRetry={() => home.refetch()} />;
+  if (home.isError) {
+    return (
+      <div className="flex flex-col gap-8">
+        <ErrorState error={home.error} onRetry={() => home.refetch()} />
+        <EmptyBlocks withLocation />
+      </div>
+    );
+  }
 
   const sections = ORDER.map((id) => ({ id, data: home.data.sections.find((s) => s.id === id) })).filter(
     (s): s is { id: HomeSectionId; data: NonNullable<typeof s.data> } => !!s.data && s.data.items.length > 0,
   );
 
-  if (sections.length === 0) {
-    return (
-      <section className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-12 text-center">
-        <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-text">
-          <Compass className="size-6" aria-hidden />
-        </span>
-        <h2 className="text-xl font-bold text-text-strong">Ainda não há nada para mostrar aqui</h2>
-        <p className="max-w-md text-text-muted">
-          Não encontramos itens num raio de {location.radiusKm} km. Amplie a distância ou busque por algo
-          específico.
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event(OPEN_LOCATION_EVENT))}
-            className="h-11 rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover"
-          >
-            Mudar local ou raio
-          </button>
-          <Link
-            href={routes.explorar}
-            className="flex h-11 items-center rounded-lg border border-border-strong px-5 text-sm font-semibold text-text-2 hover:bg-surface-2"
-          >
-            Abrir o Explorar
-          </Link>
-        </div>
-      </section>
-    );
-  }
+  if (sections.length === 0) return <EmptyBlocks withLocation />;
 
   return (
     <div className="flex flex-col gap-8">

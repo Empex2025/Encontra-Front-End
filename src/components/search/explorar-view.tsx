@@ -3,6 +3,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import {
   LayoutGrid,
+  Map as MapIcon,
   Ruler,
   Search,
   SearchX,
@@ -20,13 +21,7 @@ import { Chip } from "@/components/ui/chip";
 import { useSession } from "@/hooks/use-session";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { track } from "@/lib/analytics/track";
-import {
-  fetchSearch,
-  type Kind,
-  type Lens,
-  type SearchResponse,
-  type Sort,
-} from "@/lib/api/search";
+import { fetchSearch, type Kind, type Lens, type SearchResponse, type Sort } from "@/lib/api/search";
 import { takePendingAction } from "@/lib/domain/auth-actions";
 import { CATEGORIES } from "@/lib/domain/categories";
 import { RADIUS_STEPS } from "@/lib/domain/radius";
@@ -259,6 +254,14 @@ export function ExplorarView() {
               >
                 <LayoutGrid className="size-4" aria-hidden />
                 Grade
+              </span>
+              <span
+                aria-disabled="true"
+                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3.5 text-[13px] font-semibold text-text-muted"
+                title="O mapa entra quando o serviço de mapas for definido"
+              >
+                <MapIcon className="size-4" aria-hidden />
+                Mapa · em breve
               </span>
             </div>
           </div>

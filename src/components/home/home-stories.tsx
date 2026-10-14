@@ -8,8 +8,9 @@ import { discover } from "@/lib/api/discover";
 import { storiesHref } from "@/lib/routes";
 
 import { cn } from "@/components/ui/cn";
+import { EmptyBlock } from "./empty-block";
 
-/** Faixa de Stories da Home. Sem local, sem stories ou com erro, a faixa some (nada de círculos de enfeite). */
+/** Faixa de Stories da Home. Sem stories a seção continua visível com estado vazio (nada de círculos de enfeite). */
 export function HomeStories() {
   const { location, isLoading } = useUserLocation();
   const hasPlace = location.lat !== null || location.label.trim().length > 0;
@@ -21,7 +22,21 @@ export function HomeStories() {
     retry: false,
   });
   const groups = q.data?.groups ?? [];
-  if (groups.length === 0) return null;
+  if (groups.length === 0) {
+    if (q.isPending && q.fetchStatus !== "idle") return null;
+    return (
+      <EmptyBlock
+        id="home-stories"
+        title="Stories"
+        subtitle="Novidades das lojas perto de você, por 24 horas"
+        message={
+          hasPlace
+            ? "Ainda não há stories perto de você. Quando as lojas publicarem, eles aparecem aqui."
+            : "Defina seu local para ver os stories das lojas perto de você."
+        }
+      />
+    );
+  }
   return (
     <section aria-label="Stories perto de você" className="flex flex-col gap-2">
       <ul className="flex gap-4 overflow-x-auto pb-1">

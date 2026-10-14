@@ -12,7 +12,7 @@ import { lojaHref, prestadorHref } from "@/lib/routes";
 
 /**
  * "Radar do bairro · O que está mudando perto de você". Três colunas, cada uma só aparece com dados reais
- * do servidor (preços com base de cálculo, buscas com volume mínimo, lugares com sinal). Tudo vazio: a seção some.
+ * do servidor (preços com base de cálculo, buscas com volume mínimo, lugares com sinal). Tudo vazio: a seção fica com uma mensagem de estado vazio.
  */
 export function NeighborhoodRadar() {
   const { location, isLoading } = useUserLocation();
@@ -36,7 +36,7 @@ export function NeighborhoodRadar() {
   const searches = trending.data?.searches.slice(0, 5) ?? [];
   const places = trending.data?.places.slice(0, 5) ?? [];
   const areaName = trending.data?.area?.trim() || null;
-  if (priceItems.length + searches.length + places.length === 0) return null;
+  const nothing = priceItems.length + searches.length + places.length === 0;
 
   return (
     <section aria-labelledby="bairro-title" className="flex flex-col gap-4">
@@ -46,6 +46,13 @@ export function NeighborhoodRadar() {
         </h2>
         <p className="text-sm text-text-muted">O que está mudando perto de você</p>
       </div>
+      {nothing && (
+        <p className="rounded-2xl border border-dashed border-border-strong bg-surface px-5 py-6 text-sm text-text-muted">
+          {hasPlace
+            ? "Ainda não há dados suficientes no seu bairro. Preços e buscas aparecem aqui quando houver base real."
+            : "Defina seu local para ver o que está mudando perto de você."}
+        </p>
+      )}
       <div className="grid gap-4 md:grid-cols-3">
         {priceItems.length > 0 && (
           <Column title="Preços no bairro">
