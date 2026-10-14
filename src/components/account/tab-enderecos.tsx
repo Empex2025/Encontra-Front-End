@@ -67,7 +67,11 @@ export function TabEnderecos() {
         {q.isPending ? (
           <Loading />
         ) : q.isError ? (
-          <ErrorState error={q.error} onRetry={() => q.refetch()} />
+          <ErrorState
+            error={q.error}
+            onRetry={() => q.refetch()}
+            title="Não foi possível carregar seus endereços"
+          />
         ) : (
           <>
             <ul className="flex flex-col gap-2">

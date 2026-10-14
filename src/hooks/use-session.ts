@@ -24,6 +24,8 @@ export function useSession() {
     isGuest: !q.isPending && !q.data,
     isLoading: q.isPending,
     isError: q.isError,
+    error: q.error,
+    refetch: () => void q.refetch(),
   };
 }
 

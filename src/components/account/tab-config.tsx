@@ -12,7 +12,7 @@ import { account, type Profile, type ProfilePatch } from "@/lib/api/account";
 import { saveWhatsappMode } from "@/lib/domain/whatsapp";
 import { routes } from "@/lib/routes";
 
-import { Card, errMsg } from "./shared";
+import { Card, errMsg, type ProfileState, ProfileStatus } from "./shared";
 
 export function usePatchProfile() {
   const qc = useQueryClient();
@@ -60,10 +60,8 @@ function Segmented<T extends string>({
   );
 }
 
-export function TabConfig({ profile }: { profile: Profile }) {
+export function TabConfig({ profile, profileState }: { profile?: Profile; profileState: ProfileState }) {
   const { theme, system, setTheme, setSystem } = useTheme();
-  const patch = usePatchProfile();
-  const [wa, setWa] = useState(profile.settings.whatsappOpen);
   const mode = system ? "system" : theme;
 
   return (
@@ -80,39 +78,21 @@ export function TabConfig({ profile }: { profile: Profile }) {
           onChange={(v) => (v === "system" ? setSystem() : setTheme(v))}
         />
       </Card>
-      <Card title="Abrir o WhatsApp">
-        <Segmented
-          label="Abrir o WhatsApp"
-          value={wa}
-          options={[
-            { id: "app", label: "No aplicativo" },
-            { id: "web", label: "No navegador" },
-          ]}
-          onChange={(v) => {
-            setWa(v);
-            saveWhatsappMode(v);
-            patch.mutate({ settings: { whatsappOpen: v } });
-          }}
-        />
-        <p className="text-sm text-text-muted">
-          Vale para os botões “Chamar no WhatsApp” de lojas e prestadores.
-        </p>
-      </Card>
+      {profile ? (
+        <SavedSettings profile={profile} />
+      ) : (
+        <>
+          <Card title="Abrir o WhatsApp">
+            <ProfileStatus state={profileState} />
+          </Card>
+          <Card title="Mídia e sons">
+            <ProfileStatus state={profileState} />
+          </Card>
+        </>
+      )}
       <Card title="Idioma">
         <p className="text-text">Português (Brasil)</p>
         <p className="text-sm text-text-muted">Por enquanto a EncontraÊ só está disponível em português.</p>
-      </Card>
-      <Card title="Mídia e sons" className="divide-y divide-border">
-        <Switch
-          label="Reproduzir vídeos automaticamente"
-          checked={profile.settings.autoplay}
-          onChange={(v) => patch.mutate({ settings: { autoplay: v } })}
-        />
-        <Switch
-          label="Sons do aplicativo"
-          checked={profile.settings.sounds}
-          onChange={(v) => patch.mutate({ settings: { sounds: v } })}
-        />
       </Card>
       <Card title="Sobre">
         <ul className="flex flex-col gap-1 text-link">
@@ -142,5 +122,45 @@ export function TabConfig({ profile }: { profile: Profile }) {
         </ul>
       </Card>
     </div>
+  );
+}
+
+/** Preferências gravadas na conta (WhatsApp, vídeos e sons): só aparecem com o perfil carregado. */
+function SavedSettings({ profile }: { profile: Profile }) {
+  const patch = usePatchProfile();
+  const [wa, setWa] = useState(profile.settings.whatsappOpen);
+  return (
+    <>
+      <Card title="Abrir o WhatsApp">
+        <Segmented
+          label="Abrir o WhatsApp"
+          value={wa}
+          options={[
+            { id: "app", label: "No aplicativo" },
+            { id: "web", label: "No navegador" },
+          ]}
+          onChange={(v) => {
+            setWa(v);
+            saveWhatsappMode(v);
+            patch.mutate({ settings: { whatsappOpen: v } });
+          }}
+        />
+        <p className="text-sm text-text-muted">
+          Vale para os botões “Chamar no WhatsApp” de lojas e prestadores.
+        </p>
+      </Card>
+      <Card title="Mídia e sons" className="divide-y divide-border">
+        <Switch
+          label="Reproduzir vídeos automaticamente"
+          checked={profile.settings.autoplay}
+          onChange={(v) => patch.mutate({ settings: { autoplay: v } })}
+        />
+        <Switch
+          label="Sons do aplicativo"
+          checked={profile.settings.sounds}
+          onChange={(v) => patch.mutate({ settings: { sounds: v } })}
+        />
+      </Card>
+    </>
   );
 }

@@ -24,7 +24,11 @@ export function TabInteresses() {
   if (q.isError)
     return (
       <Card title="Seus interesses">
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
+        <ErrorState
+          error={q.error}
+          onRetry={() => q.refetch()}
+          title="Não foi possível carregar seus interesses"
+        />
       </Card>
     );
   return <Form initial={q.data.categoryIds} />;

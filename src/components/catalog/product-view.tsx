@@ -118,6 +118,7 @@ function ProductContent({ product: p }: { product: Product }) {
   };
 
   useResumeAction("alert", p.id, () => setAlertOpen({ conditions: ["price_drop"], size }));
+  useResumeAction("want", p.id, () => setWantOpen(true));
 
   const ask = useMutation({
     mutationFn: (draft: string) =>

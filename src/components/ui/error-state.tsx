@@ -20,12 +20,15 @@ export function ErrorState({
   onRetry,
   title,
   compact,
+  description,
 }: {
   error: Error;
   onRetry: () => void;
-  /** Troca o título padrão ("Não foi possível carregar os resultados"). */
+  /** Troca o título padrão ("Não foi possível carregar os resultados") por um que descreva a seção. */
   title?: string;
   compact?: boolean;
+  /** Texto de apoio específico da seção; mensagens de timeout e de falta de conexão têm prioridade. */
+  description?: string;
 }) {
   const slow = error instanceof ApiError && error.code === "TIMEOUT";
   const offline = error instanceof ApiError && error.status === 0 && !slow;
@@ -49,7 +52,7 @@ export function ErrorState({
           ? "Está demorando mais que o normal. Tente de novo."
           : offline
             ? "Verifique sua internet e tente de novo."
-            : "Não é você, é a gente. Tente de novo em alguns segundos."}
+            : (description ?? "Não é você, é a gente. Tente de novo em alguns segundos.")}
       </p>
       {maybeNotConnected(error) && (
         <p className="max-w-md text-xs text-text-subtle">

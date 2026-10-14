@@ -53,7 +53,14 @@ export function NotificationPrefsForm() {
   });
 
   if (q.isPending) return <Loading />;
-  if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  if (q.isError)
+    return (
+      <ErrorState
+        error={q.error}
+        onRetry={() => q.refetch()}
+        title="Não foi possível carregar suas preferências de aviso"
+      />
+    );
   const p = q.data;
 
   return (

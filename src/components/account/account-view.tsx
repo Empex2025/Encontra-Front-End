@@ -75,6 +75,11 @@ export function AccountView() {
   const go = (t: TabId) => router.replace(`${pathname}?aba=${t}`, { scroll: false });
   const p = q.data;
   const counters = me?.counters;
+  const profileState = {
+    pending: q.isPending,
+    error: q.isError ? q.error : null,
+    retry: () => void q.refetch(),
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -114,27 +119,27 @@ export function AccountView() {
             >
               {initials(p?.name ?? me?.name ?? "")}
             </span>
-            <p className="text-lg font-bold text-text-strong">{p?.name ?? me?.name}</p>
-            {p && <p className="text-sm text-text-muted">Na EncontraÊ desde {since(p.createdAt)}</p>}
-            {counters && (
-              <ul className="mt-2 grid w-full grid-cols-3 gap-2 text-center text-sm">
-                {[
-                  ["Favoritos", counters.favorites, "itens"],
-                  ["Seguindo", counters.following, "lojas"],
-                  ["Alertas", counters.alerts, "alertas"],
-                ].map(([l, n, aba]) => (
-                  <li key={l as string}>
-                    <Link
-                      href={`${routes.favoritos}?aba=${aba}`}
-                      className="flex min-h-14 flex-col items-center justify-center rounded-lg hover:bg-surface-2"
-                    >
-                      <span className="text-lg font-bold text-text-strong">{n}</span>
-                      <span className="text-text-muted">{l}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <p className="text-lg font-bold text-text-strong">{p?.name ?? me?.name ?? "—"}</p>
+            <p className="text-sm text-text-muted">
+              {p ? `Na EncontraÊ desde ${since(p.createdAt)}` : "Data de cadastro indisponível"}
+            </p>
+            <ul className="mt-2 grid w-full grid-cols-3 gap-2 text-center text-sm">
+              {[
+                ["Favoritos", counters?.favorites, "itens"],
+                ["Seguindo", counters?.following, "lojas"],
+                ["Alertas", counters?.alerts, "alertas"],
+              ].map(([l, n, aba]) => (
+                <li key={l as string}>
+                  <Link
+                    href={`${routes.favoritos}?aba=${aba}`}
+                    className="flex min-h-14 flex-col items-center justify-center rounded-lg hover:bg-surface-2"
+                  >
+                    <span className="text-lg font-bold text-text-strong">{n ?? "—"}</span>
+                    <span className="text-text-muted">{l}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
 
           <nav aria-label="Seções da conta" className="rounded-2xl border border-border bg-surface p-2">
@@ -202,9 +207,15 @@ export function AccountView() {
             <div>
               <p className="font-bold text-text-strong">Tem um negócio?</p>
               <p className="text-sm text-text-muted">
-                {p?.hasBusiness
-                  ? "Sua área do comerciante chega em breve."
-                  : "Em breve você poderá divulgar sua loja ou seus serviços aqui."}
+                Esta é a conta de quem procura produtos e serviços. Para falar sobre a sua loja ou os seus
+                serviços,{" "}
+                <Link
+                  href={`${routes.ajuda}?aba=contato`}
+                  className="font-semibold text-link hover:underline"
+                >
+                  fale com a gente
+                </Link>
+                .
               </p>
             </div>
           </section>
@@ -219,18 +230,25 @@ export function AccountView() {
             <TabInteresses />
           ) : tab === "enderecos" ? (
             <TabEnderecos />
+          ) : tab === "priv" ? (
+            <TabPrivacidade profile={q.data} profileState={profileState} />
+          ) : tab === "config" ? (
+            <TabConfig profile={q.data} profileState={profileState} />
           ) : q.isPending ? (
-            <Card>
+            <Card title="Seus dados">
               <Loading />
             </Card>
           ) : q.isError ? (
-            <ErrorState error={q.error} onRetry={() => q.refetch()} />
-          ) : tab === "perfil" ? (
-            <TabPerfil key={q.dataUpdatedAt} profile={q.data} />
-          ) : tab === "priv" ? (
-            <TabPrivacidade profile={q.data} />
+            <Card title="Seus dados">
+              <ErrorState
+                error={q.error}
+                onRetry={() => q.refetch()}
+                title="Não foi possível carregar seus dados"
+                description="Seus dados vêm do nosso servidor e não chegaram agora. Tente de novo em alguns segundos."
+              />
+            </Card>
           ) : (
-            <TabConfig profile={q.data} />
+            <TabPerfil key={q.dataUpdatedAt} profile={q.data} />
           )}
         </div>
       </div>

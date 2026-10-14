@@ -24,15 +24,6 @@ export function SiteFooter() {
                 </Link>
               </li>
             ))}
-            <li
-              className="flex items-center gap-2 text-text-subtle"
-              title="Este aplicativo é do consumidor. A área do lojista não faz parte desta versão."
-            >
-              Área do lojista
-              <span className="rounded-full border border-border-strong px-2 text-[10px] font-bold">
-                indisponível nesta versão
-              </span>
-            </li>
           </ul>
         </nav>
         <p>© {new Date().getFullYear()} EncontraÊ</p>

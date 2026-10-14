@@ -47,9 +47,19 @@ export function NotFoundView() {
           Explorar perto de mim
         </Link>
       </div>
-      {suggestions.length > 0 && (
-        <div className="mt-4 w-full text-left">
-          <h2 className="mb-2 font-bold text-text-strong">Que tal ver isto?</h2>
+      <div className="mt-4 w-full text-left">
+        <h2 className="mb-2 font-bold text-text-strong">Que tal ver isto?</h2>
+        {suggestions.length === 0 ? (
+          <p className="rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-muted">
+            {near.isError
+              ? "Não foi possível carregar sugestões agora. Use os botões acima para continuar."
+              : near.isPending && hasPlace
+                ? "Buscando sugestões perto de você…"
+                : hasPlace
+                  ? "Ainda não há sugestões para o seu local."
+                  : "Defina seu local no topo da página para ver sugestões perto de você."}
+          </p>
+        ) : (
           <ul className="flex flex-col gap-2">
             {suggestions.map((s) => (
               <li key={s.id}>
@@ -67,8 +77,8 @@ export function NotFoundView() {
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }

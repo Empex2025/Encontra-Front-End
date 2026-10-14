@@ -1,4 +1,5 @@
 import { cn } from "@/components/ui/cn";
+import { ErrorState } from "@/components/ui/error-state";
 
 export const btnPrimary =
   "inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60";
@@ -37,4 +38,21 @@ export function Loading({ children = "Carregando…" }: { children?: string }) {
 
 export function errMsg(e: unknown, fallback = "Não foi possível concluir. Tente de novo.") {
   return e instanceof Error && e.message ? e.message : fallback;
+}
+
+/** Estado da consulta do perfil, repassado às abas que usam só parte dos dados (o resto continua funcionando). */
+export type ProfileState = { pending: boolean; error: Error | null; retry: () => void };
+
+/** Dentro de um bloco que precisa do perfil: carregando ou erro com "Tentar de novo". */
+export function ProfileStatus({ state }: { state: ProfileState }) {
+  if (state.error)
+    return (
+      <ErrorState
+        error={state.error}
+        onRetry={state.retry}
+        title="Não foi possível carregar estas preferências"
+        description="Elas vêm do nosso servidor e não chegaram agora. As demais seções desta aba continuam disponíveis."
+      />
+    );
+  return <Loading />;
 }

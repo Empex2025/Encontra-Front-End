@@ -130,7 +130,12 @@ export function LoginForm() {
         >
           Explorar sem cadastro ›
         </Link>
-        <p className="text-text-subtle">É lojista ou prestador? A área do comerciante chega em breve.</p>
+        <Link
+          href={routes.ajuda}
+          className="inline-flex h-11 items-center text-text-muted hover:text-text-strong hover:underline"
+        >
+          Precisa de ajuda para entrar? Central de Ajuda
+        </Link>
       </div>
     </AuthCard>
   );

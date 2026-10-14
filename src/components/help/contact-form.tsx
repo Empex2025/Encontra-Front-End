@@ -65,7 +65,7 @@ export function ContactForm() {
       <Card title="Mensagem enviada">
         <p role="status" className="text-text">
           Recebemos sua mensagem. Seu protocolo é <strong className="text-text-strong">{protocol}</strong>.
-          Respondemos por e-mail em até 1 dia útil.
+          Vamos responder no e-mail que você informou.
         </p>
       </Card>
     );

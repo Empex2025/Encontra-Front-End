@@ -81,12 +81,14 @@ export function AuthInviteProvider({ children }: { children: React.ReactNode }) 
             </div>
             <Link
               href={`${routes.cadastro}?voltar=${back}`}
+              onClick={() => setAction(null)}
               className="flex h-12 items-center justify-center rounded-lg bg-primary text-base font-bold text-on-primary hover:bg-primary-hover"
             >
               Criar conta grátis
             </Link>
             <Link
               href={`${routes.entrar}?voltar=${back}`}
+              onClick={() => setAction(null)}
               className="flex h-12 items-center justify-center rounded-lg border border-border-strong text-base font-semibold text-text-2 hover:bg-surface-2"
             >
               Já tem conta? Entrar

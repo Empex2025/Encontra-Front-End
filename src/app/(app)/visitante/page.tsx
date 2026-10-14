@@ -9,12 +9,12 @@ export const metadata: Metadata = { title: "Modo visitante" };
 /** Conteúdo fixo: o que dá para fazer sem conta e o que pede para entrar. */
 const FREE = [
   "Buscar e explorar",
-  "Ver mapa, rotas e distâncias",
+  "Ver distâncias e abrir a rota até a loja",
   "Ver ofertas, menores preços e cupons",
   "Assistir stories e lives",
   "Ver perfis, avaliações e horários",
   "Comparar na hora (sem salvar)",
-  "Chamar no WhatsApp ou ligar",
+  "Chamar no WhatsApp",
 ];
 const LOCKED = [
   "Salvar nos favoritos",
@@ -26,7 +26,7 @@ const LOCKED = [
   "Pedir orçamento",
   "Salvar comparação",
   "Pedir uma promoção",
-  "Reservar, curtir e marcar como útil",
+  "Curtir e marcar avaliação como útil",
   "Comentar na live e confirmar presença",
 ];
 
