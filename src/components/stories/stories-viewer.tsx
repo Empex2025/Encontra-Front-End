@@ -9,10 +9,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ShareButton } from "@/components/catalog/share-button";
 import { useToast } from "@/components/ui/toast";
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { actions } from "@/lib/api/actions";
 import { discover, type Story, type StoryGroup } from "@/lib/api/discover";
+import { readPendingAction } from "@/lib/domain/auth-actions";
 import {
+  findStoryPos,
   nextPos,
   type Pos,
   prevPos,
@@ -23,6 +26,7 @@ import {
   validReply,
 } from "@/lib/domain/discover";
 import { formatCount, formatMoney, formatTimeAgo } from "@/lib/format";
+import { peekTextDraft, saveTextDraft, takeTextDraft } from "@/lib/domain/text-draft";
 import {
   conversaHref,
   denunciarHref,
@@ -127,6 +131,28 @@ function CloseLink({ perfil }: { perfil: string | null }) {
   );
 }
 
+const replyDraftScope = (storyId: string) => `story:${storyId}`;
+
+/**
+ * Onde abrir a fila. Quem entrou na conta no meio de uma ação (curtir, salvar, responder) volta
+ * exatamente ao story em que estava, mesmo que a fila tenha mudado de ordem.
+ */
+function startPos(groups: StoryGroup[]): Pos {
+  const pending = typeof window === "undefined" ? null : readPendingAction();
+  if (pending?.targetId) {
+    if (pending.type === "like" || pending.type === "favorite") {
+      return findStoryPos(groups, pending.targetId) ?? { g: 0, s: 0 };
+    }
+    if (pending.type === "chat") {
+      const g = groups.findIndex((x) => x.profile.id === pending.targetId);
+      const s =
+        g < 0 ? -1 : groups[g].stories.findIndex((x) => peekTextDraft(replyDraftScope(x.id)) !== null);
+      if (g >= 0 && s >= 0) return { g, s };
+    }
+  }
+  return { g: 0, s: 0 };
+}
+
 function Player({
   groups,
   interests,
@@ -144,7 +170,7 @@ function Player({
   const toast = useToast();
   const requireAuth = useRequireAuth();
   const sizes = groups.map((g) => g.stories.length);
-  const [pos, setPos] = useState<Pos>({ g: 0, s: 0 });
+  const [pos, setPos] = useState<Pos>(() => startPos(groups));
   const [laps, setLaps] = useState(0);
   const [ended, setEnded] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -284,6 +310,22 @@ function Player({
     mutationFn: (id: string) => actions.claimCoupon(id),
     onSuccess: () => toast("Cupom guardado em Meus cupons."),
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível pegar o cupom.", "info"),
+  });
+
+  // Depois do login: conclui o que a pessoa tentou neste story.
+  useResumeAction("like", story.id, () => {
+    if (!liked) like.mutate(true);
+  });
+  useResumeAction("favorite", story.id, () => {
+    if (!saved) save.mutate(true);
+  });
+  useResumeAction("chat", group.profile.id, () => {
+    // O texto digitado volta pronto; a pessoa confere e envia (nada é enviado sozinho).
+    const text = takeTextDraft(replyDraftScope(story.id), REPLY_MAX);
+    if (text) {
+      setReply(text);
+      setTyping(true);
+    }
   });
 
   const profileHref =
@@ -484,7 +526,10 @@ function Player({
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (!validReply(reply) || sendReply.isPending) return;
-                  if (!requireAuth("chat", group.profile.id)) return;
+                  if (!requireAuth("chat", group.profile.id)) {
+                    saveTextDraft(replyDraftScope(story.id), reply.trim());
+                    return;
+                  }
                   sendReply.mutate(reply.trim());
                 }}
                 className="flex items-center gap-2"

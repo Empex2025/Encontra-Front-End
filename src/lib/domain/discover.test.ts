@@ -78,7 +78,7 @@ describe("evento", () => {
   });
 });
 
-import { activeStoryGroups } from "./discover";
+import { activeStoryGroups, findStoryPos } from "./discover";
 import type { StoryGroup } from "@/lib/api/discover";
 
 describe("stories de 24 h", () => {
@@ -107,5 +107,20 @@ describe("stories de 24 h", () => {
   });
   it("data inválida é mantida", () => {
     expect(activeStoryGroups([group([story("x", "lixo")])], now)).toHaveLength(1);
+  });
+});
+
+describe("achar story na fila", () => {
+  const st = (id: string) => ({ id }) as unknown as StoryGroup["stories"][number];
+  const groups = [
+    { profile: { id: "p1" }, stories: [st("a"), st("b")] },
+    { profile: { id: "p2" }, stories: [st("c")] },
+  ] as unknown as StoryGroup[];
+  it("devolve grupo e posição", () => {
+    expect(findStoryPos(groups, "b")).toEqual({ g: 0, s: 1 });
+    expect(findStoryPos(groups, "c")).toEqual({ g: 1, s: 0 });
+  });
+  it("story que saiu da fila: null", () => {
+    expect(findStoryPos(groups, "zzz")).toBeNull();
   });
 });

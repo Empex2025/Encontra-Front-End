@@ -19,6 +19,7 @@ import { ApiError } from "@/lib/api/client";
 import { discover, type Live, type LiveMessage } from "@/lib/api/discover";
 import { formatCount, formatMoney } from "@/lib/format";
 import { formatElapsed, HEART_MS, LIVE_MESSAGE_MAX, MAX_HEARTS, mergeMessages } from "@/lib/domain/discover";
+import { saveTextDraft, takeTextDraft } from "@/lib/domain/text-draft";
 import {
   conversaHref,
   denunciarHref,
@@ -460,6 +461,11 @@ function Chat({
     },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível enviar.", "info"),
   });
+  // Depois do login, o comentário digitado volta pronto no campo; a pessoa confere e envia.
+  useResumeAction("comment", live.id, () => {
+    const t = takeTextDraft(`live:${live.id}`, LIVE_MESSAGE_MAX);
+    if (t) setText(t);
+  });
   const listRef = useRef<HTMLUListElement>(null);
   const last = q.data?.at(-1)?.id;
   useEffect(() => {
@@ -501,7 +507,10 @@ function Chat({
             e.preventDefault();
             const t = text.trim();
             if (!t || t.length > LIVE_MESSAGE_MAX || send.isPending) return;
-            if (!requireAuth("comment", live.id)) return;
+            if (!requireAuth("comment", live.id)) {
+              saveTextDraft(`live:${live.id}`, t);
+              return;
+            }
             send.mutate(t);
           }}
           className="flex items-center gap-2 border-t border-border p-3"

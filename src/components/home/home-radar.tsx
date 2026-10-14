@@ -66,7 +66,34 @@ export function HomeRadar() {
       />
     );
   }
-  if (q.isError) return null; // erro no radar não derruba a Home: a faixa só não aparece
+  if (q.isError) {
+    // Erro no radar não derruba a Home. Quem tem conta vê o aviso com "Tentar de novo" (o radar é pessoal e
+    // sumir em silêncio parece "não há novidades"); visitante não perde nada, então a faixa só não aparece.
+    if (isGuest) return null;
+    return (
+      <section
+        role="alert"
+        aria-labelledby="radar-title"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-navy p-5 text-white"
+      >
+        <div className="min-w-0">
+          <h2 id="radar-title" className="flex items-center gap-2 text-xl font-bold">
+            <RadarIcon className="size-5 text-amber" aria-hidden />
+            Meu Radar
+          </h2>
+          <p className="mt-1 text-sm text-navy-200">Não foi possível carregar seus avisos agora.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void q.refetch()}
+          disabled={q.isFetching}
+          className="inline-flex h-11 items-center rounded-xl border border-white/40 px-5 text-sm font-semibold hover:bg-white/10 disabled:opacity-60"
+        >
+          {q.isFetching ? "Tentando…" : "Tentar de novo"}
+        </button>
+      </section>
+    );
+  }
   const items = visibleRadarItems(q.data.items, isGuest);
   // conta só o que está na tela: o número do servidor pode incluir tipos que o front não mostra
   const unseen = items.filter((i) => !i.seen).length;

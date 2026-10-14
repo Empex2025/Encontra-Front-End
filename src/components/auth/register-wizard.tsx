@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useSession } from "@/hooks/use-session";
 import { useSignIn } from "@/hooks/use-sign-in";
 import { authApi, type OtpChallenge } from "@/lib/api/auth";
+import { type RegisterStep, registerStepHref, resolveRegisterStep } from "@/lib/domain/register-steps";
 
 import { AuthCard } from "./auth-card";
 import { OtpStep } from "./otp-step";
@@ -14,7 +15,6 @@ import { RegisterInteresses } from "./register-interesses";
 import { RegisterLocal } from "./register-local";
 import { RegisterPronto } from "./register-pronto";
 
-type Step = "dados" | "codigo" | "local" | "interesses" | "pronto";
 const EMPTY: DadosForm = { name: "", cpf: "", email: "", phone: "", password: "" };
 
 /** Cadastro em 4 etapas: dados → código por SMS → localização → interesses → tudo pronto. */
@@ -22,11 +22,19 @@ export function RegisterWizard() {
   const router = useRouter();
   const { me } = useSession();
   const signIn = useSignIn();
-  const [step, setStep] = useState<Step>("dados");
   const [form, setForm] = useState<DadosForm>(EMPTY);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [label, setLabel] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
+
+  // A etapa vive no endereço (?etapa=…): o botão voltar do navegador volta uma etapa em vez de sair do cadastro.
+  // Etapa que depende de algo que não existe mais (recarregou a página, por exemplo) cai em "dados".
+  const step = resolveRegisterStep(useSearchParams().get("etapa"), {
+    hasChallenge: !!challenge,
+    signedIn: !!me,
+  });
+  const goTo = (next: RegisterStep) => window.history.pushState(null, "", registerStepHref(next));
+  const goBack = () => window.history.back();
 
   // Quem já tem conta não cria outra; durante o cadastro a sessão nasce na etapa 2.
   const inFlow = step !== "dados";
@@ -41,7 +49,7 @@ export function RegisterWizard() {
         onDone={(f, c) => {
           setForm(f);
           setChallenge(c);
-          setStep("codigo");
+          goTo("codigo");
         }}
       />
     );
@@ -62,8 +70,8 @@ export function RegisterWizard() {
             signIn(res.user);
           }}
           resend={(challengeId) => authApi.resend({ challengeId })}
-          onVerified={() => setStep("local")}
-          onBack={() => setStep("dados")}
+          onVerified={() => goTo("local")}
+          onBack={goBack}
         />
       </AuthCard>
     );
@@ -72,10 +80,10 @@ export function RegisterWizard() {
   if (step === "local") {
     return (
       <RegisterLocal
-        onBack={() => setStep("codigo")}
+        onBack={goBack}
         onDone={(l) => {
           setLabel(l);
-          setStep("interesses");
+          goTo("interesses");
         }}
       />
     );
@@ -84,10 +92,10 @@ export function RegisterWizard() {
   if (step === "interesses") {
     return (
       <RegisterInteresses
-        onBack={() => setStep("local")}
+        onBack={goBack}
         onDone={(ids) => {
           setInterests(ids);
-          setStep("pronto");
+          goTo("pronto");
         }}
       />
     );

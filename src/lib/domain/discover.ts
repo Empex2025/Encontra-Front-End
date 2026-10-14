@@ -111,3 +111,12 @@ export function eventDayBadge(startIso: string, now: Date = new Date()) {
   const wd = s.toLocaleDateString("pt-BR", { weekday: "long" });
   return wd.charAt(0).toUpperCase() + wd.slice(1);
 }
+
+/** Posição (grupo, story) de um story na fila, ou null se ele não está mais nela. */
+export function findStoryPos(groups: StoryGroup[], storyId: string): { g: number; s: number } | null {
+  for (let g = 0; g < groups.length; g++) {
+    const s = groups[g].stories.findIndex((x) => x.id === storyId);
+    if (s >= 0) return { g, s };
+  }
+  return null;
+}
