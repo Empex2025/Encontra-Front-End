@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { ActivityView } from "@/components/activity/activity-view";
 
-export const metadata: Metadata = { title: "Minha atividade" };
+export const metadata: Metadata = { title: "Minha atividade", robots: { index: false, follow: false } };
 
+/** A tela decide sozinha o que mostrar a visitante: estrutura completa + convite para entrar. */
 export default function AtividadePage() {
   return (
-    <ScreenPending
-      title="Minha atividade"
-      purpose="Orçamentos, pedidos de promoção, avaliações, cupons pegos e vistos recentemente."
-    />
+    <Suspense>
+      <ActivityView />
+    </Suspense>
   );
 }

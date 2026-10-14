@@ -6,7 +6,11 @@ import { themeInitScript } from "@/lib/theme";
 
 import { Providers } from "./providers";
 
+/** Endereço público do site (ex.: https://encontrae.com.br). Sem ele, as prévias usam caminhos relativos. */
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
 export const metadata: Metadata = {
+  ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
   title: { default: "EncontraÊ", template: "%s · EncontraÊ" },
   description: "Produtos, serviços e ofertas das lojas do seu bairro. Você fala direto com a loja.",
   icons: { icon: "/brand/simbolo.png" },

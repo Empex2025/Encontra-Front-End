@@ -3,6 +3,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
+import { AuthInviteProvider } from "@/components/auth/auth-invite";
+import { SystemGuard } from "@/components/system/system-guard";
+import { ToastProvider } from "@/components/ui/toast";
 import { ApiError } from "@/lib/api/client";
 
 let browserQueryClient: QueryClient | undefined;
@@ -28,5 +31,12 @@ function getQueryClient() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={getQueryClient()}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={getQueryClient()}>
+      <ToastProvider>
+        <AuthInviteProvider>{children}</AuthInviteProvider>
+        <SystemGuard />
+      </ToastProvider>
+    </QueryClientProvider>
+  );
 }

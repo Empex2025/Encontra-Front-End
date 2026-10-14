@@ -24,12 +24,6 @@ export function SiteFooter() {
                 </Link>
               </li>
             ))}
-            <li className="flex items-center gap-2 text-text-subtle">
-              Área do lojista
-              <span className="rounded-full border border-border-strong px-2 text-[10px] font-bold">
-                em breve
-              </span>
-            </li>
           </ul>
         </nav>
         <p>© {new Date().getFullYear()} EncontraÊ</p>

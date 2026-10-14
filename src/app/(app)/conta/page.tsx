@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { AccountView } from "@/components/account/account-view";
+import { AuthGate } from "@/components/auth/auth-gate";
 
 export const metadata: Metadata = { title: "Minha Conta" };
 
 export default function ContaPage() {
   return (
-    <ScreenPending
-      title="Minha Conta"
-      purpose="Seus dados, onde você busca, interesses, avisos, privacidade e configurações."
-    />
+    <AuthGate area="conta">
+      <Suspense fallback={null}>
+        <AccountView />
+      </Suspense>
+    </AuthGate>
   );
 }

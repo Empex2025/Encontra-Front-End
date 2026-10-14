@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { ConversationsView } from "@/components/chat/conversations-view";
 
-export const metadata: Metadata = { title: "Conversas" };
+export const metadata: Metadata = { title: "Conversas", robots: { index: false, follow: false } };
 
+/** A tela decide sozinha o que mostrar a visitante: estrutura completa + convite para entrar. */
 export default function ConversasPage() {
-  return <ScreenPending title="Conversas" purpose="Suas conversas com lojas e prestadores." />;
+  return <ConversationsView />;
 }

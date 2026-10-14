@@ -1,14 +1,25 @@
 import type { Metadata } from "next";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { CategoryStrip } from "@/components/home/category-strip";
+import { HomeHero } from "@/components/home/home-hero";
+import { HomeRadar } from "@/components/home/home-radar";
+import { NeighborhoodRadar } from "@/components/home/neighborhood-radar";
+import { HomeStories } from "@/components/home/home-stories";
+import { HomeMap } from "@/components/home/home-map";
+import { HomeSections } from "@/components/home/home-sections";
 
 export const metadata: Metadata = { title: "Início" };
 
 export default function HomePage() {
   return (
-    <ScreenPending
-      title="Início"
-      purpose="Busca em destaque, Meu Radar, o que está acontecendo perto, produtos, serviços e o que está em alta."
-    />
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+      <HomeHero />
+      <HomeStories />
+      <CategoryStrip />
+      <HomeRadar />
+      <HomeSections />
+      <HomeMap />
+      <NeighborhoodRadar />
+    </div>
   );
 }

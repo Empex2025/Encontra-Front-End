@@ -3,6 +3,8 @@ import { z } from "zod";
 /** Endereço da API do back-end. Por padrão "/api/v1", repassado ao back-end pelo next.config (BACKEND_URL). */
 export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "/api/v1";
 
+const TIMEOUT_MESSAGE = "Está demorando mais que o normal. Tente de novo.";
+
 const apiErrorSchema = z.object({
   code: z.string(),
   message: z.string(),
@@ -25,7 +27,12 @@ export class ApiError extends Error {
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   query?: Record<string, string | number | boolean | undefined | null | readonly string[]>;
+  /** Limite de espera em ms. Padrão: 8 s para leituras (GET); escrita não tem limite (pode ter funcionado). */
+  timeoutMs?: number;
 };
+
+/** Regra do documento: depois de 8 s sem resposta, a tela mostra "algo deu errado" com "Tentar de novo". */
+export const READ_TIMEOUT_MS = 8000;
 
 function buildUrl(path: string, query?: RequestOptions["query"]) {
   const params = new URLSearchParams();
@@ -44,13 +51,26 @@ function buildUrl(path: string, query?: RequestOptions["query"]) {
 export async function api<T>(
   path: string,
   schema: z.ZodType<T>,
-  { body, query, headers, ...init }: RequestOptions = {},
+  { body, query, headers, timeoutMs, ...init }: RequestOptions = {},
 ): Promise<T> {
+  const limit = timeoutMs ?? ((init.method ?? "GET") === "GET" ? READ_TIMEOUT_MS : undefined);
+  const ctrl = limit ? new AbortController() : undefined;
+  let slow = false;
+  const timer = ctrl
+    ? setTimeout(() => {
+        slow = true;
+        ctrl.abort();
+      }, limit)
+    : undefined;
+  const signal =
+    ctrl && init.signal ? AbortSignal.any([ctrl.signal, init.signal]) : (ctrl?.signal ?? init.signal);
+  const timedOut = () => slow && !init.signal?.aborted;
   let res: Response;
   try {
     res = await fetch(buildUrl(path, query), {
       credentials: "include",
       ...init,
+      signal,
       headers: {
         Accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
@@ -59,12 +79,26 @@ export async function api<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
+    clearTimeout(timer);
+    if (timedOut()) throw new ApiError(0, "TIMEOUT", TIMEOUT_MESSAGE);
     throw new ApiError(0, "NETWORK", "Sem conexão com o servidor. Verifique sua internet e tente de novo.");
   }
 
-  if (res.status === 204) return schema.parse(undefined);
+  if (res.status === 204) {
+    clearTimeout(timer);
+    return schema.parse(undefined);
+  }
 
-  const data: unknown = await res.json().catch(() => undefined);
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    // corpo que não chegou a tempo é demora; corpo que não é JSON segue para o erro padrão abaixo
+    if (timedOut()) throw new ApiError(0, "TIMEOUT", TIMEOUT_MESSAGE);
+    data = undefined;
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const parsed = apiErrorSchema.safeParse(data);

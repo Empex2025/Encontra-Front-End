@@ -35,6 +35,7 @@
   --accent-soft: #fef5e2;
   --accent-border: #fcd780;
 
+  --success: #198754;
   --success-text: #146c43;
   --success-soft: #e8f3ee;
   --danger: #dc3545;
@@ -137,6 +138,7 @@
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
+  --color-success: var(--success);
   --color-success-text: var(--success-text);
   --color-success-soft: var(--success-soft);
   --color-danger: var(--danger);
@@ -191,5 +193,26 @@ body {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Corações da live: sobem e somem em 1,7 s. */
+@keyframes floatup {
+  from {
+    transform: translateY(0) scale(0.8);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-150px) scale(1.3);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes floatup {
+    from,
+    to {
+      transform: none;
+      opacity: 0;
+    }
   }
 }

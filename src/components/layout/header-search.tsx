@@ -8,25 +8,8 @@ import { useCallback, useDeferredValue, useId, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { useDismiss } from "@/components/ui/use-dismiss";
 import { endpoints, queryKeys } from "@/lib/api/endpoints";
+import { addToHistory, HISTORY_SHOWN, readHistory, removeFromHistory } from "@/lib/domain/search-history";
 import { explorarComBusca } from "@/lib/routes";
-
-const HIST_KEY = "encontrae_busca_hist";
-const HIST_MAX = 6;
-
-function readHistory(): string[] {
-  try {
-    const v = JSON.parse(window.localStorage.getItem(HIST_KEY) ?? "[]");
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, HIST_MAX) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeHistory(list: string[]) {
-  try {
-    window.localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, HIST_MAX)));
-  } catch {}
-}
 
 type Row = { text: string; hint?: string; kind: "hist" | "trend" | "sugg" };
 
@@ -60,20 +43,29 @@ export function HeaderSearch({ className }: { className?: string }) {
         ...(sugg.data?.trending ?? []).map((t) => ({ text: t, kind: "trend" as const })),
       ];
 
+  // Painel sem linhas: explica por quê (carregando, erro ou sem sugestões) em vez de simplesmente não abrir.
+  const note =
+    rows.length > 0
+      ? null
+      : sugg.isError
+        ? "Não foi possível carregar sugestões. Digite o que procura e pressione Enter."
+        : sugg.isPending
+          ? "Carregando sugestões…"
+          : term
+            ? `Nenhuma sugestão. Pressione Enter para buscar “${term}”.`
+            : "Sem buscas recentes por aqui. Digite o que procura.";
+
   const go = (text: string) => {
     const t = text.trim();
     if (!t) return;
-    const next = [t, ...readHistory().filter((h) => h.toLowerCase() !== t.toLowerCase())];
-    writeHistory(next);
+    addToHistory(t);
     setQ("");
     close();
     router.push(explorarComBusca(t));
   };
 
   const removeHist = (text: string) => {
-    const next = readHistory().filter((h) => h !== text);
-    writeHistory(next);
-    setHistory(next);
+    setHistory(removeFromHistory(text).slice(0, HISTORY_SHOWN));
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -114,7 +106,7 @@ export function HeaderSearch({ className }: { className?: string }) {
             setActive(-1);
           }}
           onFocus={() => {
-            setHistory(readHistory());
+            setHistory(readHistory().slice(0, HISTORY_SHOWN));
             setOpen(true);
           }}
           onKeyDown={onKeyDown}
@@ -128,6 +120,15 @@ export function HeaderSearch({ className }: { className?: string }) {
           className="h-full min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-navy-200 focus-visible:outline-none"
         />
       </label>
+
+      {open && note && (
+        <div
+          role="status"
+          className="absolute top-13 right-0 left-0 z-50 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text-muted shadow-pop"
+        >
+          {note}
+        </div>
+      )}
 
       {open && rows.length > 0 && (
         <ul

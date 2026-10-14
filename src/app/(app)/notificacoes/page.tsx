@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { ScreenPending } from "@/components/layout/screen-pending";
+import { NotificationsView } from "@/components/notifications/notifications-view";
 
-export const metadata: Metadata = { title: "Notificações" };
+export const metadata: Metadata = { title: "Notificações", robots: { index: false, follow: false } };
 
+/** A tela decide sozinha o que mostrar a visitante: estrutura completa + convite para entrar. */
 export default function NotificacoesPage() {
   return (
-    <ScreenPending
-      title="Notificações"
-      purpose="Avisos de preço, cupons, lojas que você segue e sua atividade."
-    />
+    <Suspense>
+      <NotificationsView />
+    </Suspense>
   );
 }

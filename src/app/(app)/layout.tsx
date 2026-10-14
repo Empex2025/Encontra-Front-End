@@ -1,3 +1,5 @@
+import { CookieNotice } from "@/components/home/cookie-notice";
+import { VisitorBar } from "@/components/auth/visitor-bar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Sidebar } from "@/components/layout/sidebar";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -8,6 +10,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
       <SiteHeader />
+      <VisitorBar />
       <div className="flex">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col pb-16 lg:pb-0">
@@ -22,6 +25,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </div>
       <MobileNav />
+      <CookieNotice />
     </>
   );
 }
