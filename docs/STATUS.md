@@ -4,7 +4,7 @@ Atualizada a cada entrega. Estados: **Pendente** · **Em implementação** · **
 
 Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases: `docs/DIRETRIZES.md` §13. O que falta, por fluxo e com o motivo: `docs/PENDENCIAS.md`.
 
-> **Situação do back-end (09/10/2026):** o contrato `/api/v1` está descrito na aba "Pedido ao back-end". Nenhuma rota `/api/v1` foi publicada ainda, então **nada pode ser "Validado"** por enquanto. Este repositório não tem acesso ao repositório do back-end; a última leitura dele é de 30/09/2026.
+> **Situação do back-end (14/10/2026):** o repositório do back-end já tem código (NestJS, cerca de 220 rotas sob `/api/v1`), mas só 11 de 69 grupos de rotas do front coincidem em método e caminho; veja `docs/RECONCILIACAO-API.md`. Nada foi testado contra ele, então **nada pode ser "Validado"** ainda.
 
 ## Base (estrutura global)
 
