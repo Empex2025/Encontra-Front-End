@@ -4,18 +4,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Plus, Star, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { WantDialog } from "@/components/search/want-dialog";
+import { type Access, LockedBody, useAccess } from "@/components/auth/session-gate";
 import { Stars } from "@/components/catalog/stars";
+import { WantDialog } from "@/components/search/want-dialog";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState, ListSkeleton, SearchField } from "@/components/ui/list-states";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { activity, type MyCoupon, type MyReview, type Quote, type WantRow } from "@/lib/api/me";
 import { createWant } from "@/lib/api/search";
-import { clearViewed, readViewed } from "@/lib/domain/recently-viewed";
+import { clearViewed, readViewed, type ViewedRef } from "@/lib/domain/recently-viewed";
+import { matches } from "@/lib/domain/text-match";
 import { formatDayMonth, formatMoney, formatTimeAgo } from "@/lib/format";
 import { avaliarHref, conversaHref, lojaHref, prestadorHref, routes } from "@/lib/routes";
 
@@ -23,33 +26,47 @@ const TABS = ["orcamentos", "promocao", "avaliacoes", "cupons", "vistos"] as con
 type TabId = (typeof TABS)[number];
 const SUMMARY = ["me", "activity", "summary"] as const;
 
+/** Contador que nunca vira 0 por falta de dado: sem resposta do servidor aparece "—". */
+const fmt = (n: number | null | undefined) => (typeof n === "number" ? n : "—");
+
 export function ActivityView() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const access = useAccess();
+  const member = access === "member";
   const raw = params.get("aba");
   const tab: TabId = (TABS as readonly string[]).includes(raw ?? "") ? (raw as TabId) : "orcamentos";
   const setTab = (t: string) => router.replace(`${pathname}?aba=${t}`, { scroll: false });
-  const summary = useQuery({ queryKey: SUMMARY, queryFn: activity.summary });
+  const summary = useQuery({ queryKey: SUMMARY, queryFn: activity.summary, enabled: member });
   const s = summary.data;
-  const [viewedCount] = useState(() => (typeof window === "undefined" ? 0 : readViewed().length));
+  // Histórico guardado só neste navegador: lido depois de montar para não divergir do servidor.
+  const [viewed, setViewed] = useState<ViewedRef[] | null>(null);
+  useEffect(() => {
+    queueMicrotask(() => setViewed(readViewed()));
+  }, []);
   const tabs = [
-    { id: "orcamentos", label: "Orçamentos", count: s?.quotes ?? null },
-    { id: "promocao", label: "Quero em promoção", count: s?.wants ?? null },
-    { id: "avaliacoes", label: "Minhas avaliações", count: s?.reviews ?? null },
-    { id: "cupons", label: "Meus cupons", count: s?.coupons ?? null },
-    { id: "vistos", label: "Vistos recentemente", count: viewedCount },
+    { id: "orcamentos", label: "Orçamentos", count: fmt(s?.quotes) },
+    { id: "promocao", label: "Quero em promoção", count: fmt(s?.wants) },
+    { id: "avaliacoes", label: "Minhas avaliações", count: fmt(s?.reviews) },
+    { id: "cupons", label: "Meus cupons", count: fmt(s?.coupons) },
+    { id: "vistos", label: "Vistos recentemente", count: fmt(viewed?.length) },
   ];
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
-      <h1 className="text-2xl font-bold text-text-strong">Minha atividade</h1>
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-bold text-text-strong">Minha atividade</h1>
+        <p className="text-text-muted">
+          Seus pedidos de orçamento, pedidos em promoção, avaliações e cupons em um só lugar.
+        </p>
+      </header>
       <Tabs label="Seções da atividade" value={tab} onChange={setTab} tabs={tabs} />
       <TabPanel label={tabs.find((t) => t.id === tab)!.label}>
-        {tab === "orcamentos" && <Quotes />}
-        {tab === "promocao" && <Wants />}
-        {tab === "avaliacoes" && <Reviews />}
-        {tab === "cupons" && <Coupons />}
-        {tab === "vistos" && <Viewed />}
+        {tab === "orcamentos" && <Quotes access={access} />}
+        {tab === "promocao" && <Wants access={access} />}
+        {tab === "avaliacoes" && <Reviews access={access} />}
+        {tab === "cupons" && <Coupons access={access} />}
+        {tab === "vistos" && <Viewed refs={viewed} setRefs={setViewed} />}
       </TabPanel>
     </div>
   );
@@ -60,21 +77,55 @@ function useRefresh() {
   return () => void qc.invalidateQueries({ queryKey: ["me"] });
 }
 
-const Empty = ({ text, href, cta }: { text: string; href?: string; cta?: string }) => (
-  <div className="flex flex-col items-center gap-2 rounded-2xl border border-border p-8 text-center">
-    <p className="font-bold text-text-strong">{text}</p>
-    {href && cta && (
-      <Link href={href} className="text-sm font-semibold text-link hover:underline">
-        {cta}
-      </Link>
-    )}
-  </div>
-);
+/** Cabeçalho de cada aba: título, explicação e (quando há lista) a busca, sempre visível. */
+function TabHead({
+  title,
+  text,
+  term,
+  onTerm,
+  searchLabel,
+  locked,
+  children,
+}: {
+  title: string;
+  text: string;
+  term?: string;
+  onTerm?: (v: string) => void;
+  searchLabel?: string;
+  locked: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div>
+        <h2 className="text-lg font-bold text-text-strong">{title}</h2>
+        <p className="text-sm text-text-muted">{text}</p>
+      </div>
+      {children}
+      {onTerm && (
+        <SearchField
+          value={term ?? ""}
+          onChange={onTerm}
+          disabled={locked}
+          label={searchLabel ?? "Buscar"}
+          className="sm:max-w-sm"
+        />
+      )}
+    </div>
+  );
+}
 
+/** Corpo de uma lista da atividade: convite (visitante), esqueleto, erro com retry, vazio ou itens. */
 function Section<T>({
   q,
+  access,
+  area,
+  loading,
+  errorTitle,
+  term,
   render,
   empty,
+  match,
 }: {
   q: {
     isPending: boolean;
@@ -83,13 +134,26 @@ function Section<T>({
     data: T[] | undefined;
     refetch: () => unknown;
   };
+  access: Access;
+  area: "atividade";
+  loading: string;
+  errorTitle: string;
+  term: string;
   render: (items: T[]) => React.ReactNode;
   empty: React.ReactNode;
+  match: (item: T, term: string) => boolean;
 }) {
-  if (q.isPending) return <p className="text-text-muted">Carregando…</p>;
-  if (q.isError) return <ErrorState error={q.error ?? new Error("Erro")} onRetry={() => void q.refetch()} />;
+  if (access !== "member") return <LockedBody access={access} area={area} />;
+  if (q.isPending) return <ListSkeleton label={loading} />;
+  if (q.isError)
+    return (
+      <ErrorState title={errorTitle} error={q.error ?? new Error("Erro")} onRetry={() => void q.refetch()} />
+    );
   if (!q.data || q.data.length === 0) return <>{empty}</>;
-  return <>{render(q.data)}</>;
+  const shown = q.data.filter((x) => match(x, term));
+  if (shown.length === 0)
+    return <EmptyState title="Nenhum registro encontrado" hint={`Nada combina com “${term.trim()}”.`} />;
+  return <>{render(shown)}</>;
 }
 
 /* ---------- Orçamentos ---------- */
@@ -102,11 +166,24 @@ const QUOTE_LABEL: Record<Quote["status"], { text: string; cls: string }> = {
   canceled: { text: "Cancelado", cls: "bg-surface-2 text-text-muted" },
 };
 
-function Quotes() {
+type QuoteFilter = "all" | "open" | "done";
+const QUOTE_FILTERS: { id: QuoteFilter; label: string }[] = [
+  { id: "all", label: "Todos" },
+  { id: "open", label: "Em andamento" },
+  { id: "done", label: "Concluídos" },
+];
+
+function Quotes({ access }: { access: Access }) {
+  const [term, setTerm] = useState("");
+  const [filter, setFilter] = useState<QuoteFilter>("all");
   const toast = useToast();
   const refresh = useRefresh();
   const router = useRouter();
-  const q = useQuery({ queryKey: ["me", "quotes"], queryFn: async () => (await activity.quotes()).items });
+  const q = useQuery({
+    queryKey: ["me", "quotes"],
+    enabled: access === "member",
+    queryFn: async () => (await activity.quotes()).items.filter((x) => x.status !== "canceled"),
+  });
   const act = useMutation({
     mutationFn: ({ id, kind }: { id: string; kind: "accept" | "cancel" }) =>
       kind === "accept" ? activity.acceptQuote(id) : activity.cancelQuote(id),
@@ -117,16 +194,56 @@ function Quotes() {
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível concluir.", "info"),
   });
   return (
-    <Section
-      q={q}
-      empty={
-        <Empty text="Você ainda não pediu orçamentos." href={routes.explorar} cta="Buscar prestadores" />
-      }
-      render={(items) => (
-        <ul className="flex flex-col gap-3">
-          {items
-            .filter((x) => x.status !== "canceled")
-            .map((x) => {
+    <div className="flex flex-col gap-4">
+      <TabHead
+        title="Orçamentos"
+        text="Os pedidos que você fez a prestadores e as respostas deles."
+        term={term}
+        onTerm={setTerm}
+        searchLabel="Buscar nos orçamentos"
+        locked={access !== "member"}
+      >
+        <ul className="flex flex-wrap gap-2" aria-label="Mostrar orçamentos">
+          {QUOTE_FILTERS.map((f) => (
+            <li key={f.id}>
+              <button
+                type="button"
+                aria-pressed={filter === f.id}
+                disabled={access !== "member"}
+                onClick={() => setFilter(f.id)}
+                className={chipCls(filter === f.id)}
+              >
+                {f.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </TabHead>
+      <Section
+        q={q}
+        access={access}
+        area="atividade"
+        loading="Carregando orçamentos…"
+        errorTitle="Não foi possível carregar seus orçamentos"
+        term={term}
+        match={(x, t) =>
+          (filter === "all" ||
+            (filter === "done"
+              ? x.status === "done"
+              : ["waiting", "answered", "accepted"].includes(x.status))) &&
+          matches(t, x.profile?.name, x.service, x.note)
+        }
+        empty={
+          <EmptyState
+            title="Você ainda não pediu orçamentos."
+            hint="Abra o perfil de um prestador e use “Pedir orçamento”."
+            href={routes.explorar}
+            cta="Buscar prestadores"
+          />
+        }
+        render={(items) => (
+          <ul className="flex flex-col gap-3">
+            {items.map((x) => {
               const st = QUOTE_LABEL[x.status];
               return (
                 <li key={x.id} className="flex flex-col gap-2 rounded-2xl border border-border p-4">
@@ -138,7 +255,8 @@ function Quotes() {
                   </div>
                   <p className="text-sm text-text">
                     {x.service}
-                    {x.when ? ` · ${x.when}` : ""} · pedido {formatTimeAgo(x.createdAt)}
+                    {x.when ? ` · ${x.when}` : ""}
+                    {formatTimeAgo(x.createdAt) ? ` · pedido ${formatTimeAgo(x.createdAt)}` : ""}
                   </p>
                   {x.priceCents !== null && (
                     <p className="text-sm font-bold text-text-strong">{formatMoney(x.priceCents)}</p>
@@ -195,11 +313,20 @@ function Quotes() {
                 </li>
               );
             })}
-        </ul>
-      )}
-    />
+          </ul>
+        )}
+      />
+    </div>
   );
 }
+
+const chipCls = (on: boolean) =>
+  cn(
+    "h-10 rounded-full border px-4 text-sm font-semibold disabled:opacity-60",
+    on
+      ? "border-primary bg-primary text-on-primary"
+      : "border-border bg-surface text-text hover:bg-surface-2",
+  );
 
 const btn =
   "inline-flex h-10 items-center rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2";
@@ -209,7 +336,7 @@ const btnPrimary =
 /* ---------- Quero em promoção ---------- */
 const WANT_STATUS: Record<WantRow["status"], string> = {
   waiting: "Aguardando ofertas",
-  found: "1 oferta encontrada",
+  found: "Ofertas encontradas",
   expired: "Expirou",
   canceled: "Cancelado",
 };
@@ -219,7 +346,8 @@ const DEADLINE: Record<WantRow["deadline"], string> = {
   month: "sem pressa",
 };
 
-function Wants() {
+function Wants({ access }: { access: Access }) {
+  const [term, setTerm] = useState("");
   const { location } = useUserLocation();
   const pathname = usePathname();
   const toast = useToast();
@@ -227,6 +355,7 @@ function Wants() {
   const [open, setOpen] = useState(false);
   const q = useQuery({
     queryKey: ["me", "wants"],
+    enabled: access === "member",
     queryFn: async () => (await activity.wants()).items.filter((w) => w.status !== "canceled"),
   });
   const cancel = useMutation({
@@ -253,17 +382,38 @@ function Wants() {
   });
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-text-muted">
-        Diga o que você quer em promoção e avisamos as lojas perto. Elas só veem quantas pessoas querem —
-        nunca quem é.
-      </p>
-      <button type="button" onClick={() => setOpen(true)} className={cn(btnPrimary, "self-start")}>
-        <Plus className="mr-1 size-4" aria-hidden />
-        Novo pedido
-      </button>
+      <TabHead
+        title="Quero em promoção"
+        text="Diga o que você quer em promoção e avisamos as lojas perto. Elas só veem quantas pessoas querem — nunca quem é."
+        term={term}
+        onTerm={setTerm}
+        searchLabel="Buscar nos pedidos"
+        locked={access !== "member"}
+      >
+        <button
+          type="button"
+          disabled={access !== "member"}
+          onClick={() => setOpen(true)}
+          className={cn(btnPrimary, "self-start disabled:opacity-60")}
+        >
+          <Plus className="mr-1 size-4" aria-hidden />
+          Novo pedido
+        </button>
+      </TabHead>
       <Section
         q={q}
-        empty={<Empty text="Você ainda não fez pedidos de promoção." />}
+        access={access}
+        area="atividade"
+        loading="Carregando pedidos…"
+        errorTitle="Não foi possível carregar seus pedidos"
+        term={term}
+        match={(w, t) => matches(t, w.term)}
+        empty={
+          <EmptyState
+            title="Você ainda não fez pedidos de promoção."
+            hint="Toque em “Novo pedido” e conte o que você quer encontrar em promoção."
+          />
+        }
         render={(items) => (
           <ul className="flex flex-col gap-3">
             {[...items]
@@ -279,8 +429,8 @@ function Wants() {
                   <p className="font-bold text-text-strong">“{w.term}” em promoção</p>
                   <p className="text-sm text-text-muted">
                     até {w.radiusKm} km · {DEADLINE[w.deadline]}
-                    {w.maxPriceCents !== null ? ` · até ${formatMoney(w.maxPriceCents)}` : ""} · pedido{" "}
-                    {formatTimeAgo(w.createdAt)}
+                    {w.maxPriceCents !== null ? ` · até ${formatMoney(w.maxPriceCents)}` : ""}
+                    {formatTimeAgo(w.createdAt) ? ` · pedido ${formatTimeAgo(w.createdAt)}` : ""}
                   </p>
                   <p className="text-sm font-semibold text-text">{WANT_STATUS[w.status]}</p>
                   <p className="text-sm text-text-muted">
@@ -291,7 +441,7 @@ function Wants() {
                     <p className="bg-success-bg rounded-lg px-3 py-2 text-sm font-semibold text-success-text">
                       ENCONTRAMOS {w.found.count} {w.found.count === 1 ? "oferta" : "ofertas"} ·{" "}
                       <Link href={w.found.href} className="underline">
-                        Ver no mapa
+                        Ver ofertas
                       </Link>
                     </p>
                   )}
@@ -337,21 +487,47 @@ function Wants() {
 }
 
 /* ---------- Minhas avaliações ---------- */
-function Reviews() {
+function Reviews({ access }: { access: Access }) {
+  const [term, setTerm] = useState("");
   const refresh = useRefresh();
-  const q = useQuery({ queryKey: ["me", "reviews"], queryFn: async () => (await activity.reviews()).items });
+  const q = useQuery({
+    queryKey: ["me", "reviews"],
+    enabled: access === "member",
+    queryFn: async () => (await activity.reviews()).items,
+  });
   return (
-    <Section
-      q={q}
-      empty={<Empty text="Você ainda não avaliou nada." />}
-      render={(items) => (
-        <ul className="flex flex-col gap-3">
-          {items.map((r) => (
-            <ReviewRow key={r.id} r={r} onChanged={refresh} />
-          ))}
-        </ul>
-      )}
-    />
+    <div className="flex flex-col gap-4">
+      <TabHead
+        title="Minhas avaliações"
+        text="O que você avaliou. Você pode editar ou excluir quando quiser."
+        term={term}
+        onTerm={setTerm}
+        searchLabel="Buscar nas avaliações"
+        locked={access !== "member"}
+      />
+      <Section
+        q={q}
+        access={access}
+        area="atividade"
+        loading="Carregando avaliações…"
+        errorTitle="Não foi possível carregar suas avaliações"
+        term={term}
+        match={(r, t) => matches(t, r.targetTitle, r.text)}
+        empty={
+          <EmptyState
+            title="Você ainda não avaliou nada."
+            hint="Depois de comprar ou contratar, avalie a loja ou o prestador para ajudar outras pessoas."
+          />
+        }
+        render={(items) => (
+          <ul className="flex flex-col gap-3">
+            {items.map((r) => (
+              <ReviewRow key={r.id} r={r} onChanged={refresh} />
+            ))}
+          </ul>
+        )}
+      />
+    </div>
   );
 }
 
@@ -487,9 +663,14 @@ const COUPON_STATUS: Record<MyCoupon["status"], { text: string; cls: string }> =
   expired: { text: "Vencido", cls: "bg-surface-2 text-text-muted" },
 };
 
-function Coupons() {
+function Coupons({ access }: { access: Access }) {
+  const [term, setTerm] = useState("");
   const toast = useToast();
-  const q = useQuery({ queryKey: ["me", "coupons"], queryFn: async () => (await activity.coupons()).items });
+  const q = useQuery({
+    queryKey: ["me", "coupons"],
+    enabled: access === "member",
+    queryFn: async () => (await activity.coupons()).items,
+  });
   const copy = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code);
@@ -499,85 +680,135 @@ function Coupons() {
     }
   };
   return (
-    <Section
-      q={q}
-      empty={<Empty text="Você ainda não pegou cupons." href={routes.ofertas} cta="Ver ofertas e cupons" />}
-      render={(items) => (
-        <ul className="grid gap-3 md:grid-cols-2">
-          {items.map((c) => {
-            const st = COUPON_STATUS[c.status];
-            return (
-              <li
-                key={c.id}
-                className={cn(
-                  "flex flex-col gap-2 rounded-2xl border border-border p-4",
-                  c.status !== "active" && "opacity-70",
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-lg font-bold text-text-strong">CÓDIGO {c.code}</p>
-                  <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", st.cls)}>
-                    {st.text}
-                  </span>
-                </div>
-                <p className="text-sm text-text">{c.benefit}</p>
-                <p className="text-sm text-text-muted">
-                  {c.profile.name} · válido até {formatDayMonth(c.validUntil)}
-                </p>
-                <div className="flex gap-2">
-                  {c.status === "active" && (
-                    <button type="button" onClick={() => void copy(c.code)} className={btn}>
-                      <Copy className="mr-1 size-4" aria-hidden />
-                      Copiar código
-                    </button>
+    <div className="flex flex-col gap-4">
+      <TabHead
+        title="Meus cupons"
+        text="Os cupons que você pegou. Mostre o código na loja para usar."
+        term={term}
+        onTerm={setTerm}
+        searchLabel="Buscar nos cupons"
+        locked={access !== "member"}
+      />
+      <Section
+        q={q}
+        access={access}
+        area="atividade"
+        loading="Carregando cupons…"
+        errorTitle="Não foi possível carregar seus cupons"
+        term={term}
+        match={(c, t) => matches(t, c.code, c.benefit, c.profile.name)}
+        empty={
+          <EmptyState
+            title="Você ainda não pegou cupons."
+            hint="Cupons aparecem em Ofertas e nos perfis das lojas."
+            href={routes.ofertas}
+            cta="Ver ofertas e cupons"
+          />
+        }
+        render={(items) => (
+          <ul className="grid gap-3 md:grid-cols-2">
+            {items.map((c) => {
+              const st = COUPON_STATUS[c.status];
+              return (
+                <li
+                  key={c.id}
+                  className={cn(
+                    "flex flex-col gap-2 rounded-2xl border border-border p-4",
+                    c.status !== "active" && "opacity-70",
                   )}
-                  <Link href={lojaHref(c.profile.slug)} className={btn}>
-                    Ver loja ›
-                  </Link>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    />
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-mono text-lg font-bold text-text-strong">CÓDIGO {c.code}</p>
+                    <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-bold", st.cls)}>
+                      {st.text}
+                    </span>
+                  </div>
+                  <p className="text-sm text-text">{c.benefit}</p>
+                  <p className="text-sm text-text-muted">
+                    {c.profile.name} · válido até {formatDayMonth(c.validUntil)}
+                  </p>
+                  <div className="flex gap-2">
+                    {c.status === "active" && (
+                      <button type="button" onClick={() => void copy(c.code)} className={btn}>
+                        <Copy className="mr-1 size-4" aria-hidden />
+                        Copiar código
+                      </button>
+                    )}
+                    <Link href={lojaHref(c.profile.slug)} className={btn}>
+                      Ver loja ›
+                    </Link>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      />
+    </div>
   );
 }
 
 /* ---------- Vistos recentemente (só neste navegador) ---------- */
-function Viewed() {
-  const [refs, setRefs] = useState(() => (typeof window === "undefined" ? [] : readViewed()));
-  const key = refs.map((r) => `${r.type}:${r.slug}`);
+function Viewed({ refs, setRefs }: { refs: ViewedRef[] | null; setRefs: (r: ViewedRef[]) => void }) {
+  const [term, setTerm] = useState("");
+  const list = refs ?? [];
+  const key = list.map((r) => `${r.type}:${r.slug}`);
   const q = useQuery({
     queryKey: ["recent", key],
     enabled: key.length > 0,
     queryFn: async () => (await activity.recent(key)).items,
   });
-  const when = new Map(refs.map((r) => [`${r.type}:${r.slug}`, r.at]));
+  const when = new Map(list.map((r) => [`${r.type}:${r.slug}`, r.at]));
+  const shown = q.data?.filter((it) => matches(term, it.title)) ?? [];
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-text-muted">Só você vê este histórico, e ele fica apenas neste navegador.</p>
-      {refs.length > 0 && (
+      <TabHead
+        title="Vistos recentemente"
+        text="Só você vê este histórico, e ele fica apenas neste navegador."
+        term={term}
+        onTerm={setTerm}
+        searchLabel="Buscar nos vistos"
+        locked={false}
+      >
         <button
           type="button"
+          disabled={list.length === 0}
           onClick={() => {
             clearViewed();
             setRefs([]);
           }}
-          className={cn(btn, "self-start")}
+          className={cn(btn, "self-start disabled:opacity-60")}
         >
           Limpar histórico
         </button>
-      )}
-      {refs.length === 0 ? (
-        <Empty text="Você ainda não viu nada." href={routes.explorar} cta="Buscar no Explorar" />
+      </TabHead>
+      {refs === null ? (
+        <ListSkeleton label="Carregando histórico…" rows={2} />
+      ) : list.length === 0 ? (
+        <EmptyState
+          title="Você ainda não viu nada."
+          hint="Os produtos e lojas que você abrir aparecem aqui."
+          href={routes.explorar}
+          cta="Buscar no Explorar"
+        />
       ) : q.isPending ? (
-        <p className="text-text-muted">Carregando…</p>
+        <ListSkeleton label="Carregando itens vistos…" rows={2} />
       ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
+        <ErrorState
+          title="Não foi possível carregar os itens vistos"
+          error={q.error}
+          onRetry={() => q.refetch()}
+        />
+      ) : q.data.length === 0 ? (
+        <EmptyState
+          title="Esses itens não estão mais disponíveis."
+          hint="Quando você abrir outros produtos ou lojas, eles aparecem aqui."
+        />
+      ) : shown.length === 0 ? (
+        <EmptyState title="Nenhum registro encontrado" hint={`Nada combina com “${term.trim()}”.`} />
       ) : (
         <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {q.data.map((it) => {
+          {shown.map((it) => {
             const at = when.get(`${it.type}:${it.slug}`);
             return (
               <li key={`${it.type}:${it.slug}`}>

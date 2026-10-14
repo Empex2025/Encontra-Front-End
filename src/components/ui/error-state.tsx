@@ -4,7 +4,16 @@ import { RotateCw } from "lucide-react";
 
 import { ApiError } from "@/lib/api/client";
 
-export function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
+export function ErrorState({
+  error,
+  onRetry,
+  title,
+}: {
+  error: Error;
+  onRetry: () => void;
+  /** Troca o título padrão ("Não foi possível carregar os resultados"). */
+  title?: string;
+}) {
   const slow = error instanceof ApiError && error.code === "TIMEOUT";
   const offline = error instanceof ApiError && error.status === 0 && !slow;
   return (
@@ -17,7 +26,7 @@ export function ErrorState({ error, onRetry }: { error: Error; onRetry: () => vo
           ? "Algo deu errado"
           : offline
             ? "Sem conexão com o servidor"
-            : "Não foi possível carregar os resultados"}
+            : (title ?? "Não foi possível carregar os resultados")}
       </h3>
       <p className="max-w-md text-text-muted">
         {slow

@@ -83,7 +83,7 @@ export function AlertDialog({
           })}
         </p>
         <p className="text-sm text-text-muted">
-          O alerta vale por 30 dias. Você pode editar ou cancelar em Minha atividade.
+          O alerta vale por 30 dias. Você pode pausar ou excluir em Favoritos › Alertas.
         </p>
         <button
           type="button"

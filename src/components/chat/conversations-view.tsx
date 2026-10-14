@@ -16,9 +16,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { LockedBody, useAccess } from "@/components/auth/session-gate";
 import { Avatar } from "@/components/catalog/avatar";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState, ListSkeleton } from "@/components/ui/list-states";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { track } from "@/lib/analytics/track";
@@ -59,6 +61,8 @@ const shortTime = (iso: string) => {
 /** Conversas: lista + conversa aberta. No celular, uma tela por vez (`/conversas` e `/conversas/{id}`). */
 export function ConversationsView({ activeId }: { activeId?: string }) {
   const router = useRouter();
+  const access = useAccess();
+  const member = access === "member";
   const [term, setTerm] = useState("");
   const [q, setQ] = useState("");
   const [onlyUnread, setOnlyUnread] = useState(false);
@@ -71,13 +75,14 @@ export function ConversationsView({ activeId }: { activeId?: string }) {
     queryKey: [...LIST_KEY, q, onlyUnread],
     queryFn: () => chat.list({ q, unread: onlyUnread }),
     refetchInterval: 30_000,
+    enabled: member,
   });
   const first = list.data?.items[0]?.id;
   // Sem conversa pedida, no computador abre a primeira da lista.
   useEffect(() => {
-    if (!activeId && first && window.matchMedia("(min-width: 768px)").matches)
+    if (member && !activeId && first && window.matchMedia("(min-width: 768px)").matches)
       router.replace(conversaHref(first));
-  }, [activeId, first, router]);
+  }, [member, activeId, first, router]);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
@@ -102,14 +107,16 @@ export function ConversationsView({ activeId }: { activeId?: string }) {
               type="search"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
+              disabled={!member}
               placeholder="Buscar loja ou produto"
-              className="h-11 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-9 text-text"
+              className="h-11 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-9 text-text disabled:opacity-60"
             />
           </label>
           <div className="flex gap-2">
             <button
               type="button"
               aria-pressed={!onlyUnread}
+              disabled={!member}
               onClick={() => setOnlyUnread(false)}
               className={chip(!onlyUnread)}
             >
@@ -118,20 +125,38 @@ export function ConversationsView({ activeId }: { activeId?: string }) {
             <button
               type="button"
               aria-pressed={onlyUnread}
+              disabled={!member}
               onClick={() => setOnlyUnread(true)}
               className={chip(onlyUnread)}
             >
-              Não lidas{list.data && list.data.unreadTotal > 0 ? ` (${list.data.unreadTotal})` : ""}
+              Não lidas ({list.data ? list.data.unreadTotal : "—"})
             </button>
           </div>
-          {list.isPending ? (
-            <p className="text-text-muted">Carregando…</p>
+          {!member ? (
+            <LockedBody
+              access={access}
+              area="conversas"
+              hint="Suas conversas ficam salvas e você recebe a resposta mesmo se sair da página. O WhatsApp continua liberado."
+            />
+          ) : list.isPending ? (
+            <ListSkeleton label="Carregando conversas…" rows={4} />
           ) : list.isError ? (
-            <ErrorState error={list.error} onRetry={() => list.refetch()} />
+            <ErrorState
+              title="Não foi possível carregar suas conversas"
+              error={list.error}
+              onRetry={() => list.refetch()}
+            />
           ) : list.data.items.length === 0 ? (
-            <p className="rounded-2xl border border-border p-6 text-center font-semibold text-text-strong">
-              {q || onlyUnread ? "Nenhuma conversa encontrada." : "Nenhuma conversa"}
-            </p>
+            q || onlyUnread ? (
+              <EmptyState title="Nenhuma conversa encontrada." hint="Troque a busca ou volte para “Todas”." />
+            ) : (
+              <EmptyState
+                title="Você ainda não tem conversas."
+                hint="Abra o perfil de uma loja ou prestador e toque em “Conversar”."
+                href={routes.explorar}
+                cta="Buscar no Explorar"
+              />
+            )
           ) : (
             <ul className="flex flex-col gap-1">
               {list.data.items.map((c) => (
@@ -141,7 +166,13 @@ export function ConversationsView({ activeId }: { activeId?: string }) {
           )}
         </aside>
         <section aria-label="Conversa aberta" className={cn("min-w-0", !activeId && "max-md:hidden")}>
-          {activeId ? (
+          {activeId && !member ? (
+            <LockedBody
+              access={access}
+              area="conversas"
+              hint="Suas conversas ficam salvas e você recebe a resposta mesmo se sair da página. O WhatsApp continua liberado."
+            />
+          ) : activeId ? (
             <Thread key={activeId} id={activeId} />
           ) : (
             <div className="flex h-full min-h-60 flex-col items-center justify-center gap-2 rounded-2xl border border-border p-8 text-center text-text-muted">
@@ -300,7 +331,7 @@ function Thread({ id }: { id: string }) {
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível alterar.", "info"),
   });
 
-  if (detail.isPending) return <p className="text-text-muted">Carregando conversa…</p>;
+  if (detail.isPending) return <ListSkeleton label="Carregando conversa…" rows={4} />;
   if (detail.isError) {
     const notFound = (detail.error as { status?: number }).status === 404;
     return notFound ? (
@@ -311,7 +342,11 @@ function Thread({ id }: { id: string }) {
         </Link>
       </div>
     ) : (
-      <ErrorState error={detail.error} onRetry={() => detail.refetch()} />
+      <ErrorState
+        title="Não foi possível abrir a conversa"
+        error={detail.error}
+        onRetry={() => detail.refetch()}
+      />
     );
   }
   const c: ConversationDetail = detail.data;
@@ -433,7 +468,13 @@ function Thread({ id }: { id: string }) {
           </button>
         )}
         {msgs.isPending ? (
-          <p className="text-text-muted">Carregando…</p>
+          <ListSkeleton label="Carregando mensagens…" rows={2} />
+        ) : msgs.isError && messages.length === 0 ? (
+          <ErrorState
+            title="Não foi possível carregar as mensagens"
+            error={msgs.error}
+            onRetry={() => msgs.refetch()}
+          />
         ) : messages.length === 0 ? (
           <p className="m-auto text-sm text-text-muted">Nenhuma mensagem ainda. Diga olá!</p>
         ) : (

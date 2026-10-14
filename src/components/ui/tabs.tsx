@@ -4,7 +4,7 @@ import { useId, useRef } from "react";
 
 import { cn } from "./cn";
 
-export type TabDef = { id: string; label: string; count?: number | null };
+export type TabDef = { id: string; label: string; count?: number | string | null };
 
 /** Abas acessíveis (setas ← → trocam, Home/End vão às pontas). O conteúdo é de quem usa: `panelId(id)` liga as duas. */
 export function Tabs({
