@@ -8,6 +8,7 @@ import { discover } from "@/lib/api/discover";
 import { storiesHref } from "@/lib/routes";
 
 import { cn } from "@/components/ui/cn";
+import { ErrorState } from "@/components/ui/error-state";
 import { EmptyBlock } from "./empty-block";
 
 /** Faixa de Stories da Home. Sem stories a seção continua visível com estado vazio (nada de círculos de enfeite). */
@@ -23,7 +24,34 @@ export function HomeStories() {
   });
   const groups = q.data?.groups ?? [];
   if (groups.length === 0) {
-    if (q.isPending && q.fetchStatus !== "idle") return null;
+    if (q.isPending && q.fetchStatus !== "idle") {
+      return (
+        <EmptyBlock
+          id="home-stories"
+          title="Stories"
+          subtitle="Novidades das lojas perto de você, por 24 horas"
+          message="Carregando stories…"
+        />
+      );
+    }
+    if (q.isError) {
+      return (
+        <section aria-labelledby="home-stories" className="flex flex-col gap-3">
+          <div>
+            <h2 id="home-stories" className="text-xl font-bold text-text-strong">
+              Stories
+            </h2>
+            <p className="text-sm text-text-muted">Novidades das lojas perto de você, por 24 horas</p>
+          </div>
+          <ErrorState
+            error={q.error}
+            title="Não foi possível carregar os stories"
+            compact
+            onRetry={() => q.refetch()}
+          />
+        </section>
+      );
+    }
     return (
       <EmptyBlock
         id="home-stories"

@@ -74,7 +74,8 @@ export function OffersView() {
     getNextPageParam: (last) => (last.page * last.limit < last.total ? last.page + 1 : undefined),
   });
 
-  if (ready && !hasLocation) return <NeedLocation />;
+  const noPlace = ready && !hasLocation;
+  const status = query.isError ? "error" : query.isPending ? "loading" : "ready";
 
   const first = query.data?.pages[0];
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
@@ -90,11 +91,11 @@ export function OffersView() {
         </p>
       </header>
 
-      {first && first.coupons.length > 0 && (
-        <section aria-labelledby="cupons-t" className="flex flex-col gap-3">
-          <h2 id="cupons-t" className="text-lg font-bold text-text-strong">
-            Cupons do dia
-          </h2>
+      <section aria-labelledby="cupons-t" className="flex flex-col gap-3">
+        <h2 id="cupons-t" className="text-lg font-bold text-text-strong">
+          Cupons do dia
+        </h2>
+        {first && first.coupons.length > 0 ? (
           <ul className="grid gap-3 md:grid-cols-2">
             {first.coupons.map((c) => (
               <li key={c.id} className="flex flex-col gap-2">
@@ -109,8 +110,18 @@ export function OffersView() {
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border-strong bg-surface px-5 py-5 text-sm text-text-muted">
+            {noPlace
+              ? "Defina seu local para ver os cupons perto de você."
+              : status === "loading"
+                ? "Carregando cupons…"
+                : status === "error"
+                  ? "Não foi possível carregar os cupons agora. Use “Tentar de novo” na lista abaixo."
+                  : "Nenhum cupom disponível agora neste raio."}
+          </p>
+        )}
+      </section>
 
       <section aria-labelledby="todas-t" className="flex flex-col gap-4">
         <h2 id="todas-t" className="text-lg font-bold text-text-strong">
@@ -158,46 +169,67 @@ export function OffersView() {
             Aberto agora
           </label>
         </div>
-        {cats.length > 0 && (
-          <ul className="flex flex-wrap gap-2" aria-label="Categorias">
-            <li>
+        <ul className="flex flex-wrap items-center gap-2" aria-label="Categorias">
+          <li>
+            <button
+              type="button"
+              aria-pressed={!cat}
+              onClick={() => setCat(undefined)}
+              className={chip(!cat)}
+            >
+              Todas
+            </button>
+          </li>
+          {cats.map(([id, n]) => (
+            <li key={id}>
               <button
                 type="button"
-                aria-pressed={!cat}
-                onClick={() => setCat(undefined)}
-                className={chip(!cat)}
+                aria-pressed={cat === id}
+                onClick={() => setCat(id)}
+                className={chip(cat === id)}
               >
-                Todas
+                {CATEGORIES.find((c) => c.id === id)?.name ?? id} ({n})
               </button>
             </li>
-            {cats.map(([id, n]) => (
-              <li key={id}>
-                <button
-                  type="button"
-                  aria-pressed={cat === id}
-                  onClick={() => setCat(id)}
-                  className={chip(cat === id)}
-                >
-                  {CATEGORIES.find((c) => c.id === id)?.name ?? id} ({n})
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+          ))}
+          {cats.length === 0 && (
+            <li className="text-xs text-text-subtle">
+              {status === "ready"
+                ? "Sem categorias com ofertas neste raio"
+                : "Categorias aparecem com os resultados"}
+            </li>
+          )}
+        </ul>
 
-        {query.isPending || !ready ? (
-          <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3" aria-hidden>
+        {noPlace ? (
+          <NeedLocation />
+        ) : query.isPending || !ready ? (
+          <div
+            className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3"
+            aria-busy="true"
+            aria-label="Carregando ofertas"
+          >
             {Array.from({ length: 6 }, (_, i) => (
               <ResultCardSkeleton key={i} />
             ))}
           </div>
         ) : query.isError ? (
-          <ErrorState error={query.error} onRetry={() => query.refetch()} />
+          <ErrorState
+            error={query.error}
+            title="Não foi possível carregar as ofertas"
+            onRetry={() => query.refetch()}
+          />
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-border p-8 text-center">
-            <p className="font-bold text-text-strong">Nenhuma oferta encontrada neste raio.</p>
+            <p className="font-bold text-text-strong">
+              {q || cat || openNow
+                ? "Nenhuma oferta com esses filtros neste raio."
+                : `Nenhuma oferta encontrada até ${location.radiusKm} km.`}
+            </p>
             <p className="text-sm text-text-muted">
-              Não achou o desconto que queria? Peça e avisamos as lojas perto de você.
+              {q || cat || openNow
+                ? "Tire a busca ou os filtros, ou amplie a distância no topo da página. Se ainda assim não achar, peça e avisamos as lojas perto de você."
+                : "Amplie a distância no topo da página ou peça o que você quer e avisamos as lojas perto de você."}
             </p>
             <button
               type="button"
@@ -226,7 +258,7 @@ export function OffersView() {
             ))}
           </ul>
         )}
-        {query.hasNextPage && (
+        {!noPlace && query.hasNextPage && (
           <button
             type="button"
             disabled={query.isFetchingNextPage}
@@ -236,7 +268,7 @@ export function OffersView() {
             {query.isFetchingNextPage ? "Carregando…" : "Ver mais ofertas"}
           </button>
         )}
-        {items.length > 0 && (
+        {!noPlace && items.length > 0 && (
           <p className="text-sm text-text-muted">
             Não achou o desconto que queria?{" "}
             <button

@@ -15,6 +15,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ErrorState } from "@/components/ui/error-state";
+import { MapPanel } from "@/components/ui/map-panel";
 import { NeedLocation } from "@/components/ui/need-location";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
@@ -24,6 +25,7 @@ import { track } from "@/lib/analytics/track";
 import { fetchSearch, type Kind, type Lens, type SearchResponse, type Sort } from "@/lib/api/search";
 import { takePendingAction } from "@/lib/domain/auth-actions";
 import { CATEGORIES } from "@/lib/domain/categories";
+import { countWithCoords, LENS_LABEL, resultsHeading } from "@/lib/domain/explorar-copy";
 import { RADIUS_STEPS } from "@/lib/domain/radius";
 import {
   type ExplorarState,
@@ -38,22 +40,6 @@ import { DistanceButton } from "./distance-button";
 import { ResultCard, ResultCardSkeleton, targetTypeOf } from "./result-card";
 import { WantDialog } from "./want-dialog";
 
-const LENS_LABEL: Record<Lens, string> = {
-  live: "Ao vivo",
-  offers: "Ofertas",
-  price: "Menor preço",
-  new: "Novidades",
-  trending: "Em alta",
-  open: "Aberto agora",
-};
-const LENS_SUFFIX: Record<Lens, string> = {
-  live: " ao vivo",
-  offers: " em oferta",
-  price: " com preço",
-  new: " novos",
-  trending: " em alta",
-  open: " abertos agora",
-};
 const KIND_LABEL: Record<Kind, string> = { product: "Produtos", service: "Serviços", place: "Lugares" };
 const SORT_LABEL: Record<Sort, string> = {
   relevance: "Mais relevantes",
@@ -73,6 +59,7 @@ export function ExplorarView() {
   const [widened, setWidened] = useState<{ q: string; km: number } | null>(null);
   const radiusKm = widened && widened.q === state.q ? widened.km : location.radiusKm;
   const [wantOpen, setWantOpen] = useState(false);
+  const [view, setView] = useState<"grid" | "map">("grid");
   const { me } = useSession();
   // Quem pediu "Quero em promoção" sem conta volta aqui depois de entrar: reabre o pedido, sem enviar sozinho.
   useEffect(() => {
@@ -126,16 +113,107 @@ export function ExplorarView() {
     });
   });
 
-  const title = (() => {
-    const cat = state.cat ? CATEGORIES.find((c) => c.id === state.cat)?.name : undefined;
-    if (!isSearch) {
-      const base = cat ?? (state.lens ? LENS_LABEL[state.lens] : "O que tem perto de você");
-      if (cat && state.lens) return `${cat} · ${LENS_LABEL[state.lens].toLowerCase()} perto de você`;
-      return cat || state.lens ? `${base} perto de você` : base;
-    }
-    const n = first?.total ?? 0;
-    return `${n} ${n === 1 ? "resultado" : "resultados"}${state.lens ? LENS_SUFFIX[state.lens] : ""} para “${state.q}”${cat ? ` em ${cat}` : ""}`;
-  })();
+  const title = resultsHeading({
+    q: state.q,
+    cat: state.cat,
+    lens: state.lens,
+    status:
+      !hasPlace && !locLoading
+        ? "no-place"
+        : results.isPending
+          ? "loading"
+          : results.isError
+            ? "error"
+            : "ready",
+    total: first?.total ?? 0,
+  });
+
+  const resultsBody = (
+    <>
+      {results.isPending ? (
+        <ResultGrid compact={view === "map"}>
+          {Array.from({ length: 8 }, (_, i) => (
+            <ResultCardSkeleton key={i} />
+          ))}
+        </ResultGrid>
+      ) : results.isError ? (
+        <ErrorState error={results.error} onRetry={() => results.refetch()} />
+      ) : items.length === 0 ? (
+        isSearch ? (
+          <NoResults
+            q={state.q}
+            radiusKm={radiusKm}
+            refined={hasRefinements(state) || !!state.lens || !!state.cat}
+            nearest={first?.nearestOutside ?? null}
+            onWiden={(km) => setWidened({ q: state.q, km })}
+            onClear={() =>
+              setState({
+                lens: undefined,
+                cat: undefined,
+                kind: undefined,
+                serviceMode: undefined,
+                specialty: [],
+                minRating: undefined,
+              })
+            }
+            onWant={() => setWantOpen(true)}
+          />
+        ) : (
+          <EmptyDiscovery radiusKm={radiusKm} />
+        )
+      ) : (
+        <>
+          <ResultGrid compact={view === "map"}>
+            {items.map((item, i) => (
+              <ResultCard
+                key={item.id}
+                item={item}
+                onOpen={() =>
+                  track({
+                    type: "SEARCH_RESULT_CLICK",
+                    targetType: targetTypeOf(item),
+                    targetId: item.id,
+                    props: { q: state.q || null, position: i + 1, sponsored: item.sponsored },
+                  })
+                }
+              />
+            ))}
+            {results.isFetchingNextPage &&
+              Array.from({ length: 4 }, (_, i) => <ResultCardSkeleton key={`more-${i}`} />)}
+          </ResultGrid>
+          {results.hasNextPage && !results.isFetchingNextPage && (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => results.fetchNextPage()}
+                className="h-12 rounded-lg border border-primary px-6 text-[15px] font-bold text-text-strong hover:bg-surface-2"
+              >
+                Carregar mais resultados ({(first?.total ?? 0) - items.length} restantes)
+              </button>
+            </div>
+          )}
+          {results.isFetchNextPageError && (
+            <p role="alert" className="text-center text-sm text-danger-text">
+              Não foi possível carregar mais. Tente de novo.
+            </p>
+          )}
+        </>
+      )}
+
+      {isSearch && first && first.total < 3 && first.similar.length > 0 && (
+        <section aria-labelledby="similar" className="flex flex-col gap-3 pt-4">
+          <h2 id="similar" className="text-lg font-bold text-text-strong">
+            Parecidos com o que você buscou
+          </h2>
+          <ResultGrid compact={view === "map"}>
+            {first.similar.slice(0, 4).map((item) => (
+              <ResultCard key={item.id} item={item} />
+            ))}
+          </ResultGrid>
+        </section>
+      )}
+    </>
+  );
 
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
@@ -173,183 +251,133 @@ export function ExplorarView() {
         onPick={(cat) => setState({ cat }, { filter: "cat", value: cat ?? "tudo" })}
       />
 
-      {isSearch && first && (
-        <div className="flex flex-col gap-3">
-          <div role="group" aria-label="Descobrir por" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            <Chip label="Tudo" selected={!state.lens} onClick={() => setState({ lens: undefined })} />
-            {(Object.keys(LENS_LABEL) as Lens[]).map((l) => (
-              <Chip
-                key={l}
-                label={LENS_LABEL[l]}
-                count={first.facets.lenses[l] ?? 0}
-                selected={state.lens === l}
-                leading={
-                  l === "live" ? <span className="size-2 rounded-full bg-danger" aria-hidden /> : undefined
-                }
-                onClick={() =>
-                  setState({ lens: state.lens === l ? undefined : l }, { filter: "lens", value: l })
-                }
-              />
-            ))}
-          </div>
-          <FilterRow state={state} facets={first.facets} setState={setState} />
+      <div className="flex flex-col gap-3">
+        <div role="group" aria-label="Descobrir por" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          <Chip label="Tudo" selected={!state.lens} onClick={() => setState({ lens: undefined })} />
+          {(Object.keys(LENS_LABEL) as Lens[]).map((l) => (
+            <Chip
+              key={l}
+              label={LENS_LABEL[l]}
+              count={first?.facets.lenses[l]}
+              selected={state.lens === l}
+              disabled={!first && state.lens !== l}
+              leading={
+                l === "live" ? <span className="size-2 rounded-full bg-danger" aria-hidden /> : undefined
+              }
+              onClick={() =>
+                setState({ lens: state.lens === l ? undefined : l }, { filter: "lens", value: l })
+              }
+            />
+          ))}
         </div>
-      )}
+        <FilterRow
+          state={state}
+          facets={first?.facets}
+          enabled={isSearch && !!first}
+          isSearch={isSearch}
+          setState={setState}
+        />
+      </div>
 
-      {!hasPlace && !locLoading ? (
-        <NeedLocation />
-      ) : (
-        <section aria-labelledby="res-title" className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-            <h2 id="res-title" className="text-xl leading-7 font-bold text-text-strong" aria-live="polite">
-              {results.isPending ? (isSearch ? `Buscando “${state.q}”…` : "Carregando…") : title}
-            </h2>
-            <div className="flex flex-wrap items-center gap-3">
-              {isSearch && (
-                <button
-                  type="button"
-                  onClick={() => setWantOpen(true)}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-accent-border bg-accent-soft px-3.5 text-[13px] font-bold whitespace-nowrap text-accent-text"
-                >
-                  <Tag className="size-4" aria-hidden />
-                  Quero “{state.q.length > 22 ? `${state.q.slice(0, 21)}…` : state.q}” em promoção
-                </button>
-              )}
-              {isSearch && first?.widen && (first.widen.gain > 0 || first.total < 4) && (
-                <button
-                  type="button"
-                  onClick={() => setWidened({ q: state.q, km: first.widen!.nextRadiusKm })}
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-dashed border-navy-300 px-3.5 text-[13px] font-bold text-link"
-                >
-                  <Target className="size-4" aria-hidden />
-                  Ampliar para {first.widen.nextRadiusKm} km
-                  {first.widen.gain > 0 && (
-                    <span className="rounded-full bg-accent px-2 text-[11px] font-extrabold text-on-accent">
-                      +{first.widen.gain}
-                    </span>
-                  )}
-                </button>
-              )}
-              {isSearch && (
-                <label className="inline-flex items-center gap-2 text-[13px] text-text-muted">
-                  Ordenar
-                  <select
-                    value={state.sort}
-                    onChange={(e) =>
-                      setState({ sort: e.target.value as Sort }, { filter: "sort", value: e.target.value })
-                    }
-                    className="h-10 rounded-lg border border-border bg-surface px-3 text-sm text-text"
-                  >
-                    {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
-                      <option key={s} value={s}>
-                        {SORT_LABEL[s]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <span
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-surface-3 px-3.5 text-[13px] font-bold text-text-strong"
-                title="O mapa entra quando o serviço de mapas for definido"
+      <section aria-labelledby="res-title" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <h2 id="res-title" className="text-xl leading-7 font-bold text-text-strong" aria-live="polite">
+            {title}
+          </h2>
+          <div className="flex flex-wrap items-center gap-3">
+            {isSearch && (
+              <button
+                type="button"
+                onClick={() => setWantOpen(true)}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-accent-border bg-accent-soft px-3.5 text-[13px] font-bold whitespace-nowrap text-accent-text"
+              >
+                <Tag className="size-4" aria-hidden />
+                Quero “{state.q.length > 22 ? `${state.q.slice(0, 21)}…` : state.q}” em promoção
+              </button>
+            )}
+            {isSearch && first?.widen && (first.widen.gain > 0 || first.total < 4) && (
+              <button
+                type="button"
+                onClick={() => setWidened({ q: state.q, km: first.widen!.nextRadiusKm })}
+                className="inline-flex h-10 items-center gap-2 rounded-full border border-dashed border-navy-300 px-3.5 text-[13px] font-bold text-link"
+              >
+                <Target className="size-4" aria-hidden />
+                Ampliar para {first.widen.nextRadiusKm} km
+                {first.widen.gain > 0 && (
+                  <span className="rounded-full bg-accent px-2 text-[11px] font-extrabold text-on-accent">
+                    +{first.widen.gain}
+                  </span>
+                )}
+              </button>
+            )}
+            <label className="inline-flex items-center gap-2 text-[13px] text-text-muted">
+              Ordenar
+              <select
+                value={state.sort}
+                disabled={!isSearch}
+                title={isSearch ? undefined : "A ordenação vale para buscas com um termo."}
+                onChange={(e) =>
+                  setState({ sort: e.target.value as Sort }, { filter: "sort", value: e.target.value })
+                }
+                className="h-10 rounded-lg border border-border bg-surface px-3 text-sm text-text disabled:opacity-50"
+              >
+                {(Object.keys(SORT_LABEL) as Sort[]).map((s) => (
+                  <option key={s} value={s}>
+                    {SORT_LABEL[s]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div role="group" aria-label="Modo de exibição" className="flex gap-1">
+              <button
+                type="button"
+                aria-pressed={view === "grid"}
+                onClick={() => setView("grid")}
+                className={cn(
+                  "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-bold",
+                  view === "grid"
+                    ? "bg-surface-3 text-text-strong"
+                    : "border border-border text-text-muted hover:bg-surface-2",
+                )}
               >
                 <LayoutGrid className="size-4" aria-hidden />
                 Grade
-              </span>
-              <span
-                aria-disabled="true"
-                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3.5 text-[13px] font-semibold text-text-muted"
-                title="O mapa entra quando o serviço de mapas for definido"
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === "map"}
+                onClick={() => setView("map")}
+                className={cn(
+                  "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-bold",
+                  view === "map"
+                    ? "bg-surface-3 text-text-strong"
+                    : "border border-border text-text-muted hover:bg-surface-2",
+                )}
               >
                 <MapIcon className="size-4" aria-hidden />
-                Mapa · em breve
-              </span>
+                Mapa
+              </button>
             </div>
           </div>
+        </div>
 
-          {results.isPending ? (
-            <ResultGrid>
-              {Array.from({ length: 8 }, (_, i) => (
-                <ResultCardSkeleton key={i} />
-              ))}
-            </ResultGrid>
-          ) : results.isError ? (
-            <ErrorState error={results.error} onRetry={() => results.refetch()} />
-          ) : items.length === 0 ? (
-            isSearch ? (
-              <NoResults
-                q={state.q}
-                radiusKm={radiusKm}
-                refined={hasRefinements(state) || !!state.lens || !!state.cat}
-                nearest={first?.nearestOutside ?? null}
-                onWiden={(km) => setWidened({ q: state.q, km })}
-                onClear={() =>
-                  setState({
-                    lens: undefined,
-                    cat: undefined,
-                    kind: undefined,
-                    serviceMode: undefined,
-                    specialty: [],
-                    minRating: undefined,
-                  })
-                }
-                onWant={() => setWantOpen(true)}
-              />
-            ) : (
-              <EmptyDiscovery radiusKm={radiusKm} />
-            )
-          ) : (
-            <>
-              <ResultGrid>
-                {items.map((item, i) => (
-                  <ResultCard
-                    key={item.id}
-                    item={item}
-                    onOpen={() =>
-                      track({
-                        type: "SEARCH_RESULT_CLICK",
-                        targetType: targetTypeOf(item),
-                        targetId: item.id,
-                        props: { q: state.q || null, position: i + 1, sponsored: item.sponsored },
-                      })
-                    }
-                  />
-                ))}
-                {results.isFetchingNextPage &&
-                  Array.from({ length: 4 }, (_, i) => <ResultCardSkeleton key={`more-${i}`} />)}
-              </ResultGrid>
-              {results.hasNextPage && !results.isFetchingNextPage && (
-                <div className="flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => results.fetchNextPage()}
-                    className="h-12 rounded-lg border border-primary px-6 text-[15px] font-bold text-text-strong hover:bg-surface-2"
-                  >
-                    Carregar mais resultados ({(first?.total ?? 0) - items.length} restantes)
-                  </button>
-                </div>
-              )}
-              {results.isFetchNextPageError && (
-                <p role="alert" className="text-center text-sm text-danger-text">
-                  Não foi possível carregar mais. Tente de novo.
-                </p>
-              )}
-            </>
-          )}
-
-          {isSearch && first && first.total < 3 && first.similar.length > 0 && (
-            <section aria-labelledby="similar" className="flex flex-col gap-3 pt-4">
-              <h2 id="similar" className="text-lg font-bold text-text-strong">
-                Parecidos com o que você buscou
-              </h2>
-              <ResultGrid>
-                {first.similar.slice(0, 4).map((item) => (
-                  <ResultCard key={item.id} item={item} />
-                ))}
-              </ResultGrid>
-            </section>
-          )}
-        </section>
-      )}
+        {!hasPlace && !locLoading ? (
+          <NeedLocation />
+        ) : view === "map" ? (
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <MapPanel
+              total={results.isSuccess ? items.length : null}
+              withCoords={results.isSuccess ? countWithCoords(items) : null}
+            />
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-bold text-text-strong">Resultados</h3>
+              {resultsBody}
+            </div>
+          </div>
+        ) : (
+          resultsBody
+        )}
+      </section>
 
       {wantOpen && (
         <WantDialog
@@ -363,9 +391,15 @@ export function ExplorarView() {
   );
 }
 
-function ResultGrid({ children }: { children: React.ReactNode }) {
+function ResultGrid({ children, compact }: { children: React.ReactNode; compact?: boolean }) {
   return (
-    <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+    <div
+      className={
+        compact
+          ? "grid grid-cols-1 gap-3"
+          : "grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
+      }
+    >
       {children}
     </div>
   );
@@ -508,50 +542,53 @@ type Facets = SearchResponse["facets"];
 function FilterRow({
   state,
   facets,
+  enabled,
+  isSearch,
   setState,
 }: {
   state: ExplorarState;
-  facets: Facets;
+  facets: Facets | undefined;
+  /** Só há o que filtrar depois que o servidor respondeu a uma busca com termo. */
+  enabled: boolean;
+  isSearch: boolean;
   setState: (n: Partial<ExplorarState>, e?: Record<string, string>) => void;
 }) {
-  const kinds = facets.kinds
-    ? (Object.keys(KIND_LABEL) as Kind[]).filter((k) => (facets.kinds?.[k] ?? 0) > 0)
-    : [];
-  const local = facets.serviceMode?.local ?? 0;
-  const home = facets.serviceMode?.home ?? 0;
-  const specialties = (facets.specialties ?? []).filter((s) => s.count > 0);
-  const good = facets.minRating?.[String(MIN_RATING_FILTER)] ?? 0;
+  // Chip sem resultado fica desabilitado (continua visível); o que já está marcado pode ser desmarcado.
+  const off = (count: number | undefined, selected: boolean) => !selected && (!enabled || !count);
+  const specialties = (facets?.specialties ?? []).filter((s) => s.count > 0);
+  const good = facets?.minRating?.[String(MIN_RATING_FILTER)];
+  const any = hasRefinements(state);
 
-  const groups: { label: string; chips: React.ReactNode }[] = [];
-  if (kinds.length > 1)
-    groups.push({
+  const groups: { label: string; chips: React.ReactNode }[] = [
+    {
       label: "Tipo",
-      chips: kinds.map((k) => (
+      chips: (Object.keys(KIND_LABEL) as Kind[]).map((k) => (
         <Chip
           key={k}
           size="sm"
           label={KIND_LABEL[k]}
-          count={facets.kinds?.[k]}
+          count={enabled ? (facets?.kinds?.[k] ?? 0) : undefined}
           selected={state.kind === k}
+          disabled={off(facets?.kinds?.[k], state.kind === k)}
           onClick={() => setState({ kind: state.kind === k ? undefined : k }, { filter: "kind", value: k })}
         />
       )),
-    });
-  if (local > 0 && home > 0)
-    groups.push({
+    },
+    {
       label: "Onde atende",
       chips: (
         [
-          ["local", "No local", local],
-          ["home", "Vai até você", home],
+          ["local", "No local"],
+          ["home", "Vai até você"],
         ] as const
-      ).map(([v, l, n]) => (
+      ).map(([v, l]) => (
         <Chip
           key={v}
           size="sm"
           label={l}
-          count={n}
+          count={enabled ? (facets?.serviceMode?.[v] ?? 0) : undefined}
           selected={state.serviceMode === v}
+          disabled={off(facets?.serviceMode?.[v], state.serviceMode === v)}
           onClick={() =>
             setState(
               { serviceMode: state.serviceMode === v ? undefined : v },
@@ -560,38 +597,44 @@ function FilterRow({
           }
         />
       )),
-    });
-  if (specialties.length > 1)
-    groups.push({
+    },
+    {
       label: "Serviço",
-      chips: specialties.map((s) => {
-        const on = state.specialty.includes(s.id);
-        return (
-          <Chip
-            key={s.id}
-            size="sm"
-            label={s.label}
-            count={s.count}
-            selected={on}
-            onClick={() =>
-              setState(
-                { specialty: on ? state.specialty.filter((x) => x !== s.id) : [...state.specialty, s.id] },
-                { filter: "specialty", value: s.id },
-              )
-            }
-          />
-        );
-      }),
-    });
-  if (good > 0)
-    groups.push({
+      chips:
+        specialties.length > 0 ? (
+          specialties.map((s) => {
+            const on = state.specialty.includes(s.id);
+            return (
+              <Chip
+                key={s.id}
+                size="sm"
+                label={s.label}
+                count={s.count}
+                selected={on}
+                onClick={() =>
+                  setState(
+                    {
+                      specialty: on ? state.specialty.filter((x) => x !== s.id) : [...state.specialty, s.id],
+                    },
+                    { filter: "specialty", value: s.id },
+                  )
+                }
+              />
+            );
+          })
+        ) : (
+          <span className="text-xs text-text-subtle">{enabled ? "Sem especialidades nesta busca" : "—"}</span>
+        ),
+    },
+    {
       label: "Avaliação",
       chips: (
         <Chip
           size="sm"
           label="Nota 4,8 ou mais"
-          count={good}
+          count={enabled ? (good ?? 0) : undefined}
           selected={!!state.minRating}
+          disabled={off(good, !!state.minRating)}
           onClick={() =>
             setState(
               { minRating: state.minRating ? undefined : MIN_RATING_FILTER },
@@ -600,10 +643,8 @@ function FilterRow({
           }
         />
       ),
-    });
-
-  if (groups.length === 0) return null;
-  const any = hasRefinements(state);
+    },
+  ];
 
   return (
     <div
@@ -631,6 +672,11 @@ function FilterRow({
         >
           Limpar filtros
         </button>
+      )}
+      {!isSearch && (
+        <p className="basis-full text-xs text-text-subtle">
+          Tipo, onde atende, serviço e nota valem para buscas com um termo. Escreva o que procura acima.
+        </p>
       )}
     </div>
   );

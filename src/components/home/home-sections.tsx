@@ -38,23 +38,28 @@ const SECTIONS: Record<HomeSectionId, { title: string; subtitle: string; href: s
 };
 const ORDER: HomeSectionId[] = ["happening", "products", "services", "experiences"];
 
-function EmptyBlocks({ withLocation }: { withLocation: boolean }) {
+type BlockMode = "no-place" | "empty" | "error" | "loading";
+
+const BLOCK_MESSAGE: Record<BlockMode, string> = {
+  "no-place": "Defina seu local para ver o que está perto de você.",
+  empty: "Ainda não há itens aqui. Amplie o raio ou busque por algo específico.",
+  error: "Não foi possível carregar este bloco agora.",
+  loading: "Carregando…",
+};
+
+function EmptyBlocks({ mode, only }: { mode: BlockMode; only?: HomeSectionId[] }) {
   return (
-    <div className="flex flex-col gap-8">
-      {ORDER.map((id) => (
+    <>
+      {(only ?? ORDER).map((id) => (
         <EmptyBlock
           key={id}
           id={`home-${id}`}
           title={SECTIONS[id].title}
           subtitle={SECTIONS[id].subtitle}
-          message={
-            withLocation
-              ? "Ainda não há itens aqui. Amplie o raio ou busque por algo específico."
-              : "Defina seu local para ver o que está perto de você."
-          }
+          message={BLOCK_MESSAGE[mode]}
         />
       ))}
-    </div>
+    </>
   );
 }
 
@@ -74,18 +79,30 @@ export function HomeSections() {
     return (
       <div className="flex flex-col gap-8">
         <NeedLocation />
-        <EmptyBlocks withLocation={false} />
+        <EmptyBlocks mode="no-place" />
       </div>
     );
   }
 
   if (locLoading || home.isPending) {
     return (
-      <div aria-busy="true" aria-label="Carregando" className="flex gap-4 overflow-hidden">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="w-64 shrink-0">
-            <ResultCardSkeleton />
-          </div>
+      <div aria-busy="true" aria-label="Carregando" className="flex flex-col gap-8">
+        {ORDER.map((id) => (
+          <section key={id} aria-labelledby={`home-${id}`} className="flex flex-col gap-3">
+            <div>
+              <h2 id={`home-${id}`} className="text-xl font-bold text-text-strong">
+                {SECTIONS[id].title}
+              </h2>
+              <p className="text-sm text-text-muted">{SECTIONS[id].subtitle}</p>
+            </div>
+            <div className="flex gap-4 overflow-hidden">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="w-64 shrink-0">
+                  <ResultCardSkeleton />
+                </div>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     );
@@ -94,21 +111,26 @@ export function HomeSections() {
   if (home.isError) {
     return (
       <div className="flex flex-col gap-8">
-        <ErrorState error={home.error} onRetry={() => home.refetch()} />
-        <EmptyBlocks withLocation />
+        <ErrorState
+          error={home.error}
+          title="Não foi possível carregar a descoberta perto de você"
+          onRetry={() => home.refetch()}
+        />
+        <EmptyBlocks mode="error" />
       </div>
     );
   }
 
-  const sections = ORDER.map((id) => ({ id, data: home.data.sections.find((s) => s.id === id) })).filter(
-    (s): s is { id: HomeSectionId; data: NonNullable<typeof s.data> } => !!s.data && s.data.items.length > 0,
-  );
-
-  if (sections.length === 0) return <EmptyBlocks withLocation />;
+  // Todos os blocos continuam na tela, na ordem do documento: o que veio sem itens mostra o estado vazio.
+  const byId = new Map(home.data.sections.map((s) => [s.id, s]));
+  const hasItems = (id: HomeSectionId) => (byId.get(id)?.items.length ?? 0) > 0;
+  if (!ORDER.some(hasItems)) return <EmptyBlocks mode="empty" />;
 
   return (
     <div className="flex flex-col gap-8">
-      {sections.map(({ id, data }) => {
+      {ORDER.map((id) => {
+        const data = byId.get(id);
+        if (!data || data.items.length === 0) return <EmptyBlocks key={id} mode="empty" only={[id]} />;
         const meta = SECTIONS[id];
         const titleId = `home-${id}`;
         return (

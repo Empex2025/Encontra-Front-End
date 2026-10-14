@@ -66,6 +66,11 @@ export function ComparisonPicker() {
           </button>
         )}
       </div>
+      {list.length === 0 && (
+        <p className="text-sm text-text-muted">
+          Você ainda não escolheu nenhuma opção. Busque abaixo e toque em “Comparar” no cartão.
+        </p>
+      )}
       {list.length > 0 && (
         <ul className="flex flex-wrap gap-2" aria-label="Itens escolhidos">
           {list.map((e) => (
@@ -102,13 +107,30 @@ export function ComparisonPicker() {
               className="h-12 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-9 text-text"
             />
           </label>
+          {q.length < 2 && (
+            <p className="text-sm text-text-muted">
+              Digite pelo menos 2 letras para ver o que dá para comparar perto de você.
+            </p>
+          )}
+          {search.isFetching && (
+            <p role="status" className="text-sm text-text-muted">
+              Buscando “{q}”…
+            </p>
+          )}
           {!hasLocation && q.length >= 2 && (
             <p className="text-sm text-text-muted">
               Defina seu local no topo da página para buscar o que está perto.
             </p>
           )}
-          {search.isError && <ErrorState error={search.error} onRetry={() => search.refetch()} />}
-          {search.data && items.length === 0 && (
+          {search.isError && (
+            <ErrorState
+              error={search.error}
+              title="Não foi possível buscar para comparar"
+              compact
+              onRetry={() => search.refetch()}
+            />
+          )}
+          {search.data && !search.isFetching && items.length === 0 && (
             <p className="text-sm text-text-muted">
               Nada comparável encontrado para “{q}”. Tente outro termo.
             </p>

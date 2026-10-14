@@ -10,7 +10,23 @@ import { buttonState, itemRef } from "@/lib/domain/comparison";
 /** Pílula "Comparar" do card: Comparar · Na comparação · Outra categoria · Comparação cheia. */
 export function CompareButton({ item, origin = "pesquisa" }: { item: SearchItem; origin?: string }) {
   const { list, toggle } = useComparisonSelection();
-  if (item.type === "place" || !item.group) return null;
+  // Lugares não entram na comparação (não há critérios comparáveis); a pílula nem aparece.
+  if (item.type === "place") return null;
+  if (!item.group) {
+    // Produto ou serviço sem grupo comparável vindo do servidor: o botão continua visível, desabilitado, com o motivo.
+    return (
+      <button
+        type="button"
+        disabled
+        title="Esta opção ainda não tem categoria comparável no servidor."
+        aria-label={`Comparar indisponível: ${item.title}`}
+        className="relative z-10 inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3 text-xs font-bold text-text-2 opacity-50"
+      >
+        <Scale className="size-3.5" aria-hidden />
+        Comparar
+      </button>
+    );
+  }
 
   const ref = itemRef(item.type, item.id);
   const state = buttonState(list, ref, item.group.id);

@@ -1,6 +1,9 @@
-import { Map as MapIcon } from "lucide-react";
+import { MapPanel } from "@/components/ui/map-panel";
 
-/** Espaço do mapa de resultados. O mapa real depende da escolha do serviço de mapas e de `GET /map` (docs/PENDENCIAS.md). */
+/**
+ * Mapa de resultados da Home. A estrutura (título, área, controles e legenda) fica visível; o mapa real depende da
+ * escolha do serviço de mapas e de `GET /map` (docs/PENDENCIAS.md). Nada é marcado sem coordenadas reais.
+ */
 export function HomeMap() {
   return (
     <section aria-labelledby="home-mapa" className="flex flex-col gap-3">
@@ -10,17 +13,7 @@ export function HomeMap() {
         </h2>
         <p className="text-sm text-text-muted">Lojas, ofertas e serviços perto de você</p>
       </div>
-      <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border-strong bg-surface-2 px-5 text-center">
-        <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent-text">
-          <MapIcon className="size-6" aria-hidden />
-        </span>
-        <p className="font-semibold text-text-strong">
-          O mapa entra assim que o serviço de mapas for definido
-        </p>
-        <p className="max-w-md text-sm text-text-muted">
-          Os marcadores só aparecem com coordenadas reais das lojas; nada é inventado.
-        </p>
-      </div>
+      <MapPanel total={null} withCoords={null} />
     </section>
   );
 }

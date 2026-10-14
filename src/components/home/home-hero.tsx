@@ -104,24 +104,41 @@ export function HomeHero() {
             </Pill>
           ))}
         </ChipRow>
-        {history.length > 0 && (
-          <ChipRow label="Buscas recentes">
-            {history.map((t) => (
+        <ChipRow label="Buscas recentes">
+          {history.length > 0 ? (
+            history.map((t) => (
               <Pill key={t} onClick={() => go(t)} icon={<History className="size-3.5" aria-hidden />}>
                 {t}
               </Pill>
-            ))}
-          </ChipRow>
-        )}
-        {popular.length > 0 && (
-          <ChipRow label="Buscas populares perto de você">
-            {popular.map((t) => (
+            ))
+          ) : (
+            <span className="text-sm text-text-muted">Nenhuma busca ainda neste aparelho</span>
+          )}
+        </ChipRow>
+        <ChipRow label="Buscas populares perto de você">
+          {popular.length > 0 ? (
+            popular.map((t) => (
               <Pill key={t} onClick={() => go(t)} icon={<TrendingUp className="size-3.5" aria-hidden />}>
                 {t}
               </Pill>
-            ))}
-          </ChipRow>
-        )}
+            ))
+          ) : trending.isError ? (
+            <span className="inline-flex items-center gap-2 text-sm text-text-muted" role="alert">
+              Não foi possível carregar.
+              <button
+                type="button"
+                onClick={() => void trending.refetch()}
+                className="h-10 font-semibold text-link underline"
+              >
+                Tentar de novo
+              </button>
+            </span>
+          ) : (
+            <span className="text-sm text-text-muted">
+              {trending.isPending ? "Carregando…" : "Sem dados disponíveis"}
+            </span>
+          )}
+        </ChipRow>
       </div>
     </section>
   );

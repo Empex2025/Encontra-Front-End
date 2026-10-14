@@ -126,13 +126,48 @@ export function ComparisonBoard() {
   );
 
   if (!enough || (data && items.length < MIN_COMPARE)) {
+    const chosen = Math.min(list.length, MAX_COMPARE);
     return (
-      <section className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-6">
-        <Scale className="size-8 text-text-subtle" aria-hidden />
-        <h2 className="text-lg font-bold text-text-strong">A comparação precisa de pelo menos 2 opções.</h2>
+      <section
+        aria-labelledby="comp-vazia"
+        className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6"
+      >
+        <div className="flex items-start gap-3">
+          <Scale className="mt-1 size-7 shrink-0 text-text-subtle" aria-hidden />
+          <div>
+            <h2 id="comp-vazia" className="text-lg font-bold text-text-strong">
+              {chosen === 0
+                ? "Nenhuma opção escolhida ainda"
+                : `Falta${MIN_COMPARE - chosen > 1 ? "m" : ""} ${MIN_COMPARE - chosen} ${MIN_COMPARE - chosen > 1 ? "opções" : "opção"} para comparar`}
+            </h2>
+            <p className="text-sm text-text-muted">
+              A comparação precisa de pelo menos {MIN_COMPARE} opções da mesma categoria. Na pesquisa acima ou
+              no Explorar, toque em “Comparar” nos cartões (até {MAX_COMPARE}).
+            </p>
+          </div>
+        </div>
+        <ul aria-label="Vagas da comparação" className="grid gap-3 sm:grid-cols-3">
+          {Array.from({ length: MAX_COMPARE }, (_, i) => {
+            const e = list[i];
+            return (
+              <li
+                key={i}
+                className={cn(
+                  "flex min-h-20 flex-col justify-center gap-0.5 rounded-xl border p-3",
+                  e ? "border-border bg-surface-2" : "border-dashed border-border-strong",
+                )}
+              >
+                <span className="text-xs font-bold text-text-subtle">Opção {i + 1}</span>
+                <span className={cn("text-sm", e ? "font-semibold text-text-strong" : "text-text-muted")}>
+                  {e ? e.group.label : "Vaga livre"}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
         <p className="text-sm text-text-muted">
-          Na pesquisa, toque em “Comparar” nos cartões. Você escolhe até {MAX_COMPARE} opções da mesma
-          categoria e elas aparecem aqui lado a lado.
+          Com {MIN_COMPARE} ou mais opções, o quadro mostra preço, distância e os demais critérios lado a
+          lado, vindos do servidor. Nada é preenchido por estimativa.
         </p>
         <div>{back}</div>
       </section>

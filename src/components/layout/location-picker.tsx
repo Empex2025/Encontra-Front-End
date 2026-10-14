@@ -142,6 +142,12 @@ export function LocationPicker() {
                   ))}
                 </ul>
               )}
+              {places.isError && (
+                <p role="status" className="text-xs text-text-muted">
+                  Não foi possível buscar sugestões de local agora. Você ainda pode digitar o bairro ou a
+                  cidade.
+                </p>
+              )}
               <button
                 type="button"
                 onClick={useGps}

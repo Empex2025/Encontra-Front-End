@@ -43,6 +43,18 @@ export function HeaderSearch({ className }: { className?: string }) {
         ...(sugg.data?.trending ?? []).map((t) => ({ text: t, kind: "trend" as const })),
       ];
 
+  // Painel sem linhas: explica por quê (carregando, erro ou sem sugestões) em vez de simplesmente não abrir.
+  const note =
+    rows.length > 0
+      ? null
+      : sugg.isError
+        ? "Não foi possível carregar sugestões. Digite o que procura e pressione Enter."
+        : sugg.isPending
+          ? "Carregando sugestões…"
+          : term
+            ? `Nenhuma sugestão. Pressione Enter para buscar “${term}”.`
+            : "Sem buscas recentes por aqui. Digite o que procura.";
+
   const go = (text: string) => {
     const t = text.trim();
     if (!t) return;
@@ -108,6 +120,15 @@ export function HeaderSearch({ className }: { className?: string }) {
           className="h-full min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-navy-200 focus-visible:outline-none"
         />
       </label>
+
+      {open && note && (
+        <div
+          role="status"
+          className="absolute top-13 right-0 left-0 z-50 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text-muted shadow-pop"
+        >
+          {note}
+        </div>
+      )}
 
       {open && rows.length > 0 && (
         <ul
