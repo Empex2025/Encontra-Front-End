@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { cn } from "@/components/ui/cn";
+import { InlineError } from "@/components/ui/inline-state";
 import { Tabs } from "@/components/ui/tabs";
 import { useSession } from "@/hooks/use-session";
 import { radar, type Radar, type RadarKind } from "@/lib/api/radar";
@@ -66,45 +67,16 @@ export function HomeRadar() {
       />
     );
   }
-  if (q.isError) {
-    // Erro no radar não derruba a Home. Quem tem conta vê o aviso com "Tentar de novo" (o radar é pessoal e
-    // sumir em silêncio parece "não há novidades"); visitante não perde nada, então a faixa só não aparece.
-    if (isGuest) return null;
-    return (
-      <section
-        role="alert"
-        aria-labelledby="radar-title"
-        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-navy p-5 text-white"
-      >
-        <div className="min-w-0">
-          <h2 id="radar-title" className="flex items-center gap-2 text-xl font-bold">
-            <RadarIcon className="size-5 text-amber" aria-hidden />
-            Meu Radar
-          </h2>
-          <p className="mt-1 text-sm text-navy-200">Não foi possível carregar seus avisos agora.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void q.refetch()}
-          disabled={q.isFetching}
-          className="inline-flex h-11 items-center rounded-xl border border-white/40 px-5 text-sm font-semibold hover:bg-white/10 disabled:opacity-60"
-        >
-          {q.isFetching ? "Tentando…" : "Tentar de novo"}
-        </button>
-      </section>
-    );
-  }
-  const items = visibleRadarItems(q.data.items, isGuest);
+  const items = visibleRadarItems(q.data?.items ?? [], isGuest);
   // conta só o que está na tela: o número do servidor pode incluir tipos que o front não mostra
   const unseen = items.filter((i) => !i.seen).length;
-  const guestNoData = isGuest && items.length === 0;
   const tabs = radarTabs(isGuest).map((id) => ({
     id,
     label: id === "all" ? "Tudo" : RADAR_KIND_LABEL[id],
     count: id === "all" ? items.length : items.filter((i) => i.kind === id).length,
   }));
   const shown = filterRadar(items, tab);
-  const line = q.data.tracking ? trackingLine(q.data.tracking) : null;
+  const line = q.data?.tracking ? trackingLine(q.data.tracking) : null;
 
   const open = (id: string, href: string | null) => {
     if (!isGuest) seen.mutate(id);
@@ -118,7 +90,11 @@ export function HomeRadar() {
         <div className="min-w-0">
           <h2 id="radar-title" className="flex items-center gap-2 text-xl font-bold">
             <RadarIcon className="size-5 text-amber" aria-hidden />
-            {isGuest ? "Deixe a plataforma procurar por você" : radarHeadline(unseen)}
+            {isGuest
+              ? "Deixe a plataforma procurar por você"
+              : q.isError
+                ? "Meu Radar"
+                : radarHeadline(unseen)}
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-navy-200">
             {isGuest
@@ -152,10 +128,14 @@ export function HomeRadar() {
         )}
       </div>
 
-      {guestNoData ? null : items.length === 0 ? (
-        <p className="mt-4 rounded-xl bg-navy-700/50 px-4 py-6 text-center text-sm text-navy-200">
-          Nada de novo por enquanto. Quando algo mudar perto de você, aparece aqui.
-        </p>
+      {q.isError ? (
+        <InlineError
+          dark
+          className="mt-4"
+          message="Não foi possível carregar seus avisos agora."
+          onRetry={() => void q.refetch()}
+          retrying={q.isFetching}
+        />
       ) : (
         <>
           <Tabs
@@ -166,6 +146,15 @@ export function HomeRadar() {
             label="Tipos de aviso"
             className="mt-4 border-navy-700"
           />
+          {shown.length === 0 && (
+            <p className="mt-3 rounded-xl bg-navy-700/50 px-4 py-6 text-center text-sm text-navy-200">
+              {items.length > 0
+                ? "Nenhum aviso deste tipo por enquanto."
+                : isGuest
+                  ? "Nenhum aviso de novidades ou preços perto de você por enquanto. Crie uma conta para o radar acompanhar também o que você segue."
+                  : "Nada de novo por enquanto. Quando algo mudar perto de você, aparece aqui."}
+            </p>
+          )}
           <ul className="mt-3 grid gap-2 md:grid-cols-2">
             {shown.map((i) => {
               const s = KIND_STYLE[i.kind];

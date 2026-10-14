@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, BadgeCheck, Bell, Flag, Heart, Navigation, Send } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Bell, Flag, Heart, Navigation, Send, VideoOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -11,6 +11,7 @@ import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ShareButton } from "@/components/catalog/share-button";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
+import { InlineError, ListSkeleton } from "@/components/ui/inline-state";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
 import { useUserLocation } from "@/hooks/use-user-location";
@@ -51,9 +52,15 @@ export function LiveView({ id }: { id: string }) {
         <ArrowLeft className="size-4" aria-hidden /> Voltar ao início
       </Link>
       {q.isPending ? (
-        <p role="status" className="py-16 text-center text-text-muted">
-          Carregando live…
-        </p>
+        <div
+          role="status"
+          aria-busy="true"
+          aria-label="Carregando live"
+          className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_360px]"
+        >
+          <div className="aspect-video animate-pulse rounded-2xl bg-surface-2" />
+          <div className="h-80 animate-pulse rounded-2xl bg-surface-2" />
+        </div>
       ) : notFound ? (
         <section className="flex flex-col items-center gap-3 py-16 text-center">
           <h1 className="text-2xl font-bold text-text-strong">Live não encontrada</h1>
@@ -173,10 +180,18 @@ function Content({ live }: { live: Live }) {
           ) : live.coverUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={live.coverUrl} alt="" className={cn("size-full object-cover", ended && "opacity-50")} />
-          ) : null}
+          ) : (
+            <span className="flex size-full items-center justify-center" aria-hidden>
+              <VideoOff className="size-12 text-white/40" />
+            </span>
+          )}
           {!live.streamUrl && !ended && (
-            <p className="absolute inset-x-0 bottom-14 text-center text-sm text-white/80">
-              O vídeo ainda não está disponível. Você pode acompanhar pelo chat.
+            <p
+              role="note"
+              className="absolute inset-x-3 bottom-3 rounded-lg bg-black/70 px-3 py-2 text-center text-xs text-white/90 sm:text-sm"
+            >
+              Vídeo da transmissão: serviço de streaming ainda não conectado. O chat e as ofertas abaixo
+              funcionam normalmente.
             </p>
           )}
           <div className="pointer-events-none absolute top-3 left-3 flex flex-wrap items-center gap-2 text-xs font-bold">
@@ -481,7 +496,17 @@ function Chat({
         aria-label="Mensagens do chat"
         className="flex h-[340px] flex-col gap-2 overflow-y-auto p-3"
       >
-        {q.isError && <li className="text-sm text-text-muted">Não foi possível atualizar o chat agora.</li>}
+        {q.isPending && (
+          <li>
+            <ListSkeleton rows={4} label="Carregando mensagens" />
+          </li>
+        )}
+        {!q.isPending && !q.isError && (q.data ?? []).length === 0 && (
+          <li className="rounded-lg bg-surface-2 px-3 py-4 text-center text-sm text-text-muted">
+            Nenhuma mensagem ainda.{" "}
+            {ended ? "O chat foi encerrado com a live." : "Seja a primeira pessoa a escrever."}
+          </li>
+        )}
         {(q.data ?? []).map((m) => (
           <li
             key={m.id}
@@ -499,6 +524,14 @@ function Chat({
           </li>
         ))}
       </ul>
+      {q.isError && (
+        <InlineError
+          className="mx-3 mb-2"
+          message="Não foi possível atualizar o chat agora."
+          onRetry={() => void q.refetch()}
+          retrying={q.isFetching}
+        />
+      )}
       {ended ? (
         <p className="border-t border-border p-3 text-sm text-text-muted">O chat foi encerrado com a live.</p>
       ) : (
@@ -550,12 +583,24 @@ function OtherLives({ id }: { id: string }) {
     retry: false,
   });
   const items = q.data?.items ?? [];
-  if (items.length === 0) return null;
   return (
     <section className="flex flex-col gap-2 rounded-2xl border border-border bg-surface p-3">
       <h2 className="flex items-center gap-2 font-bold text-text-strong">
         <Bell className="size-4" aria-hidden /> Outras lives agora
       </h2>
+      {q.isError ? (
+        <InlineError
+          message="Não foi possível carregar as outras lives."
+          onRetry={() => void q.refetch()}
+          retrying={q.isFetching}
+        />
+      ) : q.isPending ? (
+        <ListSkeleton rows={2} label="Carregando outras lives" />
+      ) : items.length === 0 ? (
+        <p className="text-sm text-text-muted">
+          Nenhuma outra live acontecendo perto de você agora. Volte mais tarde ou ligue o lembrete da loja.
+        </p>
+      ) : null}
       <ul className="flex flex-col gap-2">
         {items.map((l) => (
           <li key={l.id} className="flex items-center gap-3">
