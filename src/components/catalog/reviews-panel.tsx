@@ -8,14 +8,15 @@ import { useState } from "react";
 
 import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
-import { ErrorState } from "@/components/ui/error-state";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
+import { useToast } from "@/components/ui/toast";
 import { actions } from "@/lib/api/actions";
 import { catalog, type Review, type ReviewSort } from "@/lib/api/catalog";
 import { formatRating, formatTimeAgo } from "@/lib/format";
 import { denunciarHref } from "@/lib/routes";
 
+import { BlockSkeleton, SectionError } from "./section-state";
 import { Stars } from "./stars";
 
 /**
@@ -27,14 +28,14 @@ export function ReviewsPanel({
   slug,
   reviewHref,
   reviewLabel,
-  reportKind,
+  reportKind = true,
 }: {
   target: "products" | "profiles";
   slug: string;
   /** Destino de "Avaliar…" (tela Avaliar); visitante vê o convite antes. */
   reviewHref: string;
   reviewLabel: string;
-  /** Mostra "Denunciar" em cada avaliação. */
+  /** Mostra "Denunciar" em cada avaliação (padrão: sim). */
   reportKind?: boolean;
 }) {
   const router = useRouter();
@@ -50,14 +51,8 @@ export function ReviewsPanel({
     getNextPageParam: (last) => (last.page * last.limit < last.total ? last.page + 1 : undefined),
   });
 
-  if (q.isPending)
-    return (
-      <div aria-busy="true" className="flex animate-pulse flex-col gap-3" aria-label="Carregando avaliações">
-        <div className="h-24 rounded-xl bg-surface-2" />
-        <div className="h-20 rounded-xl bg-surface-2" />
-      </div>
-    );
-  if (q.isError) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  if (q.isPending) return <BlockSkeleton label="Carregando avaliações" />;
+  if (q.isError) return <SectionError what="as avaliações" error={q.error} onRetry={() => q.refetch()} />;
 
   const first = q.data.pages[0];
   const items = q.data.pages.flatMap((p) => p.items);
@@ -82,7 +77,7 @@ export function ReviewsPanel({
         <ul className="flex flex-1 flex-col gap-1.5" aria-label="Distribuição das notas">
           {[5, 4, 3, 2, 1].map((n) => {
             const c = summary.distribution[String(n)] ?? 0;
-            const pct = summary.total ? Math.round((c / summary.total) * 100) : 0;
+            const pct = summary.total ? `${Math.round((c / summary.total) * 100)}%` : "—";
             return (
               <li key={n} className="flex items-center gap-2 text-sm text-text-muted">
                 <span className="w-4 text-right">{n}</span>
@@ -92,7 +87,7 @@ export function ReviewsPanel({
                     style={{ width: `${(c / maxCount) * 100}%` }}
                   />
                 </span>
-                <span className="w-10 text-right">{pct}%</span>
+                <span className="w-10 text-right">{pct}</span>
               </li>
             );
           })}
@@ -122,6 +117,9 @@ export function ReviewsPanel({
       </button>
 
       <div className="flex flex-wrap items-center gap-2">
+        {first.filters.length === 0 && (
+          <Chip label="Todas" count={summary.total} size="sm" selected onClick={() => setFilter("all")} />
+        )}
         {first.filters.map((f) => (
           <Chip
             key={f.id}
@@ -146,9 +144,16 @@ export function ReviewsPanel({
       </div>
 
       {items.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 p-4 text-sm text-text-muted">
-          {filter === "all" ? "Ainda não há avaliações." : "Nenhuma avaliação neste filtro."}
-        </p>
+        <div className="flex flex-col gap-1 rounded-xl border border-dashed border-border-strong bg-surface-2 p-4 text-sm">
+          <p className="font-semibold text-text">
+            {filter === "all" ? "Ainda não há avaliações." : "Nenhuma avaliação neste filtro."}
+          </p>
+          <p className="text-text-muted">
+            {filter === "all"
+              ? "Quando alguém avaliar, as notas, os filtros e os comentários aparecem aqui. Você pode ser a primeira pessoa a avaliar."
+              : "Escolha outro filtro para ver as demais avaliações."}
+          </p>
+        </div>
       ) : (
         <ul className="flex flex-col gap-4">
           {items.map((r) => (
@@ -173,6 +178,7 @@ export function ReviewsPanel({
 
 function ReviewItem({ review, reportKind }: { review: Review; reportKind?: boolean }) {
   const requireAuth = useRequireAuth();
+  const toast = useToast();
   const [on, setOn] = useState(review.markedHelpful);
   const [count, setCount] = useState(review.helpfulCount);
   const ago = formatTimeAgo(review.createdAt);
@@ -184,9 +190,10 @@ function ReviewItem({ review, reportKind }: { review: Review; reportKind?: boole
       setCount((c) => c + (next ? 1 : -1));
     },
     onSuccess: (d) => setCount(d.helpfulCount),
-    onError: (_e, next) => {
+    onError: (e, next) => {
       setOn(!next);
       setCount((c) => c + (next ? -1 : 1));
+      toast(e instanceof Error ? e.message : "Não foi possível registrar seu voto agora.", "info");
     },
   });
   useResumeAction("helpful", review.id, () => {
@@ -204,7 +211,11 @@ function ReviewItem({ review, reportKind }: { review: Review; reportKind?: boole
             .join(" · ")}
         </span>
       </div>
-      <p className="text-text">{review.text}</p>
+      {review.text ? (
+        <p className="text-text">{review.text}</p>
+      ) : (
+        <p className="text-sm text-text-muted">Esta pessoa deu a nota sem escrever comentário.</p>
+      )}
       {review.photoUrls.length > 0 && (
         <ul className="flex flex-wrap gap-2">
           {review.photoUrls.map((u) => (

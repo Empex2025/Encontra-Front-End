@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/components/ui/cn";
-import { ErrorState } from "@/components/ui/error-state";
+import { PageError } from "@/components/catalog/section-state";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { useSession } from "@/hooks/use-session";
@@ -62,21 +62,44 @@ export function ReviewForm({ tipo, id }: { tipo: string | undefined; id: string 
     queryFn: () => reviews.target(tipo as ReviewType, id!),
     retry: (n, e) => !(e instanceof ApiError && e.status === 404) && n < 2,
   });
-  if (!valid) return <Missing />;
-  if (target.isPending) return <p className="text-text-muted">Carregando…</p>;
+  if (!valid) return <Missing reason="link" />;
+  if (target.isPending)
+    return (
+      <div
+        aria-busy="true"
+        aria-label="Carregando o item a avaliar"
+        className="mx-auto flex w-full max-w-2xl animate-pulse flex-col gap-4"
+      >
+        <div className="h-8 w-1/2 rounded bg-surface-2" />
+        <div className="h-20 rounded-2xl bg-surface-2" />
+        <div className="h-32 rounded-2xl bg-surface-2" />
+      </div>
+    );
   if (target.isError)
     return target.error instanceof ApiError && target.error.status === 404 ? (
-      <Missing />
+      <Missing reason="notfound" />
     ) : (
-      <ErrorState error={target.error} onRetry={() => target.refetch()} />
+      <PageError
+        what="o item a avaliar"
+        error={target.error}
+        onRetry={() => target.refetch()}
+        backHref={routes.explorar}
+        backLabel="Buscar no Explorar"
+      />
     );
   return <Form type={tipo as ReviewType} slug={id!} target={target.data} />;
 }
 
-function Missing() {
+/** `link`: o endereço veio sem tipo/identificador válidos. `notfound`: o item não existe mais. */
+function Missing({ reason }: { reason: "link" | "notfound" }) {
   return (
     <section className="mx-auto flex max-w-lg flex-col items-center gap-3 py-16 text-center">
       <h1 className="text-2xl font-bold text-text-strong">Não encontramos o que você quer avaliar</h1>
+      <p className="text-text-muted">
+        {reason === "link"
+          ? "O endereço está incompleto. Para avaliar, abra um produto, uma loja ou um prestador e toque em “Avaliar”."
+          : "O item pode ter sido removido ou o endereço está incorreto."}
+      </p>
       <Link
         href={routes.explorar}
         className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-on-primary"

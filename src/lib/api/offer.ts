@@ -15,15 +15,17 @@ export const offerPageSchema = z.object({
   imageUrl: nstr,
   status: z.enum(["active", "ended"]),
   endsAt: nstr,
-  profile: profileSummarySchema.pick({
-    id: true,
-    slug: true,
-    kind: true,
-    name: true,
-    avatarUrl: true,
-    whatsapp: true,
-    status: true,
-  }),
+  profile: profileSummarySchema
+    .pick({
+      id: true,
+      slug: true,
+      kind: true,
+      name: true,
+      avatarUrl: true,
+      whatsapp: true,
+      status: true,
+    })
+    .extend({ verification: profileSummarySchema.shape.verification.optional() }),
   product: z
     .object({
       slug: z.string(),

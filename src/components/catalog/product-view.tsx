@@ -1,16 +1,15 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Bell, Check, Clock, MapPin, Minus, Plus, Scale, Star, Tag } from "lucide-react";
+import { Bell, Check, Clock, MapPin, Minus, Navigation, Plus, Scale, Star, Tag } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useRequireAuth } from "@/components/auth/auth-invite";
-import { ResultCard, ResultCardSkeleton, targetTypeOf } from "@/components/search/result-card";
+import { ResultCard, targetTypeOf } from "@/components/search/result-card";
 import { WantDialog } from "@/components/search/want-dialog";
 import { cn } from "@/components/ui/cn";
-import { ErrorState } from "@/components/ui/error-state";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import { useResumeAction } from "@/hooks/use-resume-action";
@@ -23,7 +22,9 @@ import { ApiError } from "@/lib/api/client";
 import type { AlertCondition } from "@/lib/api/actions";
 import { categoryById } from "@/lib/domain/categories";
 import { buttonState, itemRef } from "@/lib/domain/comparison";
+import { routeUrl } from "@/lib/domain/offer";
 import { markViewed } from "@/lib/domain/recently-viewed";
+import { priceSignal, stockSignal, textSignal, verificationSignal } from "@/lib/domain/trust";
 import { productMessage, QUICK_QUESTIONS } from "@/lib/domain/whatsapp";
 import { discountPct, formatCount, formatDayMonth, formatKm, formatMoney, formatRating } from "@/lib/format";
 import {
@@ -44,8 +45,10 @@ import { FavoriteButton } from "./favorite-button";
 import { FollowButton } from "./follow-button";
 import { Gallery } from "./gallery";
 import { ReviewsPanel } from "./reviews-panel";
+import { CardsSkeleton, EmptyNote, PageError, Section, SectionError } from "./section-state";
 import { ShareButton } from "./share-button";
 import { StatusLine } from "./status-line";
+import { TrustSignals } from "./trust-signals";
 
 type TabId = "descricao" | "avaliacoes" | "loja";
 
@@ -59,7 +62,15 @@ export function ProductView({ slug }: { slug: string }) {
   if (q.isPending) return <ProductSkeleton />;
   if (q.isError) {
     if (q.error instanceof ApiError && q.error.status === 404) return <NotFound />;
-    return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+    return (
+      <PageError
+        what="o produto"
+        error={q.error}
+        onRetry={() => q.refetch()}
+        backHref={routes.explorar}
+        backLabel="Buscar outros produtos"
+      />
+    );
   }
   return <ProductContent product={q.data} />;
 }
@@ -89,6 +100,8 @@ function ProductContent({ product: p }: { product: Product }) {
   const priceDate = p.price?.updatedAt ? formatDayMonth(p.price.updatedAt) : null;
   const max = Math.max(1, Math.min(p.maxQuantity, p.stock.units ?? p.maxQuantity));
   const hasAlert = !!p.alert;
+  const route = routeUrl({ lat: p.location.lat, lng: p.location.lng, address: p.about.address });
+  const stock = stockSignal(p.stock);
 
   const message = productMessage({
     store: p.profile.name,
@@ -183,7 +196,7 @@ function ProductContent({ product: p }: { product: Product }) {
               ) : (
                 <span>Ainda sem avaliações</span>
               )}
-              {p.sold !== null && <span>· {formatCount(p.sold)} vendidos</span>}
+              <span>· {p.sold !== null ? `${formatCount(p.sold)} vendidos` : "Vendas não informadas"}</span>
             </p>
           </div>
 
@@ -205,9 +218,11 @@ function ProductContent({ product: p }: { product: Product }) {
                     </>
                   )}
                 </p>
-                {priceDate && (
-                  <p className="text-xs text-text-subtle">Preço informado pela loja em {priceDate}</p>
-                )}
+                <p className="text-xs text-text-subtle">
+                  {priceDate
+                    ? `Preço informado pela loja em ${priceDate}`
+                    : "Preço informado pela loja. Data da atualização não informada."}
+                </p>
               </>
             ) : (
               <p className="text-lg font-semibold text-text-muted">Preço não informado. Pergunte à loja.</p>
@@ -248,6 +263,20 @@ function ProductContent({ product: p }: { product: Product }) {
             >
               · Ver no mapa
             </Link>
+            {route ? (
+              <a
+                href={route}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => track({ type: "ROUTE_REQUESTED", targetType: "PRODUCT", targetId: p.id })}
+                className="inline-flex items-center gap-1 font-semibold text-link hover:underline"
+              >
+                <Navigation className="size-4" aria-hidden />
+                Como chegar
+              </a>
+            ) : (
+              <span className="text-text-subtle">· Como chegar indisponível: endereço não informado</span>
+            )}
           </p>
 
           {p.sizes && p.sizes.length > 0 && (
@@ -289,25 +318,30 @@ function ProductContent({ product: p }: { product: Product }) {
             </fieldset>
           )}
 
-          <p
-            className={cn(
-              "flex items-center gap-2 text-sm font-semibold",
-              p.stock.state === "available" ? "text-success-text" : "text-text-muted",
+          <div className="flex flex-col gap-0.5">
+            <p
+              className={cn(
+                "flex items-center gap-2 text-sm font-semibold",
+                p.stock.state === "available" ? "text-success-text" : "text-text-muted",
+              )}
+            >
+              {p.stock.state === "available" && <Check className="size-4" aria-hidden />}
+              {p.stock.state === "available"
+                ? [
+                    "Disponível segundo a loja",
+                    p.stock.units !== null ? `${p.stock.units} unidades` : null,
+                    p.stock.pickupText,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                : p.stock.state === "unavailable"
+                  ? "Indisponível segundo a loja"
+                  : "Disponibilidade não informada. Pergunte à loja."}
+            </p>
+            {stock.hint && p.stock.state !== "unknown" && (
+              <p className="text-xs text-text-subtle">{stock.hint}</p>
             )}
-          >
-            {p.stock.state === "available" && <Check className="size-4" aria-hidden />}
-            {p.stock.state === "available"
-              ? [
-                  "Disponível",
-                  p.stock.units !== null ? `${p.stock.units} unidades na loja` : null,
-                  p.stock.pickupText,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")
-              : p.stock.state === "unavailable"
-                ? "Indisponível no momento"
-                : "Disponibilidade não informada. Pergunte à loja."}
-          </p>
+          </div>
 
           <div className="flex items-center gap-3">
             <div>
@@ -382,6 +416,17 @@ function ProductContent({ product: p }: { product: Product }) {
 
           <CompareBlock product={p} />
 
+          <TrustSignals
+            id="confianca-produto"
+            description="O que a loja informou e o que a EncontraÊ conseguiu confirmar."
+            signals={[
+              verificationSignal(p.profile.verification),
+              priceSignal(p.price),
+              stock,
+              textSignal("Tempo de resposta", p.profile.responseTime),
+            ]}
+          />
+
           {p.coupon && <CouponCard coupon={p.coupon} productTitle={p.title} />}
 
           {p.sameLine && p.sameLine.count > 0 && (
@@ -401,15 +446,23 @@ function ProductContent({ product: p }: { product: Product }) {
             </Link>
           )}
 
-          {p.storeBadges.length > 0 && (
-            <ul className="flex flex-wrap gap-2">
-              {p.storeBadges.map((b) => (
-                <li key={b} className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-text-2">
-                  {b}
-                </li>
-              ))}
-            </ul>
-          )}
+          <section aria-label="Selos da loja" className="flex flex-col gap-1.5">
+            <h2 className="text-sm font-bold text-text-strong">Selos da loja</h2>
+            {p.storeBadges.length > 0 ? (
+              <ul className="flex flex-wrap gap-2">
+                {p.storeBadges.map((b) => (
+                  <li
+                    key={b}
+                    className="rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-text-2"
+                  >
+                    {b}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-text-muted">A loja não informou selos.</p>
+            )}
+          </section>
         </div>
       </div>
 
@@ -434,9 +487,9 @@ function ProductContent({ product: p }: { product: Product }) {
               ) : (
                 <p className="text-text-muted">A loja ainda não escreveu uma descrição.</p>
               )}
-              {p.specs.length > 0 && (
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-lg font-bold text-text-strong">Informações técnicas</h2>
+              <div className="flex flex-col gap-2">
+                <h2 className="text-lg font-bold text-text-strong">Informações técnicas</h2>
+                {p.specs.length > 0 ? (
                   <dl className="divide-y divide-border overflow-hidden rounded-xl border border-border">
                     {p.specs.map((s) => (
                       <div
@@ -448,8 +501,10 @@ function ProductContent({ product: p }: { product: Product }) {
                       </div>
                     ))}
                   </dl>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-text-muted">A loja não informou características técnicas.</p>
+                )}
+              </div>
             </div>
           )}
           {tab === "avaliacoes" && (
@@ -513,7 +568,31 @@ function Info({ label, value }: { label: string; value: string | null }) {
 function CompareBlock({ product: p }: { product: Product }) {
   const { list, toggle, clear } = useComparisonSelection();
   const toast = useToast();
-  if (!p.group) return null;
+  if (!p.group)
+    return (
+      <section aria-label="Comparação" className="flex flex-col gap-2 rounded-xl border border-border p-4">
+        <button
+          type="button"
+          disabled
+          aria-describedby="compare-off"
+          className="inline-flex h-10 items-center gap-2 self-start rounded-full border border-border px-4 text-sm font-bold text-text-subtle disabled:cursor-not-allowed"
+        >
+          <Scale className="size-4" aria-hidden />
+          Comparar
+        </button>
+        <p id="compare-off" className="text-sm text-text-muted">
+          Este produto ainda não tem um grupo de comparação definido, então não dá para compará-lo com outras
+          lojas. Você pode{" "}
+          <Link
+            href={`${routes.explorar}?q=${encodeURIComponent(p.title)}`}
+            className="font-semibold text-link hover:underline"
+          >
+            buscar opções parecidas
+          </Link>
+          .
+        </p>
+      </section>
+    );
   const ref = itemRef("product", p.id);
   const state = buttonState(list, ref, p.group.id);
   const group = p.group;
@@ -581,43 +660,45 @@ function CompareBlock({ product: p }: { product: Product }) {
 
 function Related({ slug }: { slug: string }) {
   const q = useQuery({ queryKey: ["product", slug, "related"], queryFn: () => catalog.related(slug) });
-  if (q.isPending)
-    return (
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-hidden>
-        {Array.from({ length: 4 }, (_, i) => (
-          <ResultCardSkeleton key={i} />
-        ))}
-      </div>
-    );
-  if (q.isError || q.data.items.length === 0) return null;
   return (
-    <section aria-labelledby="related-title" className="flex flex-col gap-3">
-      <div className="flex items-end justify-between">
-        <h2 id="related-title" className="text-xl font-bold text-text-strong">
-          Quem viu este produto também viu
-        </h2>
-        <Link href={routes.explorar} className="py-2 text-sm font-semibold text-link hover:underline">
-          Ver todos
-        </Link>
-      </div>
-      <ul className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
-        {q.data.items.slice(0, 4).map((item, i) => (
-          <li key={item.id}>
-            <ResultCard
-              item={item}
-              onOpen={() =>
-                track({
-                  type: "SEARCH_RESULT_CLICK",
-                  targetType: targetTypeOf(item),
-                  targetId: item.id,
-                  props: { q: null, position: i + 1, sponsored: item.sponsored, source: "product:related" },
-                })
-              }
-            />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Section
+      id="related"
+      title="Quem viu este produto também viu"
+      description="Outros produtos que costumam interessar a quem viu este."
+      action={{ href: routes.explorar, label: "Ver todos" }}
+    >
+      {q.isPending ? (
+        <CardsSkeleton label="Carregando produtos relacionados" />
+      ) : q.isError ? (
+        <SectionError what="os produtos relacionados" error={q.error} onRetry={() => q.refetch()} />
+      ) : q.data.items.length === 0 ? (
+        <EmptyNote title="Ainda não há produtos relacionados a este.">
+          Quando outras pessoas virem produtos parecidos, eles aparecem aqui. Enquanto isso,{" "}
+          <Link href={routes.explorar} className="font-semibold text-link hover:underline">
+            busque no Explorar
+          </Link>
+          .
+        </EmptyNote>
+      ) : (
+        <ul className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-4">
+          {q.data.items.slice(0, 4).map((item, i) => (
+            <li key={item.id}>
+              <ResultCard
+                item={item}
+                onOpen={() =>
+                  track({
+                    type: "SEARCH_RESULT_CLICK",
+                    targetType: targetTypeOf(item),
+                    targetId: item.id,
+                    props: { q: null, position: i + 1, sponsored: item.sponsored, source: "product:related" },
+                  })
+                }
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }
 

@@ -93,6 +93,8 @@ export const productSchema = z.object({
     state: z.enum(["available", "unavailable", "unknown"]),
     units: z.number().int().nonnegative().nullable(),
     pickupText: nullableStr,
+    /** Quando a loja informou a disponibilidade (sinal de confiança; ausente = "não informado"). */
+    updatedAt: nullableStr.optional(),
   }),
   maxQuantity: z.number().int().min(1).max(6),
   storeBadges: z.array(z.string()),
@@ -163,6 +165,8 @@ export const profileSchema = profileSummarySchema.extend({
   badges: z.array(z.string()),
   payment: z.array(z.string()),
   cnpjVerified: z.boolean(),
+  /** Última atualização do perfil pela loja (sinal de confiança; ausente = "não informado"). */
+  updatedAt: nullableStr.optional(),
   highlights: z.array(
     z.object({ id: z.string(), label: z.string(), coverUrl: nullableStr, seen: z.boolean() }),
   ),

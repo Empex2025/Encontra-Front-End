@@ -8,12 +8,14 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/catalog/avatar";
 import { ContactButtons } from "@/components/catalog/contact-buttons";
 import { CouponCard } from "@/components/catalog/coupon-card";
+import { EmptyNote, PageError, Section } from "@/components/catalog/section-state";
 import { StatusLine } from "@/components/catalog/status-line";
-import { ErrorState } from "@/components/ui/error-state";
+import { TrustSignals } from "@/components/catalog/trust-signals";
 import { ResultCard } from "@/components/search/result-card";
 import { ApiError } from "@/lib/api/client";
 import { offerApi, type OfferPage } from "@/lib/api/offer";
 import { countdownText, msLeft, offerEnded, routeUrl } from "@/lib/domain/offer";
+import { textSignal, verificationSignal } from "@/lib/domain/trust";
 import { formatKm, formatMoney } from "@/lib/format";
 import { lojaHref, prestadorHref, produtoHref, routes } from "@/lib/routes";
 
@@ -33,7 +35,15 @@ export function OfferView({ slug }: { slug: string }) {
     );
   if (q.isError) {
     if (q.error instanceof ApiError && q.error.status === 404) return <Gone />;
-    return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+    return (
+      <PageError
+        what="a oferta"
+        error={q.error}
+        onRetry={() => q.refetch()}
+        backHref={routes.ofertas}
+        backLabel="Ver ofertas perto de você"
+      />
+    );
   }
   return <OfferContent offer={q.data} />;
 }
@@ -147,10 +157,35 @@ function OfferContent({ offer: o }: { offer: OfferPage }) {
             </span>
           </p>
         )}
+        {!ended && !o.endsAt && (
+          <p className="flex items-center gap-2 text-sm text-text-muted">
+            <Clock className="size-4" aria-hidden />
+            Prazo da oferta não informado. Confirme com a loja.
+          </p>
+        )}
         <StatusLine status={o.profile.status} />
       </header>
 
       {!ended && o.coupon && <CouponCard coupon={o.coupon} productTitle={o.product?.title} />}
+
+      <TrustSignals
+        id="confianca-oferta"
+        description="O que a loja informou sobre esta oferta."
+        signals={[
+          verificationSignal(o.profile.verification),
+          {
+            label: "Situação da oferta",
+            value: ended ? "Encerrada" : "Ativa segundo a loja",
+            tone: "neutral",
+            hint: ended ? undefined : "Confirme preço e disponibilidade com a loja antes de ir.",
+          },
+          textSignal("Preço do produto", o.product ? formatMoney(o.product.priceCents) : null),
+          {
+            ...textSignal("Horário da loja", o.profile.status?.text),
+            tone: o.profile.status ? "neutral" : "unknown",
+          },
+        ]}
+      />
 
       {!ended && (
         <ContactButtons
@@ -161,34 +196,59 @@ function OfferContent({ offer: o }: { offer: OfferPage }) {
         />
       )}
 
-      {(o.location.address || o.location.neighborhood) && (
-        <section className="rounded-2xl border border-border bg-surface p-4">
-          <p className="flex items-start gap-2 text-text">
-            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <span>
-              {o.location.address ?? o.location.neighborhood}
-              {o.location.distanceKm !== null && (
-                <span className="block text-sm text-text-muted">
-                  {formatKm(o.location.distanceKm)} de você
-                </span>
-              )}
+      <section aria-labelledby="onde-t" className="rounded-2xl border border-border bg-surface p-4">
+        <h2 id="onde-t" className="mb-2 text-lg font-bold text-text-strong">
+          Onde fica
+        </h2>
+        <p className="flex items-start gap-2 text-text">
+          <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            {o.location.address ?? o.location.neighborhood ?? "Endereço não informado"}
+            <span className="block text-sm text-text-muted">
+              {o.location.distanceKm !== null
+                ? `${formatKm(o.location.distanceKm)} de você`
+                : "Distância indisponível"}
             </span>
-          </p>
-          {route && (
-            <a
-              href={route}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 inline-flex min-h-11 items-center gap-2 font-semibold text-link hover:underline"
+          </span>
+        </p>
+        {route ? (
+          <a
+            href={route}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex min-h-11 items-center gap-2 font-semibold text-link hover:underline"
+          >
+            <Navigation className="size-4" aria-hidden /> Como chegar
+          </a>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled
+              aria-describedby="rota-oferta-off"
+              className="mt-2 inline-flex min-h-11 items-center gap-2 font-semibold text-text-subtle disabled:cursor-not-allowed"
             >
               <Navigation className="size-4" aria-hidden /> Como chegar
-            </a>
-          )}
-        </section>
-      )}
+            </button>
+            <p id="rota-oferta-off" className="text-xs text-text-muted">
+              Sem endereço ou localização informados, não dá para traçar a rota.
+            </p>
+          </>
+        )}
+      </section>
 
-      {o.more.length > 0 && <Related title="Mais desta loja" items={o.more.slice(0, 3)} />}
-      {o.similar.length > 0 && <Related title="Parecidos perto" items={o.similar.slice(0, 3)} />}
+      <Related
+        id="mais"
+        title="Mais desta loja"
+        description="Outros produtos e ofertas de quem publicou esta."
+        items={o.more.slice(0, 3)}
+      />
+      <Related
+        id="parecidos"
+        title="Parecidos perto"
+        description="Opções semelhantes na região, para comparar."
+        items={o.similar.slice(0, 3)}
+      />
 
       <footer className="flex flex-wrap gap-4 border-t border-border pt-4 text-sm">
         <Link href="/institucional/termos" className="text-link hover:underline">
@@ -208,17 +268,32 @@ function OfferContent({ offer: o }: { offer: OfferPage }) {
   );
 }
 
-function Related({ title, items }: { title: string; items: OfferPage["more"] }) {
+function Related({
+  id,
+  title,
+  description,
+  items,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  items: OfferPage["more"];
+}) {
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="text-lg font-bold text-text-strong">{title}</h2>
-      <ul className="grid gap-3 sm:grid-cols-3">
-        {items.map((it) => (
-          <li key={`${it.type}-${it.id}`}>
-            <ResultCard item={it} />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <Section id={id} title={title} description={description} level={3}>
+      {items.length === 0 ? (
+        <EmptyNote title="Nada para mostrar aqui por enquanto.">
+          Quando houver outras ofertas ou produtos relacionados, eles aparecem nesta seção.
+        </EmptyNote>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {items.map((it) => (
+            <li key={`${it.type}-${it.id}`}>
+              <ResultCard item={it} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
   );
 }

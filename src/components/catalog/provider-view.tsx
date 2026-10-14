@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { BadgeCheck, Clock, Home, MapPin, ShieldCheck, ThumbsUp, Wrench } from "lucide-react";
+import { Clock, Home, MapPin, ThumbsUp, Wrench, Award } from "lucide-react";
 import { useState } from "react";
 
 import { useRequireAuth } from "@/components/auth/auth-invite";
@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 
 import { ContactButtons } from "./contact-buttons";
 import { ReviewsPanel } from "./reviews-panel";
+import { EmptyNote } from "./section-state";
 import { SimilarProfiles } from "./profile-view";
 
 const DAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -36,12 +37,21 @@ export function ProviderBody({ profile: p, provider: v }: { profile: Profile; pr
   const [serviceId, setServiceId] = useState<string | null>(null);
   const service = v.services.find((s) => s.id === serviceId) ?? null;
   const target = { targetType: "PROVIDER" as const, targetId: p.id };
-  const seals = [
-    p.verification === "verified" && { icon: BadgeCheck, text: "Identidade verificada" },
-    p.cnpjVerified && { icon: ShieldCheck, text: "CNPJ verificado" },
-    v.recommendPct !== null && { icon: ThumbsUp, text: `${v.recommendPct}% recomendam` },
-    v.jobsDone !== null && { icon: Wrench, text: `${v.jobsDone} serviços feitos` },
-  ].filter(Boolean) as { icon: typeof BadgeCheck; text: string }[];
+  // indicadores sempre presentes: sem dado, "—" (nunca 0)
+  const indicators = [
+    {
+      icon: ThumbsUp,
+      label: "Recomendam",
+      value: v.recommendPct !== null ? `${v.recommendPct}%` : "—",
+    },
+    { icon: Wrench, label: "Serviços feitos", value: v.jobsDone !== null ? String(v.jobsDone) : "—" },
+    {
+      icon: Award,
+      label: "Experiência",
+      value: v.yearsExperience !== null ? `${v.yearsExperience} anos` : "—",
+    },
+    { icon: Clock, label: "Próximo horário", value: v.nextSlot ?? "—" },
+  ];
 
   return (
     <div className="flex flex-col gap-8">
@@ -65,36 +75,25 @@ export function ProviderBody({ profile: p, provider: v }: { profile: Profile; pr
               Atende em domicílio{v.homeRadiusKm ? ` até ${v.homeRadiusKm} km` : ""}
             </span>
           )}
-          {v.yearsExperience !== null && <span>{v.yearsExperience} anos de experiência</span>}
-          {v.nextSlot && (
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-4" aria-hidden />
-              Próximo horário: {v.nextSlot}
-            </span>
-          )}
         </p>
-        {seals.length > 0 && (
-          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {seals.map((s) => (
-              <li
-                key={s.text}
-                className="flex items-center gap-2 rounded-xl bg-surface-2 p-3 text-sm font-semibold text-text"
-              >
-                <s.icon className="size-5 shrink-0 text-primary" aria-hidden />
-                {s.text}
-              </li>
-            ))}
-          </ul>
-        )}
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Indicadores do prestador">
+          {indicators.map((i) => (
+            <div key={i.label} className="flex items-center gap-2 rounded-xl bg-surface-2 p-3">
+              <i.icon className="size-5 shrink-0 text-primary" aria-hidden />
+              <div className="min-w-0">
+                <dt className="text-xs text-text-muted">{i.label}</dt>
+                <dd className="text-sm font-bold text-text-strong">{i.value}</dd>
+              </div>
+            </div>
+          ))}
+        </dl>
         <nav aria-label="Atalhos" className="flex flex-wrap gap-4 text-sm font-semibold text-link">
           <a href="#servicos" className="hover:underline">
             Serviços
           </a>
-          {v.photos.length > 0 && (
-            <a href="#fotos" className="hover:underline">
-              Fotos
-            </a>
-          )}
+          <a href="#fotos" className="hover:underline">
+            Fotos
+          </a>
           <a href="#avaliacoes" className="hover:underline">
             Avaliações
           </a>
@@ -109,9 +108,9 @@ export function ProviderBody({ profile: p, provider: v }: { profile: Profile; pr
           Serviços
         </h2>
         {v.services.length === 0 ? (
-          <p className="text-text-muted">
-            O prestador ainda não cadastrou serviços. Converse para pedir um orçamento.
-          </p>
+          <EmptyNote title="O prestador ainda não cadastrou serviços.">
+            Use o chat acima para descrever o que você precisa e pedir um orçamento.
+          </EmptyNote>
         ) : (
           <ul className="flex flex-col gap-2">
             {v.services.map((s) => (
@@ -149,11 +148,15 @@ export function ProviderBody({ profile: p, provider: v }: { profile: Profile; pr
         )}
       </section>
 
-      {v.photos.length > 0 && (
-        <section id="fotos" aria-labelledby="fotos-t" className="flex scroll-mt-24 flex-col gap-3">
-          <h2 id="fotos-t" className="text-xl font-bold text-text-strong">
-            Fotos de trabalhos
-          </h2>
+      <section id="fotos" aria-labelledby="fotos-t" className="flex scroll-mt-24 flex-col gap-3">
+        <h2 id="fotos-t" className="text-xl font-bold text-text-strong">
+          Fotos de trabalhos
+        </h2>
+        {v.photos.length === 0 ? (
+          <EmptyNote title="O prestador ainda não publicou fotos de trabalhos.">
+            Peça um orçamento pelo chat para ver exemplos do que ele faz.
+          </EmptyNote>
+        ) : (
           <ul className="grid grid-cols-3 gap-2">
             {v.photos.map((ph) => (
               <li key={ph.id} className="aspect-square overflow-hidden rounded-lg bg-surface-2">
@@ -167,8 +170,8 @@ export function ProviderBody({ profile: p, provider: v }: { profile: Profile; pr
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
       <section id="avaliacoes" aria-labelledby="aval-t" className="flex scroll-mt-24 flex-col gap-3">
         <h2 id="aval-t" className="text-xl font-bold text-text-strong">
@@ -247,6 +250,7 @@ function QuoteForm({
   const [sent, setSent] = useState<{ conversationId: string | null } | null>(null);
   const service = v.services.find((s) => s.id === serviceId) ?? null;
   const needsNeighborhood = v.serviceMode === "home";
+  const noServices = v.services.length === 0;
 
   const send = useMutation({
     mutationFn: (via: "chat" | "whatsapp") =>
@@ -400,26 +404,41 @@ function QuoteForm({
         />
         <span className="self-end text-xs font-normal text-text-subtle">{details.length}/400</span>
       </label>
+      {noServices && (
+        <p role="status" className="rounded-lg bg-surface-2 p-3 text-sm text-text-muted">
+          O prestador ainda não cadastrou serviços, então o pedido de orçamento está desativado. Use o botão
+          “Conversar” no topo da página para falar com ele.
+        </p>
+      )}
       <p className="text-xs text-text-muted">
         Seu telefone só é compartilhado se você escolher enviar pelo WhatsApp.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
-          disabled={send.isPending}
+          disabled={send.isPending || noServices}
           onClick={() => submit("chat")}
           className="h-12 flex-1 rounded-lg bg-primary px-4 font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
         >
           Enviar pelo chat
         </button>
-        {p.whatsapp && (
+        {p.whatsapp ? (
           <button
             type="button"
-            disabled={send.isPending}
+            disabled={send.isPending || noServices}
             onClick={() => submit("whatsapp")}
             className="h-12 flex-1 rounded-lg border border-primary px-4 font-bold text-text-strong hover:bg-surface-2 disabled:opacity-60"
           >
             Enviar pelo WhatsApp
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled
+            title="O prestador não informou WhatsApp"
+            className="h-12 flex-1 rounded-lg border border-border px-4 font-bold text-text-subtle disabled:cursor-not-allowed"
+          >
+            WhatsApp não informado
           </button>
         )}
       </div>

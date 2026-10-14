@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { MessageCircle, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useId } from "react";
 
 import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
@@ -38,6 +39,7 @@ export function ContactButtons({
   layout?: "row" | "stack";
 }) {
   const router = useRouter();
+  const noWaId = useId();
   const requireAuth = useRequireAuth();
   const toast = useToast();
 
@@ -52,30 +54,48 @@ export function ContactButtons({
   const wa = whatsappUrl(profile.whatsapp, whatsappText);
 
   return (
-    <div className={cn("flex gap-2", layout === "stack" ? "flex-col" : "flex-col sm:flex-row")}>
-      <button
-        type="button"
-        disabled={chat.isPending}
-        onClick={() => {
-          if (!requireAuth("chat", profile.id)) return;
-          chat.mutate();
-        }}
-        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-[15px] font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
-      >
-        <MessageCircle className="size-5" aria-hidden />
-        {chat.isPending ? "Abrindo…" : chatLabel}
-      </button>
-      {wa && (
-        <a
-          href={wa}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => track({ type: "WHATSAPP_CLICK", ...target })}
-          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-success px-4 text-[15px] font-bold text-success-text hover:bg-success-soft"
+    <div className="flex flex-col gap-1.5">
+      <div className={cn("flex gap-2", layout === "stack" ? "flex-col" : "flex-col sm:flex-row")}>
+        <button
+          type="button"
+          disabled={chat.isPending}
+          onClick={() => {
+            if (!requireAuth("chat", profile.id)) return;
+            chat.mutate();
+          }}
+          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-[15px] font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
         >
-          <Phone className="size-5" aria-hidden />
-          Chamar no WhatsApp
-        </a>
+          <MessageCircle className="size-5" aria-hidden />
+          {chat.isPending ? "Abrindo…" : chatLabel}
+        </button>
+        {wa ? (
+          <a
+            href={wa}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => track({ type: "WHATSAPP_CLICK", ...target })}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-success px-4 text-[15px] font-bold text-success-text hover:bg-success-soft"
+          >
+            <Phone className="size-5" aria-hidden />
+            Chamar no WhatsApp
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            aria-describedby={noWaId}
+            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 text-[15px] font-bold text-text-subtle disabled:cursor-not-allowed"
+          >
+            <Phone className="size-5" aria-hidden />
+            WhatsApp não informado
+          </button>
+        )}
+      </div>
+      {!wa && (
+        <p id={noWaId} className="text-xs text-text-muted">
+          Este perfil ainda não informou um WhatsApp. Use o chat da EncontraÊ para falar com{" "}
+          {profile.kind === "provider" ? "o prestador" : "a loja"}.
+        </p>
       )}
     </div>
   );
