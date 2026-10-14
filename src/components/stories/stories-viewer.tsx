@@ -41,9 +41,9 @@ const TICK_MS = 100;
 const TAG_LABEL = { product: "Produto", service: "Serviço", offer: "Oferta", place: "No mapa" } as const;
 const TAG_TONE = {
   product: "bg-navy-600 text-white",
-  service: "bg-[#8a5a2b] text-white",
+  service: "bg-navy-500 text-white",
   offer: "bg-amber text-black",
-  place: "bg-[#146c43] text-white",
+  place: "bg-success text-white",
 } as const;
 
 type Local = { liked?: boolean; likes?: number; saved?: boolean };
@@ -71,12 +71,23 @@ export function StoriesViewer() {
   return (
     <div className="fixed inset-0 z-[60] overflow-hidden bg-black text-white">
       {q.isPending ? (
-        <p role="status" className="flex h-full items-center justify-center text-white/80">
-          Carregando stories…
-        </p>
+        <div
+          role="status"
+          aria-busy="true"
+          aria-label="Carregando stories"
+          className="flex h-full flex-col items-center justify-center gap-4 px-4"
+        >
+          <div className="h-[60%] max-h-[560px] w-full max-w-[420px] animate-pulse rounded-2xl bg-white/10" />
+          <p className="text-white/80">Carregando stories…</p>
+        </div>
       ) : q.isError ? (
         <Centered>
-          <p className="text-lg font-bold">Não foi possível carregar os stories</p>
+          <p role="alert" className="text-lg font-bold">
+            Não foi possível carregar os stories
+          </p>
+          <p className="max-w-sm text-white/70">
+            Não é você, é a gente. Verifique a conexão e tente de novo.
+          </p>
           <button
             type="button"
             onClick={() => q.refetch()}
@@ -88,8 +99,14 @@ export function StoriesViewer() {
         </Centered>
       ) : q.data.groups.length === 0 ? (
         <Centered>
-          <p className="text-lg font-bold">Nenhum story por perto agora</p>
-          <p className="text-white/70">Volte mais tarde ou veja o que está perto de você.</p>
+          <p className="text-lg font-bold">
+            {perfil || destaque ? "Este perfil não tem stories ativos agora" : "Nenhum story por perto agora"}
+          </p>
+          <p className="max-w-sm text-white/70">
+            {perfil || destaque
+              ? "Os stories duram 24 horas. Volte ao perfil ou veja o que está perto de você."
+              : "Stories duram 24 horas. Siga lojas para ver as novidades delas aqui, ou veja o que está perto de você."}
+          </p>
           <Link
             href={routes.explorar}
             className="inline-flex h-11 items-center rounded-lg bg-white px-5 font-bold text-black"

@@ -3,17 +3,18 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
+import { InlineError, ListSkeleton } from "@/components/ui/inline-state";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { radar } from "@/lib/api/radar";
 import { explorarHref } from "@/lib/domain/search-state";
+import { sectionState, type SectionState } from "@/lib/domain/section-state";
 import { growthText, priceChangeText, priceValueText, safeInternalHref } from "@/lib/domain/radar";
 import { formatKm } from "@/lib/format";
 import { lojaHref, prestadorHref } from "@/lib/routes";
 
 /**
  * "Radar do bairro · O que está mudando perto de você". Três colunas, cada uma só aparece com dados reais
- * do servidor (preços com base de cálculo, buscas com volume mínimo, lugares com sinal). As três colunas ficam
- * sempre na tela, cada uma com seu estado: carregando, erro com "Tentar de novo", vazio ou dados.
+ * do servidor (preços com base de cálculo, buscas com volume mínimo, lugares com sinal). Cada coluna mostra carregando, erro (com "Tentar de novo") ou vazio; a estrutura nunca some.
  */
 export function NeighborhoodRadar() {
   const { location, isLoading } = useUserLocation();
@@ -37,27 +38,9 @@ export function NeighborhoodRadar() {
   const searches = trending.data?.searches.slice(0, 5) ?? [];
   const places = trending.data?.places.slice(0, 5) ?? [];
   const areaName = trending.data?.area?.trim() || null;
-
-  // Estado de cada coluna: carregando, erro (com nova tentativa), sem local, vazio ou com dados.
-  const stateOf = (
-    q: { isError: boolean; isPending: boolean; refetch: () => unknown },
-    count: number,
-  ): ColState =>
-    !hasPlace && !isLoading
-      ? { kind: "empty", text: "Defina seu local para ver o que está mudando perto de você." }
-      : q.isError
-        ? { kind: "error", retry: () => void q.refetch() }
-        : q.isPending
-          ? { kind: "loading" }
-          : count === 0
-            ? {
-                kind: "empty",
-                text: "Ainda não há dados suficientes no seu bairro. Aparecem aqui quando houver base real.",
-              }
-            : { kind: "ready" };
-  const priceState = stateOf(prices, priceItems.length);
-  const searchState = stateOf(trending, searches.length);
-  const placeState = stateOf(trending, places.length);
+  const emptyText = hasPlace
+    ? "Ainda não há dados suficientes no seu bairro. Aparece aqui quando houver base real."
+    : "Defina seu local para ver o que está mudando perto de você.";
 
   return (
     <section aria-labelledby="bairro-title" className="flex flex-col gap-4">
@@ -68,7 +51,12 @@ export function NeighborhoodRadar() {
         <p className="text-sm text-text-muted">O que está mudando perto de você</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Column title="Preços no bairro" state={priceState}>
+        <Column
+          title="Preços no bairro"
+          state={sectionState(prices, on, priceItems.length)}
+          onRetry={() => void prices.refetch()}
+          emptyText={emptyText}
+        >
           {priceItems.map((p) => {
             const href =
               safeInternalHref(p.href) ?? explorarHref({ q: p.item, specialty: [], sort: "relevance" });
@@ -102,7 +90,9 @@ export function NeighborhoodRadar() {
         </Column>
         <Column
           title={areaName ? `Mais procurados no ${areaName} esta semana` : "Mais procurados esta semana"}
-          state={searchState}
+          state={sectionState(trending, on, searches.length)}
+          onRetry={() => void trending.refetch()}
+          emptyText={emptyText}
         >
           {searches.map((s) => (
             <li key={s.term}>
@@ -120,7 +110,12 @@ export function NeighborhoodRadar() {
             </li>
           ))}
         </Column>
-        <Column title="Lugares chamando atenção" state={placeState}>
+        <Column
+          title="Lugares chamando atenção"
+          state={sectionState(trending, on, places.length)}
+          onRetry={() => void trending.refetch()}
+          emptyText={emptyText}
+        >
           {places.map((p) => (
             <li key={p.profile.id}>
               <Link
@@ -144,37 +139,30 @@ export function NeighborhoodRadar() {
   );
 }
 
-type ColState =
-  | { kind: "loading" }
-  | { kind: "ready" }
-  | { kind: "empty"; text: string }
-  | { kind: "error"; retry: () => void };
-
-function Column({ title, state, children }: { title: string; state: ColState; children: React.ReactNode }) {
+function Column({
+  title,
+  state,
+  onRetry,
+  emptyText,
+  children,
+}: {
+  title: string;
+  state: SectionState;
+  onRetry: () => void;
+  emptyText: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-3">
       <h3 className="px-2 pb-1 text-sm font-bold text-text-strong">{title}</h3>
-      {state.kind === "ready" ? (
+      {state === "ready" ? (
         <ul className="flex flex-col">{children}</ul>
-      ) : state.kind === "loading" ? (
-        <div aria-busy="true" aria-label="Carregando" className="flex flex-col gap-2 px-2 py-2">
-          {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="h-8 animate-pulse rounded-lg bg-surface-2" />
-          ))}
-        </div>
-      ) : state.kind === "error" ? (
-        <div role="alert" className="flex flex-col items-start gap-2 px-2 py-3 text-sm text-text-muted">
-          <p>Não foi possível carregar agora.</p>
-          <button
-            type="button"
-            onClick={state.retry}
-            className="h-10 rounded-lg border border-primary px-4 text-sm font-bold text-text-strong hover:bg-surface-2"
-          >
-            Tentar de novo
-          </button>
-        </div>
+      ) : state === "loading" ? (
+        <ListSkeleton rows={3} label={`Carregando: ${title}`} />
+      ) : state === "error" ? (
+        <InlineError message="Não foi possível carregar esta lista." onRetry={onRetry} />
       ) : (
-        <p className="px-2 py-3 text-sm text-text-muted">{state.text}</p>
+        <p className="px-2 py-3 text-sm text-text-muted">{emptyText}</p>
       )}
     </div>
   );

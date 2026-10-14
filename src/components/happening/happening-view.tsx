@@ -10,6 +10,7 @@ import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ShareButton } from "@/components/catalog/share-button";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
+import { InlineError, ListSkeleton } from "@/components/ui/inline-state";
 import { useToast } from "@/components/ui/toast";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { actions } from "@/lib/api/actions";
@@ -46,9 +47,10 @@ export function HappeningView({ id }: { id: string }) {
         <ArrowLeft className="size-4" aria-hidden /> Voltar para o início
       </Link>
       {q.isPending ? (
-        <p role="status" className="py-16 text-center text-text-muted">
-          Carregando evento…
-        </p>
+        <div role="status" aria-busy="true" aria-label="Carregando evento" className="flex flex-col gap-4">
+          <div className="h-64 animate-pulse rounded-2xl bg-surface-2" />
+          <div className="h-32 animate-pulse rounded-2xl bg-surface-2" />
+        </div>
       ) : notFound ? (
         <section className="flex flex-col items-center gap-3 py-16 text-center">
           <h1 className="text-2xl font-bold text-text-strong">Evento não encontrado</h1>
@@ -253,6 +255,11 @@ function Content({ ev }: { ev: Happening }) {
         >
           <Flag className="size-4" aria-hidden /> Denunciar
         </Link>
+        {past && (
+          <p role="status" className="w-full text-sm font-semibold text-text-muted">
+            Este evento já terminou: presença e interesse estão encerrados.
+          </p>
+        )}
         <p className="w-full text-sm text-text-muted sm:ml-auto sm:w-auto" aria-live="polite">
           {ev.going} vão · {ev.interested} interessados
         </p>
@@ -260,13 +267,17 @@ function Content({ ev }: { ev: Happening }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-6">
-          {ev.about && (
-            <Block title="Sobre o evento">
+          <Block title="Sobre o evento">
+            {ev.about ? (
               <p className="whitespace-pre-line text-text">{ev.about}</p>
-            </Block>
-          )}
-          {ev.schedule.length > 0 && (
-            <Block title="Programação">
+            ) : (
+              <Empty>O organizador ainda não publicou uma descrição.</Empty>
+            )}
+          </Block>
+          <Block title="Programação">
+            {ev.schedule.length === 0 ? (
+              <Empty>Nenhuma programação informada pelo organizador.</Empty>
+            ) : (
               <ul className="flex flex-col divide-y divide-border">
                 {ev.schedule.map((s, i) => (
                   <li key={i} className="flex gap-4 py-2">
@@ -278,61 +289,69 @@ function Content({ ev }: { ev: Happening }) {
                   </li>
                 ))}
               </ul>
-            </Block>
-          )}
-          {ev.offer && (
-            <Block title="Ofertas no evento">
-              <p className="font-semibold text-text-strong">{ev.offer.title}</p>
-              {ev.offer.claimed ? (
-                <p className="text-text">
-                  Seu cupom: <strong>{ev.offer.code}</strong> ·{" "}
-                  <Link
-                    href={`${routes.atividade}?aba=cupons`}
-                    className="font-semibold text-link hover:underline"
-                  >
-                    Ver meus cupons ›
-                  </Link>
+            )}
+          </Block>
+          <Block title="Ofertas no evento">
+            {!ev.offer ? (
+              <Empty>Nenhuma oferta ou cupom vinculado a este evento.</Empty>
+            ) : (
+              <>
+                <p className="font-semibold text-text-strong">{ev.offer.title}</p>
+                {ev.offer.claimed ? (
+                  <p className="text-text">
+                    Seu cupom: <strong>{ev.offer.code}</strong> ·{" "}
+                    <Link
+                      href={`${routes.atividade}?aba=cupons`}
+                      className="font-semibold text-link hover:underline"
+                    >
+                      Ver meus cupons ›
+                    </Link>
+                  </p>
+                ) : (
+                  <div>
+                    <button
+                      type="button"
+                      disabled={claim.isPending}
+                      onClick={() =>
+                        ev.offer && requireAuth("coupon", ev.offer.id) && claim.mutate(ev.offer.id)
+                      }
+                      className={cn(btn, "bg-accent text-on-accent")}
+                    >
+                      Pegar cupom
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </Block>
+          <Block title="Quem vai">
+            {ev.going === 0 && ev.attendeesPreview.length === 0 ? (
+              <Empty>Ninguém confirmou presença ainda. Seja a primeira pessoa a marcar “Vou”.</Empty>
+            ) : (
+              <>
+                <ul className="flex -space-x-2" aria-label="Algumas pessoas que vão">
+                  {ev.attendeesPreview.slice(0, 6).map((a, i) => (
+                    <li
+                      key={i}
+                      title={a.name}
+                      className="flex size-10 items-center justify-center overflow-hidden rounded-full border-2 border-surface bg-primary text-sm font-bold text-on-primary"
+                    >
+                      {a.avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.avatarUrl} alt={a.name} className="size-full object-cover" />
+                      ) : (
+                        a.name[0]
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm text-text-muted">
+                  {ev.going} {ev.going === 1 ? "pessoa vai" : "pessoas vão"}
+                  {ev.followedGoing > 0 ? `, ${ev.followedGoing} que você segue` : ""}
                 </p>
-              ) : (
-                <div>
-                  <button
-                    type="button"
-                    disabled={claim.isPending}
-                    onClick={() =>
-                      ev.offer && requireAuth("coupon", ev.offer.id) && claim.mutate(ev.offer.id)
-                    }
-                    className={cn(btn, "bg-accent text-on-accent")}
-                  >
-                    Pegar cupom
-                  </button>
-                </div>
-              )}
-            </Block>
-          )}
-          {(ev.going > 0 || ev.attendeesPreview.length > 0) && (
-            <Block title="Quem vai">
-              <ul className="flex -space-x-2" aria-label="Algumas pessoas que vão">
-                {ev.attendeesPreview.slice(0, 6).map((a, i) => (
-                  <li
-                    key={i}
-                    title={a.name}
-                    className="flex size-10 items-center justify-center overflow-hidden rounded-full border-2 border-surface bg-primary text-sm font-bold text-on-primary"
-                  >
-                    {a.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.avatarUrl} alt={a.name} className="size-full object-cover" />
-                    ) : (
-                      a.name[0]
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm text-text-muted">
-                {ev.going} {ev.going === 1 ? "pessoa vai" : "pessoas vão"}
-                {ev.followedGoing > 0 ? `, ${ev.followedGoing} que você segue` : ""}
-              </p>
-            </Block>
-          )}
+              </>
+            )}
+          </Block>
           <Block title="Perguntas ao organizador">
             <div className="flex flex-wrap gap-2">
               {ev.organizer.profileId && (
@@ -410,8 +429,10 @@ function Content({ ev }: { ev: Happening }) {
                   : "Paga"}
             </p>
           </Block>
-          {ev.tags.length > 0 && (
-            <Block title="Para quem">
+          <Block title="Para quem">
+            {ev.tags.length === 0 ? (
+              <Empty>Público não informado.</Empty>
+            ) : (
               <ul className="flex flex-wrap gap-2">
                 {ev.tags.map((t) => (
                   <li key={t} className="rounded-full bg-surface-2 px-3 py-1 text-sm text-text-2">
@@ -419,13 +440,17 @@ function Content({ ev }: { ev: Happening }) {
                   </li>
                 ))}
               </ul>
-            </Block>
-          )}
+            )}
+          </Block>
           <Nearby id={ev.id} />
         </aside>
       </div>
     </article>
   );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm text-text-muted">{children}</p>;
 }
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
@@ -452,9 +477,19 @@ function Nearby({ id }: { id: string }) {
     retry: false,
   });
   const items = q.data?.items ?? [];
-  if (items.length === 0) return null;
   return (
     <Block title="Outros eventos perto">
+      {q.isError ? (
+        <InlineError
+          message="Não foi possível carregar os outros eventos."
+          onRetry={() => void q.refetch()}
+          retrying={q.isFetching}
+        />
+      ) : q.isPending ? (
+        <ListSkeleton rows={2} label="Carregando outros eventos" />
+      ) : items.length === 0 ? (
+        <Empty>Nenhum outro evento por perto. Amplie o raio no cabeçalho para ver mais.</Empty>
+      ) : null}
       <ul className="flex flex-col gap-2">
         {items.map((e) => (
           <li key={e.id}>

@@ -8,7 +8,7 @@ import { discover } from "@/lib/api/discover";
 import { storiesHref } from "@/lib/routes";
 
 import { cn } from "@/components/ui/cn";
-import { ErrorState } from "@/components/ui/error-state";
+import { InlineError } from "@/components/ui/inline-state";
 import { EmptyBlock } from "./empty-block";
 
 /** Faixa de Stories da Home. Sem stories a seção continua visível com estado vazio (nada de círculos de enfeite). */
@@ -23,50 +23,60 @@ export function HomeStories() {
     retry: false,
   });
   const groups = q.data?.groups ?? [];
-  if (groups.length === 0) {
-    if (q.isPending && q.fetchStatus !== "idle") {
-      return (
-        <EmptyBlock
-          id="home-stories"
-          title="Stories"
-          subtitle="Novidades das lojas perto de você, por 24 horas"
-          message="Carregando stories…"
+  const subtitle = "Novidades das lojas perto de você, por 24 horas";
+  if (isLoading || (q.isPending && q.fetchStatus !== "idle")) {
+    return (
+      <section aria-labelledby="home-stories" className="flex flex-col gap-3">
+        <StoriesHeading subtitle={subtitle} />
+        <div
+          aria-busy="true"
+          aria-label="Carregando stories"
+          role="status"
+          className="flex gap-4 overflow-hidden"
+        >
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="flex w-20 shrink-0 flex-col items-center gap-1.5">
+              <span className="size-[72px] animate-pulse rounded-full bg-surface-2" />
+              <span className="h-3 w-14 animate-pulse rounded bg-surface-2" />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+  if (q.isError) {
+    return (
+      <section aria-labelledby="home-stories" className="flex flex-col gap-3">
+        <StoriesHeading subtitle={subtitle} />
+        <InlineError
+          message="Não foi possível carregar os stories agora."
+          onRetry={() => void q.refetch()}
+          retrying={q.isFetching}
         />
-      );
-    }
-    if (q.isError) {
-      return (
-        <section aria-labelledby="home-stories" className="flex flex-col gap-3">
-          <div>
-            <h2 id="home-stories" className="text-xl font-bold text-text-strong">
-              Stories
-            </h2>
-            <p className="text-sm text-text-muted">Novidades das lojas perto de você, por 24 horas</p>
-          </div>
-          <ErrorState
-            error={q.error}
-            title="Não foi possível carregar os stories"
-            compact
-            onRetry={() => q.refetch()}
-          />
-        </section>
-      );
-    }
+      </section>
+    );
+  }
+  if (groups.length === 0) {
     return (
       <EmptyBlock
         id="home-stories"
         title="Stories"
-        subtitle="Novidades das lojas perto de você, por 24 horas"
+        subtitle={subtitle}
         message={
           hasPlace
             ? "Ainda não há stories perto de você. Quando as lojas publicarem, eles aparecem aqui."
             : "Defina seu local para ver os stories das lojas perto de você."
         }
-      />
+      >
+        <Link href={storiesHref({})} className="text-sm font-semibold text-link hover:underline">
+          Abrir os stories
+        </Link>
+      </EmptyBlock>
     );
   }
   return (
-    <section aria-label="Stories perto de você" className="flex flex-col gap-2">
+    <section aria-labelledby="home-stories" className="flex flex-col gap-3">
+      <StoriesHeading subtitle={subtitle} />
       <ul className="flex gap-4 overflow-x-auto pb-1">
         {groups.slice(0, 7).map((g) => (
           <li key={g.profile.id} className="w-20 shrink-0">
@@ -90,5 +100,16 @@ export function HomeStories() {
         ))}
       </ul>
     </section>
+  );
+}
+
+function StoriesHeading({ subtitle }: { subtitle: string }) {
+  return (
+    <div>
+      <h2 id="home-stories" className="text-xl font-bold text-text-strong">
+        Stories
+      </h2>
+      <p className="text-sm text-text-muted">{subtitle}</p>
+    </div>
   );
 }
