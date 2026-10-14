@@ -6,10 +6,12 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { AlertsPanel } from "@/components/alerts/alerts-panel";
 import { NotificationPrefsForm } from "@/components/account/notification-prefs";
+import { AlertsPanel } from "@/components/alerts/alerts-panel";
+import { LockedBody, useAccess } from "@/components/auth/session-gate";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState, ListSkeleton } from "@/components/ui/list-states";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { queryKeys } from "@/lib/api/endpoints";
@@ -44,6 +46,8 @@ export function NotificationsView() {
       ? "gerenciar"
       : (TABS.find((t) => t.id === raw)?.id ?? "todas");
   const setTab = (t: TabId) => router.replace(`${pathname}?aba=${t}`, { scroll: false });
+  const access = useAccess();
+  const member = access === "member";
   const [prefsOpen, setPrefsOpen] = useState(false);
   const qc = useQueryClient();
   const toast = useToast();
@@ -51,7 +55,7 @@ export function NotificationsView() {
 
   const q = useInfiniteQuery({
     queryKey: ["notifications", type ?? "all"],
-    enabled: tab !== "gerenciar",
+    enabled: member && tab !== "gerenciar",
     queryFn: ({ pageParam }) => notifications.list(type, pageParam),
     initialPageParam: 1,
     getNextPageParam: (last) => (last.page * last.limit < last.total ? last.page + 1 : undefined),
@@ -60,8 +64,9 @@ export function NotificationsView() {
   const all = useQuery({
     queryKey: ["notifications", "all", "counts"],
     queryFn: () => notifications.list(undefined, 1),
+    enabled: member,
   });
-  const alertsTotal = useQuery({ queryKey: ["me", "alerts"], queryFn: me.alerts });
+  const alertsTotal = useQuery({ queryKey: ["me", "alerts"], queryFn: me.alerts, enabled: member });
   const unread = all.data?.unread;
 
   const refresh = () => {
@@ -84,7 +89,8 @@ export function NotificationsView() {
   });
 
   const items = q.data?.pages.flatMap((p) => p.items) ?? [];
-  const total = unread?.all ?? 0;
+  // Sem resposta do servidor o total é desconhecido: nunca vira “tudo em dia”.
+  const total = unread ? unread.all : null;
   const bubble = (id: TabId) =>
     unread
       ? ({
@@ -103,17 +109,21 @@ export function NotificationsView() {
         <div>
           <h1 className="text-2xl font-bold text-text-strong">Notificações</h1>
           <p className="text-sm text-text-muted" aria-live="polite">
-            {total === 0
-              ? "Tudo em dia ✓"
-              : total === 1
-                ? "1 notificação não lida"
-                : `${total} notificações não lidas`}
+            {!member
+              ? "Seus avisos aparecem aqui depois que você entrar."
+              : total === null
+                ? "— notificações não lidas"
+                : total === 0
+                  ? "Tudo em dia ✓"
+                  : total === 1
+                    ? "1 notificação não lida"
+                    : `${total} notificações não lidas`}
           </p>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
-            disabled={total === 0 || markAll.isPending}
+            disabled={!total || markAll.isPending}
             onClick={() => markAll.mutate()}
             className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2 disabled:opacity-50"
           >
@@ -122,8 +132,9 @@ export function NotificationsView() {
           </button>
           <button
             type="button"
+            disabled={!member}
             onClick={() => setPrefsOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2 disabled:opacity-50"
           >
             <Settings2 className="size-4" aria-hidden />
             Preferências
@@ -140,7 +151,7 @@ export function NotificationsView() {
           ...TABS,
           {
             id: "gerenciar" as const,
-            label: `Gerenciar alertas${alertsTotal.data ? ` (${alertsTotal.data.items.length})` : ""}`,
+            label: `Gerenciar alertas (${alertsTotal.data ? alertsTotal.data.items.length : "—"})`,
           },
         ].map((t) => (
           <button
@@ -167,15 +178,27 @@ export function NotificationsView() {
       </div>
 
       {tab === "gerenciar" ? (
-        <AlertsPanel />
+        <AlertsPanel access={access} />
+      ) : !member ? (
+        <LockedBody
+          access={access}
+          area="notificacoes"
+          hint="Avisos de preço, cupons e novidades de quem você segue chegam aqui."
+        />
       ) : q.isPending ? (
-        <p className="text-text-muted">Carregando…</p>
+        <ListSkeleton label="Carregando notificações…" />
       ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
+        <ErrorState
+          title="Não foi possível carregar suas notificações"
+          error={q.error}
+          onRetry={() => q.refetch()}
+        />
       ) : items.length === 0 ? (
-        <p className="rounded-2xl border border-border p-8 text-center font-bold text-text-strong">
-          Nenhuma notificação por aqui.
-        </p>
+        <EmptyState
+          icon={<Bell className="size-8 text-text-subtle" aria-hidden />}
+          title="Nenhuma notificação por aqui."
+          hint="Quando um preço baixar, um cupom chegar ou alguém que você segue publicar algo, avisamos aqui."
+        />
       ) : (
         <div className="flex flex-col gap-5">
           {groupNotifications(items).map((g) => (
@@ -237,7 +260,7 @@ function Row({ n, onRead, onRemove }: { n: Notification; onRead: () => void; onR
         </span>
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="text-xs text-text-subtle">
-            {meta.label} · {formatTimeAgo(n.createdAt)}
+            {[meta.label, formatTimeAgo(n.createdAt)].filter(Boolean).join(" · ")}
           </span>
           <span className={cn("text-text-strong", !n.read && "font-bold")}>{n.title}</span>
           {n.text && <span className="text-sm text-text-muted">{n.text}</span>}
