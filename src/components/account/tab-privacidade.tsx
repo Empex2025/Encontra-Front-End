@@ -18,14 +18,29 @@ import { isValidPassword, PASSWORD_MAX } from "@/lib/domain/validation";
 import { formatTimeAgo } from "@/lib/format";
 
 import { usePatchProfile } from "./tab-config";
-import { btnDanger, btnOutline, btnPrimary, Card, errMsg, Loading } from "./shared";
+import {
+  btnDanger,
+  btnOutline,
+  btnPrimary,
+  Card,
+  errMsg,
+  Loading,
+  type ProfileState,
+  ProfileStatus,
+} from "./shared";
 
-export function TabPrivacidade({ profile }: { profile: Profile }) {
+export function TabPrivacidade({ profile, profileState }: { profile?: Profile; profileState: ProfileState }) {
   return (
     <div className="flex flex-col gap-4">
       <PasswordCard />
       <SessionsCard />
-      <PrivacyCard profile={profile} />
+      {profile ? (
+        <PrivacyCard profile={profile} />
+      ) : (
+        <Card title="Privacidade">
+          <ProfileStatus state={profileState} />
+        </Card>
+      )}
       <HistoryCard />
       <DataCard />
     </div>
@@ -134,7 +149,11 @@ function SessionsCard() {
       {q.isPending ? (
         <Loading />
       ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
+        <ErrorState
+          error={q.error}
+          onRetry={() => q.refetch()}
+          title="Não foi possível carregar seus aparelhos conectados"
+        />
       ) : (
         <ul className="flex flex-col gap-2">
           {q.data.items.map((s) => (
@@ -251,7 +270,11 @@ function HistoryCard() {
       {q.isPending ? (
         <Loading />
       ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
+        <ErrorState
+          error={q.error}
+          onRetry={() => q.refetch()}
+          title="Não foi possível carregar o histórico de buscas"
+        />
       ) : (
         <>
           <p className="text-text-muted">

@@ -14,17 +14,17 @@ const SLIDES = [
   {
     icon: Compass,
     title: "Encontre o que precisa, perto de você",
-    text: "Produtos, serviços e lugares do seu bairro em um só lugar. Busque, veja no mapa e compare preços antes de sair de casa.",
+    text: "Produtos, serviços e lugares do seu bairro em um só lugar. Busque e compare as opções antes de sair de casa.",
   },
   {
     icon: Sparkles,
     title: "Descubra o que está acontecendo agora",
-    text: "Lives, ofertas do dia, lojas novas e o preço da gasolina caindo — o comércio local ao vivo, no seu ritmo.",
+    text: "Lives, ofertas, novidades das lojas e preços da sua região: o comércio local ao vivo, no seu ritmo.",
   },
   {
     icon: MessageCircle,
     title: "Fale direto com a loja",
-    text: "Sem intermediário: converse pelo chat ou WhatsApp, combine retirada e pagamento e trace a rota até lá.",
+    text: "Sem intermediário: converse pelo chat ou pelo WhatsApp e combine direto com a loja.",
   },
 ] as const;
 

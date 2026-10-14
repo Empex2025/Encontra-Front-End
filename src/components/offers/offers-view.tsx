@@ -15,6 +15,7 @@ import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
 import { NeedLocation } from "@/components/ui/need-location";
 import { useUserLocation } from "@/hooks/use-user-location";
+import { useResumeAction } from "@/hooks/use-resume-action";
 import { track } from "@/lib/analytics/track";
 import { fetchOffers, OFFER_SORTS, type OfferSort } from "@/lib/api/catalog";
 import { CATEGORIES } from "@/lib/domain/categories";
@@ -38,6 +39,8 @@ export function OffersView() {
   const [sort, setSort] = useState<OfferSort>("relevance");
   const [openNow, setOpenNow] = useState(false);
   const [wantOpen, setWantOpen] = useState(false);
+  // Quem pediu "Quero em promoção" sem conta volta aqui depois de entrar: reabre o pedido, sem enviar sozinho.
+  useResumeAction("want", "ofertas", () => setWantOpen(true));
 
   useEffect(() => {
     const t = setTimeout(() => setQ(term.trim()), 350);

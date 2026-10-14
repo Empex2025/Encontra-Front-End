@@ -4,7 +4,19 @@ import { RotateCw } from "lucide-react";
 
 import { ApiError } from "@/lib/api/client";
 
-export function ErrorState({ error, onRetry }: { error: Error; onRetry: () => void }) {
+export function ErrorState({
+  error,
+  onRetry,
+  title,
+  description,
+}: {
+  error: Error;
+  onRetry: () => void;
+  /** Troca o título padrão ("Não foi possível carregar os resultados") por um que descreva a seção. */
+  title?: string;
+  /** Texto de apoio específico da seção; mensagens de timeout e de falta de conexão têm prioridade. */
+  description?: string;
+}) {
   const slow = error instanceof ApiError && error.code === "TIMEOUT";
   const offline = error instanceof ApiError && error.status === 0 && !slow;
   return (
@@ -17,14 +29,14 @@ export function ErrorState({ error, onRetry }: { error: Error; onRetry: () => vo
           ? "Algo deu errado"
           : offline
             ? "Sem conexão com o servidor"
-            : "Não foi possível carregar os resultados"}
+            : (title ?? "Não foi possível carregar os resultados")}
       </h3>
       <p className="max-w-md text-text-muted">
         {slow
           ? "Está demorando mais que o normal. Tente de novo."
           : offline
             ? "Verifique sua internet e tente de novo."
-            : "Não é você, é a gente. Tente de novo em alguns segundos."}
+            : (description ?? "Não é você, é a gente. Tente de novo em alguns segundos.")}
       </p>
       {error instanceof ApiError && error.status >= 500 && (
         <p className="text-xs text-text-subtle">Código do erro: {error.status}</p>

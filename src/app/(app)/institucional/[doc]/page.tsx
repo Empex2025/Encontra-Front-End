@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { LegalView } from "@/components/legal/legal-view";
 import { LEGAL_DOCS } from "@/lib/domain/legal-docs";
@@ -14,5 +14,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function InstitucionalDocPage({ params }: Props) {
   const { doc } = await params;
   if (doc === "denunciar") redirect("/denunciar");
+  if (!LEGAL_DOCS.some((d) => d.doc === doc)) notFound();
   return <LegalView doc={doc} />;
 }

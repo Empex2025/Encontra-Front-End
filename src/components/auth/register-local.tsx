@@ -53,7 +53,7 @@ export function RegisterLocal({ onBack, onDone }: { onBack: () => void; onDone: 
   const [street, setStreet] = useState("");
   const [neighborhood, setNeighborhood] = useState("");
   const [city, setCity] = useState("");
-  const [uf, setUf] = useState<string>("AL");
+  const [uf, setUf] = useState<string>("");
   const [coords, setCoords] = useState<Coords>({ lat: null, lng: null });
   const [found, setFound] = useState(false);
   const [cepError, setCepError] = useState("");
@@ -119,8 +119,9 @@ export function RegisterLocal({ onBack, onDone }: { onBack: () => void; onDone: 
     cep: !isValidCep(cep) ? "CEP incompleto (8 números)." : undefined,
     neighborhood: nb.length < 2 || nb.length > 40 ? "Digite o bairro." : undefined,
     city: ct.length < 2 || ct.length > 40 ? "Digite a cidade." : undefined,
+    uf: !uf ? "Escolha o estado." : undefined,
   };
-  const valid = !errors.cep && !errors.neighborhood && !errors.city;
+  const valid = !errors.cep && !errors.neighborhood && !errors.city && !errors.uf;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,12 +253,19 @@ export function RegisterLocal({ onBack, onDone }: { onBack: () => void; onDone: 
             id="uf"
             value={uf}
             onChange={(e) => setUf(e.target.value)}
-            className="h-12 rounded-lg border border-border-strong bg-surface px-3 text-base text-text"
+            aria-invalid={tried && !!errors.uf}
+            className="h-12 rounded-lg border border-border-strong bg-surface px-3 text-base text-text aria-[invalid=true]:border-danger"
           >
+            <option value="">Escolha o estado</option>
             {UFS.map((u) => (
               <option key={u}>{u}</option>
             ))}
           </select>
+          {tried && errors.uf && (
+            <p role="alert" className="text-sm text-danger-text">
+              {errors.uf}
+            </p>
+          )}
         </div>
 
         <p className="text-sm text-text-muted">Você pode mudar sua localização quando quiser.</p>

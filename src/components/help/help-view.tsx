@@ -42,14 +42,14 @@ export function HelpView() {
           <ContactForm />
           <Channels channels={q.data?.channels} />
         </div>
-      ) : q.isPending ? (
-        <p role="status" className="py-10 text-center text-text-muted">
-          Carregando…
-        </p>
-      ) : q.isError ? (
-        <ErrorState error={q.error} onRetry={() => q.refetch()} />
       ) : (
-        <Faq data={q.data} goContact={() => setTab("contato")} />
+        <Faq
+          data={q.data}
+          loading={q.isPending}
+          error={q.isError ? q.error : null}
+          retry={() => void q.refetch()}
+          goContact={() => setTab("contato")}
+        />
       )}
     </div>
   );
@@ -61,6 +61,7 @@ function Channels({ channels }: { channels?: { chat: string; email: string; what
     { icon: Mail, label: "E-mail", text: channels?.email },
     { icon: MessageCircle, label: "WhatsApp", text: channels?.whatsapp },
   ];
+  const missing = "Informação indisponível no momento";
   return (
     <aside className="flex flex-col gap-3 self-start rounded-2xl border border-border bg-surface p-4">
       <h2 className="text-lg font-bold text-text-strong">Outros canais</h2>
@@ -69,7 +70,7 @@ function Channels({ channels }: { channels?: { chat: string; email: string; what
           <r.icon className="mt-0.5 size-5 shrink-0 text-link" aria-hidden />
           <div>
             <p className="font-semibold text-text-strong">{r.label}</p>
-            {r.text && <p className="text-sm text-text-muted">{r.text}</p>}
+            <p className="text-sm text-text-muted">{r.text || missing}</p>
           </div>
         </div>
       ))}
@@ -77,11 +78,25 @@ function Channels({ channels }: { channels?: { chat: string; email: string; what
   );
 }
 
-function Faq({ data, goContact }: { data: FaqData; goContact: () => void }) {
+function Faq({
+  data,
+  loading,
+  error,
+  retry,
+  goContact,
+}: {
+  data?: FaqData;
+  loading: boolean;
+  error: Error | null;
+  retry: () => void;
+  goContact: () => void;
+}) {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
-  const shown = useMemo(() => filterFaq(data.items, query, cat), [data.items, query, cat]);
+  const items = useMemo(() => data?.items ?? [], [data]);
+  const shown = useMemo(() => filterFaq(items, query, cat), [items, query, cat]);
+  const ready = !!data;
   const searching = query.trim().length > 0;
 
   return (
@@ -94,13 +109,14 @@ function Faq({ data, goContact }: { data: FaqData; goContact: () => void }) {
         />
         <input
           type="search"
+          disabled={!ready}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(null);
           }}
           placeholder="Busque por uma dúvida"
-          className="h-12 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-10 text-base text-text outline-none focus:border-primary focus:ring-2 focus:ring-focus/40"
+          className="h-12 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-10 text-base text-text outline-none focus:border-primary focus:ring-2 focus:ring-focus/40 disabled:opacity-60"
         />
       </label>
 
@@ -112,9 +128,9 @@ function Faq({ data, goContact }: { data: FaqData; goContact: () => void }) {
             onClick={() => setCat(null)}
             className={chip(cat === null)}
           >
-            Todas <span className="text-text-subtle">{data.items.length}</span>
+            Todas <span className="text-text-subtle">{ready ? items.length : "—"}</span>
           </button>
-          {data.categories.map((c) => (
+          {(data?.categories ?? []).map((c) => (
             <button
               key={c.id}
               type="button"
@@ -128,10 +144,27 @@ function Faq({ data, goContact }: { data: FaqData; goContact: () => void }) {
         </div>
       )}
 
-      {shown.length === 0 ? (
+      {loading ? (
+        <p role="status" className="py-10 text-center text-text-muted">
+          Carregando as perguntas…
+        </p>
+      ) : error ? (
+        <ErrorState
+          error={error}
+          onRetry={retry}
+          title="Não foi possível carregar as perguntas frequentes"
+          description="As respostas vêm do nosso servidor e não chegaram agora. Enquanto isso, você pode falar com o suporte."
+        />
+      ) : shown.length === 0 ? (
         <section className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-10 text-center">
-          <h2 className="text-lg font-bold text-text-strong">Não encontramos essa dúvida</h2>
-          <p className="text-text-muted">Tente outras palavras ou fale com a gente.</p>
+          <h2 className="text-lg font-bold text-text-strong">
+            {items.length === 0 ? "Nenhuma pergunta publicada ainda" : "Não encontramos essa dúvida"}
+          </h2>
+          <p className="text-text-muted">
+            {items.length === 0
+              ? "Ainda não há perguntas frequentes cadastradas. Fale com a gente se precisar de ajuda."
+              : "Tente outras palavras ou fale com a gente."}
+          </p>
           <button type="button" className={btnPrimary} onClick={goContact}>
             Falar com o suporte
           </button>
@@ -149,7 +182,7 @@ function Faq({ data, goContact }: { data: FaqData; goContact: () => void }) {
           ))}
         </ul>
       )}
-      {shown.length > 0 && (
+      {!loading && (shown.length > 0 || !!error) && (
         <p className="text-sm text-text-muted">
           Não achou?{" "}
           <button type="button" onClick={goContact} className="font-semibold text-link hover:underline">
