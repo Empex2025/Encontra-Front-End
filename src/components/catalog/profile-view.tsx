@@ -453,7 +453,7 @@ function StoreTabBar({
   onChange: (t: TabId) => void;
 }) {
   const tabs: { id: TabId; count?: number }[] = [
-    { id: "fotos" },
+    { id: "fotos", count: p.stats.posts },
     { id: "loja", count: p.stats.products },
     { id: "ofertas" },
     { id: "avaliacoes", count: p.stats.reviewCount },

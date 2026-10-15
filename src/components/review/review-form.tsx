@@ -618,7 +618,7 @@ function Form({
             <button
               type="button"
               onClick={saveDraft}
-              className="h-12 rounded-lg border border-primary bg-surface px-5 text-base font-medium text-text-strong hover:bg-selected"
+              className="h-12 rounded-lg border border-primary bg-surface px-3 text-base font-medium whitespace-nowrap text-text-strong hover:bg-selected sm:px-5"
             >
               Salvar rascunho
             </button>
@@ -627,7 +627,7 @@ function Form({
               disabled={publish.isPending}
               aria-disabled={uploading || undefined}
               onClick={onPublish}
-              className="h-12 min-w-[210px] rounded-lg bg-primary px-6 text-base font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-80"
+              className="h-12 min-w-[170px] rounded-lg bg-primary px-6 text-base font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-80 sm:min-w-[210px]"
             >
               {publish.isPending ? "Publicando…" : uploading ? "Aguardando envio…" : "Publicar avaliação"}
             </button>
