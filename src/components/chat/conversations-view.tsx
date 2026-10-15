@@ -3,13 +3,15 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Ban,
   BellOff,
   EllipsisVertical,
-  ImagePlus,
+  Flag,
   MessageCircle,
-  Phone,
+  Paperclip,
   Search,
   Send,
+  Trash2,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -17,10 +19,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { LockedBody, useAccess } from "@/components/auth/session-gate";
-import { Avatar } from "@/components/catalog/avatar";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
-import { EmptyState, ListSkeleton } from "@/components/ui/list-states";
+import { ListSkeleton } from "@/components/ui/list-states";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { track } from "@/lib/analytics/track";
@@ -29,6 +30,7 @@ import { queryKeys } from "@/lib/api/endpoints";
 import {
   canSend,
   clipMessage,
+  listTimeLabel,
   MESSAGE_MAX,
   previewText,
   REPORT_REASONS,
@@ -46,19 +48,47 @@ const time = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit",
   timeZone: "America/Maceio",
 });
-const dayTime = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "2-digit",
-  timeZone: "America/Maceio",
-});
-const shortTime = (iso: string) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const today = dayTime.format(new Date()) === dayTime.format(d);
-  return today ? time.format(d) : dayTime.format(d);
-};
 
-/** Conversas: lista + conversa aberta. No celular, uma tela por vez (`/conversas` e `/conversas/{id}`). */
+/** Iniciais de duas letras ("Esporte M Loja" → "EM"). */
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter((w) => w.length > 2)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ||
+  name.trim().slice(0, 2).toUpperCase() ||
+  "?";
+
+/** Avatar redondo com iniciais (protótipo › Conversas). */
+function Initials({ name, url, size }: { name: string; url: string | null; size: 44 | 48 }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-extrabold text-on-primary",
+        size === 48 ? "size-12 text-[15px]" : "size-11 text-sm",
+      )}
+    >
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- imagens vêm de vários domínios das lojas
+        <img src={url} alt="" className="size-full object-cover" />
+      ) : (
+        <span aria-hidden>{initials(name)}</span>
+      )}
+    </span>
+  );
+}
+
+function WhatsappGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Z" />
+    </svg>
+  );
+}
+
+/** Conversas: lista + conversa aberta num cartão só. No celular, uma tela por vez (`/conversas` e `/conversas/{id}`). */
 export function ConversationsView({ activeId }: { activeId?: string }) {
   const router = useRouter();
   const access = useAccess();
@@ -84,100 +114,124 @@ export function ConversationsView({ activeId }: { activeId?: string }) {
       router.replace(conversaHref(first));
   }, [member, activeId, first, router]);
 
+  const noConversationsAtAll = !!list.data && list.data.items.length === 0 && !q && !onlyUnread;
+
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
       <header className={cn("flex flex-col gap-1", activeId && "max-md:hidden")}>
-        <h1 className="text-2xl font-bold text-text-strong">Conversas</h1>
-        <p className="text-text-muted">
+        <h1 className="text-[32px] leading-10 font-bold text-text-strong">Conversas</h1>
+        <p className="text-base text-text-muted">
           Suas conversas com lojas e prestadores. Tudo combinado aqui, sem precisar do WhatsApp.
         </p>
       </header>
-      <div className="grid min-h-[70dvh] gap-4 md:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid h-[78dvh] min-h-[28rem] overflow-hidden rounded-2xl bg-surface shadow-raised md:h-[720px] md:grid-cols-[380px_minmax(0,1fr)]">
         <aside
-          className={cn("flex flex-col gap-3", activeId && "max-md:hidden")}
+          className={cn("flex min-h-0 flex-col border-border md:border-r", activeId && "max-md:hidden")}
           aria-label="Lista de conversas"
         >
-          <label className="relative block">
-            <span className="sr-only">Buscar conversa</span>
-            <Search
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-text-subtle"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              disabled={!member}
-              placeholder="Buscar loja ou produto"
-              className="h-11 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-9 text-text disabled:opacity-60"
-            />
-          </label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              aria-pressed={!onlyUnread}
-              disabled={!member}
-              onClick={() => setOnlyUnread(false)}
-              className={chip(!onlyUnread)}
-            >
-              Todas
-            </button>
-            <button
-              type="button"
-              aria-pressed={onlyUnread}
-              disabled={!member}
-              onClick={() => setOnlyUnread(true)}
-              className={chip(onlyUnread)}
-            >
-              Não lidas ({list.data ? list.data.unreadTotal : "—"})
-            </button>
-          </div>
-          {!member ? (
-            <LockedBody
-              access={access}
-              area="conversas"
-              hint="Suas conversas ficam salvas e você recebe a resposta mesmo se sair da página. O WhatsApp continua liberado."
-            />
-          ) : list.isPending ? (
-            <ListSkeleton label="Carregando conversas…" rows={4} />
-          ) : list.isError ? (
-            <ErrorState
-              title="Não foi possível carregar suas conversas"
-              error={list.error}
-              onRetry={() => list.refetch()}
-            />
-          ) : list.data.items.length === 0 ? (
-            q || onlyUnread ? (
-              <EmptyState title="Nenhuma conversa encontrada." hint="Troque a busca ou volte para “Todas”." />
-            ) : (
-              <EmptyState
-                title="Você ainda não tem conversas."
-                hint="Abra o perfil de uma loja ou prestador e toque em “Conversar”."
-                href={routes.explorar}
-                cta="Buscar no Explorar"
+          <div className="flex flex-col gap-2.5 border-b border-surface-3 p-4">
+            <label className="flex h-11 items-center gap-2 rounded-full border border-surface-3 bg-bg px-3.5">
+              <Search className="size-4 shrink-0 text-text-subtle" aria-hidden />
+              <span className="sr-only">Buscar conversa</span>
+              <input
+                type="search"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                disabled={!member}
+                placeholder="Buscar loja ou produto"
+                className="min-w-0 flex-1 bg-transparent text-sm text-text outline-none disabled:opacity-60"
               />
-            )
-          ) : (
-            <ul className="flex flex-col gap-1">
-              {list.data.items.map((c) => (
-                <Row key={c.id} c={c} active={c.id === activeId} />
-              ))}
-            </ul>
-          )}
+            </label>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                aria-pressed={!onlyUnread}
+                disabled={!member}
+                onClick={() => setOnlyUnread(false)}
+                className={chip(!onlyUnread)}
+              >
+                Todas
+              </button>
+              <button
+                type="button"
+                aria-pressed={onlyUnread}
+                disabled={!member}
+                onClick={() => setOnlyUnread(true)}
+                className={chip(onlyUnread)}
+              >
+                Não lidas ({list.data ? list.data.unreadTotal : "—"})
+              </button>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {!member ? (
+              <div className="p-4">
+                <LockedBody
+                  access={access}
+                  area="conversas"
+                  hint="Suas conversas ficam salvas e você recebe a resposta mesmo se sair da página. O WhatsApp continua liberado."
+                />
+              </div>
+            ) : list.isPending ? (
+              <div className="p-4">
+                <ListSkeleton label="Carregando conversas…" rows={4} />
+              </div>
+            ) : list.isError ? (
+              <div className="p-4">
+                <ErrorState
+                  title="Não foi possível carregar suas conversas"
+                  error={list.error}
+                  onRetry={() => list.refetch()}
+                />
+              </div>
+            ) : list.data.items.length === 0 ? (
+              <p className="px-4 py-8 text-center text-sm text-text-subtle">
+                {q || onlyUnread ? "Nenhuma conversa encontrada." : "Nenhuma conversa"}
+              </p>
+            ) : (
+              <ul>
+                {list.data.items.map((c) => (
+                  <Row key={c.id} c={c} active={c.id === activeId} />
+                ))}
+              </ul>
+            )}
+          </div>
         </aside>
-        <section aria-label="Conversa aberta" className={cn("min-w-0", !activeId && "max-md:hidden")}>
+        <section aria-label="Conversa aberta" className={cn("min-h-0 min-w-0", !activeId && "max-md:hidden")}>
           {activeId && !member ? (
-            <LockedBody
-              access={access}
-              area="conversas"
-              hint="Suas conversas ficam salvas e você recebe a resposta mesmo se sair da página. O WhatsApp continua liberado."
-            />
+            <div className="p-4">
+              <LockedBody
+                access={access}
+                area="conversas"
+                hint="Suas conversas ficam salvas e você recebe a resposta mesmo se sair da página. O WhatsApp continua liberado."
+              />
+            </div>
           ) : activeId ? (
             <Thread key={activeId} id={activeId} />
+          ) : noConversationsAtAll ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-10 text-center">
+              <span className="flex size-[72px] items-center justify-center rounded-full bg-surface-2">
+                <MessageCircle className="size-8 text-text-subtle" aria-hidden />
+              </span>
+              <h2 className="text-xl font-bold text-text-strong">Nenhuma conversa</h2>
+              <p className="max-w-sm text-sm leading-[21px] text-text-muted">
+                Quando você falar com uma loja ou prestador pelo chat da EncontraÊ, a conversa aparece aqui.
+              </p>
+              <Link
+                href={routes.explorar}
+                className="inline-flex h-10 items-center rounded-lg bg-primary px-[18px] text-sm font-bold text-on-primary hover:bg-primary-hover"
+              >
+                Explorar lojas
+              </Link>
+            </div>
           ) : (
-            <div className="flex h-full min-h-60 flex-col items-center justify-center gap-2 rounded-2xl border border-border p-8 text-center text-text-muted">
-              <MessageCircle className="size-8" aria-hidden />
-              <p>Escolha uma conversa, ou abra uma pelo perfil de uma loja ou produto.</p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-10 text-center">
+              <span className="flex size-[72px] items-center justify-center rounded-full bg-surface-2">
+                <MessageCircle className="size-8 text-text-subtle" aria-hidden />
+              </span>
+              <p className="max-w-sm text-sm leading-[21px] text-text-muted">
+                Escolha uma conversa, ou abra uma pelo perfil de uma loja ou produto.
+              </p>
               <Link href={routes.explorar} className="text-sm font-semibold text-link hover:underline">
                 Buscar no Explorar
               </Link>
@@ -191,10 +245,10 @@ export function ConversationsView({ activeId }: { activeId?: string }) {
 
 const chip = (on: boolean) =>
   cn(
-    "h-10 rounded-full border px-4 text-sm font-semibold",
+    "h-[30px] rounded-full border px-3 text-xs font-bold disabled:opacity-60",
     on
       ? "border-primary bg-primary text-on-primary"
-      : "border-border bg-surface text-text hover:bg-surface-2",
+      : "border-border bg-surface text-text-2 hover:border-navy-300",
   );
 
 function Row({ c, active }: { c: Conversation; active: boolean }) {
@@ -203,10 +257,13 @@ function Row({ c, active }: { c: Conversation; active: boolean }) {
       <Link
         href={conversaHref(c.id)}
         aria-current={active ? "page" : undefined}
-        className={cn("flex gap-3 rounded-xl p-3 hover:bg-surface-2", active && "bg-surface-2")}
+        className={cn(
+          "flex items-center gap-3 border-b border-surface-2 px-4 py-3.5 hover:bg-surface-2",
+          active && "bg-selected/50 shadow-[inset_3px_0_0_var(--primary)]",
+        )}
       >
         <span className="relative shrink-0">
-          <Avatar name={c.profile.name} url={c.profile.avatarUrl} size={48} />
+          <Initials name={c.profile.name} url={c.profile.avatarUrl} size={48} />
           {c.online && (
             <span
               className="absolute right-0 bottom-0 size-3 rounded-full border-2 border-surface bg-success"
@@ -216,30 +273,30 @@ function Row({ c, active }: { c: Conversation; active: boolean }) {
           )}
         </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-1.5">
-            <span className={cn("truncate text-text-strong", c.unread > 0 && "font-bold")}>
-              {c.profile.name}
+          <span className="flex items-center justify-between gap-2">
+            <span className="truncate text-sm leading-5 font-bold text-text">{c.profile.name}</span>
+            <span className="flex shrink-0 items-center gap-1">
+              {c.muted && <BellOff className="size-[13px] text-text-subtle" aria-label="Silenciada" />}
+              {c.last && (
+                <span className={cn("text-[11px]", c.unread > 0 ? "text-danger" : "text-text-subtle")}>
+                  {listTimeLabel(c.last.at)}
+                </span>
+              )}
             </span>
-            {c.muted && <BellOff className="size-3.5 shrink-0 text-text-subtle" aria-label="Silenciada" />}
-            {c.last && (
-              <span
-                className={cn(
-                  "ml-auto shrink-0 text-xs",
-                  c.unread > 0 ? "font-bold text-danger-text" : "text-text-subtle",
-                )}
-              >
-                {shortTime(c.last.at)}
-              </span>
-            )}
           </span>
-          <span className="truncate text-xs text-text-subtle">{c.context ?? "Conversa"}</span>
-          <span className="flex items-center gap-2">
-            <span className={cn("truncate text-sm text-text-muted", c.unread > 0 && "font-bold text-text")}>
+          <span className="truncate text-xs leading-4 text-text-subtle">{c.context ?? "Conversa"}</span>
+          <span className="flex items-center justify-between gap-2">
+            <span
+              className={cn(
+                "truncate text-[13px] leading-[18px]",
+                c.unread > 0 ? "font-bold text-text" : "text-text-subtle",
+              )}
+            >
               {previewText(c)}
             </span>
             {c.unread > 0 && (
               <span
-                className="ml-auto shrink-0 rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary"
+                className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-danger px-1.5 text-[11px] font-bold text-white"
                 aria-label={`${c.unread} não lidas`}
               >
                 {c.unread}
@@ -262,8 +319,9 @@ function Thread({ id }: { id: string }) {
   const [text, setText] = useState("");
   const [file, setFile] = useState<{ file: File; url: string } | null>(null);
   const [fileError, setFileError] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const detail = useQuery({
     queryKey: [...LIST_KEY, id],
@@ -293,7 +351,9 @@ function Thread({ id }: { id: string }) {
   const messages: Message[] = [...(msgs.data?.pages ?? [])].reverse().flatMap((p) => p.items);
   const lastId = messages.at(-1)?.id;
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    // Rola só a lista de mensagens (não a página inteira).
+    const log = logRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
   }, [lastId]);
 
   const refreshAll = () => {
@@ -331,22 +391,29 @@ function Thread({ id }: { id: string }) {
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível alterar.", "info"),
   });
 
-  if (detail.isPending) return <ListSkeleton label="Carregando conversa…" rows={4} />;
+  if (detail.isPending)
+    return (
+      <div className="p-4">
+        <ListSkeleton label="Carregando conversa…" rows={4} />
+      </div>
+    );
   if (detail.isError) {
     const notFound = (detail.error as { status?: number }).status === 404;
     return notFound ? (
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-border p-8 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
         <p className="font-bold text-text-strong">Conversa não encontrada</p>
         <Link href={routes.conversas} className="text-sm font-semibold text-link hover:underline">
           Voltar às conversas
         </Link>
       </div>
     ) : (
-      <ErrorState
-        title="Não foi possível abrir a conversa"
-        error={detail.error}
-        onRetry={() => detail.refetch()}
-      />
+      <div className="p-4">
+        <ErrorState
+          title="Não foi possível abrir a conversa"
+          error={detail.error}
+          onRetry={() => detail.refetch()}
+        />
+      </div>
     );
   }
   const c: ConversationDetail = detail.data;
@@ -359,35 +426,44 @@ function Thread({ id }: { id: string }) {
     if (err) return;
     if (file) URL.revokeObjectURL(file.url);
     setFile({ file: f, url: URL.createObjectURL(f) });
+    setTimeout(() => inputRef.current?.focus(), 30);
   };
+  const ready = !c.blocked && canSend(text, !!file) && !send.isPending;
 
   return (
-    <div className="flex h-[78dvh] min-h-[28rem] flex-col overflow-hidden rounded-2xl border border-border bg-surface">
-      <header className="flex items-center gap-3 border-b border-border p-3">
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="flex items-center gap-2 border-b border-surface-3 px-3 py-3.5 sm:gap-3 sm:px-5">
         <Link
           href={routes.conversas}
           aria-label="Voltar às conversas"
-          className="flex size-10 items-center justify-center rounded-full hover:bg-surface-2 md:hidden"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-surface-2 md:hidden"
         >
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
-        <Avatar name={c.profile.name} url={c.profile.avatarUrl} size={40} />
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 truncate font-bold text-text-strong">
-            {c.profile.name}
-            {c.muted && <BellOff className="size-3.5 text-text-subtle" aria-label="Silenciada" />}
-          </p>
-          <p className="text-xs text-text-muted">
+        <Initials name={c.profile.name} url={c.profile.avatarUrl} size={44} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="flex items-center gap-1.5 text-base leading-6 font-bold text-text-strong">
+            <span className="truncate">{c.profile.name}</span>
+            {c.muted && (
+              <BellOff className="size-3.5 shrink-0 text-text-subtle" aria-label="Notificações silenciadas" />
+            )}
+          </span>
+          <span
+            className={cn(
+              "truncate text-xs leading-4",
+              c.blocked ? "text-danger-text" : c.status.online ? "text-success-text" : "text-text-subtle",
+            )}
+          >
             {c.blocked
               ? "Bloqueada"
               : c.status.online
                 ? `● Online${c.status.responseText ? ` · ${c.status.responseText}` : ""}`
                 : `Offline${c.status.responseText ? ` · ${c.status.responseText}` : ""}`}
-          </p>
+          </span>
         </div>
         <Link
           href={c.profileHref}
-          className="hidden h-10 items-center rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2 sm:flex"
+          className="inline-flex h-[38px] shrink-0 items-center rounded-lg border border-primary px-3.5 text-[13px] font-bold text-text-strong hover:bg-surface-2"
         >
           {c.profile.kind === "provider" ? "Ver perfil" : "Ver loja"}
         </Link>
@@ -403,60 +479,84 @@ function Thread({ id }: { id: string }) {
                 targetId: c.profile.id,
               })
             }
-            className="flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2"
+            className="inline-flex h-[38px] shrink-0 items-center gap-1.5 rounded-lg bg-success px-3 text-[13px] font-bold text-white hover:opacity-90 sm:px-3.5"
           >
-            <Phone className="size-4" aria-hidden />
-            <span className="hidden sm:inline">WhatsApp</span>
-            <span className="sr-only sm:hidden">WhatsApp</span>
+            <WhatsappGlyph />
+            <span className="max-sm:sr-only">WhatsApp</span>
           </a>
         )}
         <KebabMenu
           items={[
-            { label: c.muted ? "Reativar avisos" : "Silenciar", onSelect: () => mute.mutate(!c.muted) },
+            {
+              label: c.muted ? "Reativar notificações" : "Silenciar notificações",
+              icon: BellOff,
+              onSelect: () => mute.mutate(!c.muted),
+            },
+            { label: "Denunciar", icon: Flag, onSelect: () => setDialog("report") },
             {
               label: c.blocked ? "Desbloquear" : "Bloquear",
+              icon: Ban,
               onSelect: () => (c.blocked ? unblock() : setDialog("block")),
             },
-            { label: "Denunciar", onSelect: () => setDialog("report") },
-            { label: "Apagar conversa", onSelect: () => setDialog("delete"), danger: true },
+            { label: "Apagar conversa", icon: Trash2, onSelect: () => setDialog("delete"), danger: true },
           ]}
         />
       </header>
 
       {c.product && (
-        <Link
-          href={produtoHref(c.product.slug)}
-          className="flex items-center gap-3 border-b border-border bg-surface-2 p-3 text-sm hover:bg-border"
-        >
-          <span className="size-10 shrink-0 overflow-hidden rounded-lg bg-surface">
+        <div className="flex items-center gap-3 border-b border-surface-3 bg-bg px-3 py-2.5 sm:px-5">
+          <span className="size-11 shrink-0 overflow-hidden rounded-lg bg-primary">
             {c.product.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={c.product.imageUrl} alt="" className="size-full object-cover" />
             )}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold text-text-strong">{c.product.title}</span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-[13px] leading-[18px] font-semibold text-text">
+              {c.product.title}
+            </span>
             {c.product.priceCents !== null && (
-              <span className="text-text-muted">{formatMoney(c.product.priceCents)}</span>
+              <span className="text-[13px] leading-[18px] font-extrabold text-text-strong">
+                {formatMoney(c.product.priceCents)}
+              </span>
             )}
           </span>
-          <span className="font-semibold text-link">Ver anúncio →</span>
-        </Link>
+          <Link
+            href={produtoHref(c.product.slug)}
+            className="text-[13px] font-bold whitespace-nowrap text-link hover:underline"
+          >
+            Ver anúncio →
+          </Link>
+        </div>
       )}
       {c.blocked && (
-        <p className="bg-danger-bg px-3 py-2 text-sm font-semibold text-danger-text">
-          Você bloqueou esta loja. Desbloqueie para mandar mensagens.
-        </p>
+        <div
+          role="status"
+          className="flex items-center justify-between gap-3 border-b border-danger/40 bg-danger-soft px-3 py-2.5 sm:px-5"
+        >
+          <span className="flex items-center gap-2 text-sm leading-5 font-semibold text-danger-text">
+            <Ban className="size-4 shrink-0" aria-hidden />
+            <span>Você bloqueou {c.profile.name}.</span>
+          </span>
+          <button
+            type="button"
+            onClick={unblock}
+            className="h-8 shrink-0 rounded-lg border border-primary bg-surface px-3.5 text-[13px] font-bold text-text-strong hover:bg-surface-2"
+          >
+            Desbloquear
+          </button>
+        </div>
       )}
-      <p className="border-b border-border px-3 py-1.5 text-xs text-text-subtle">
-        Conversa protegida na EncontraÊ · nunca compartilhe senhas ou códigos
-      </p>
 
       <div
-        className="flex flex-1 flex-col gap-2 overflow-y-auto p-3"
+        ref={logRef}
+        className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-5"
         aria-live="polite"
         aria-label="Mensagens"
       >
+        <span className="self-center rounded-full bg-surface-2 px-3 py-1 text-center text-[11px] text-text-subtle">
+          🔒 Conversa protegida na EncontraÊ · nunca compartilhe senhas ou códigos
+        </span>
         {msgs.hasNextPage && (
           <button
             type="button"
@@ -476,42 +576,58 @@ function Thread({ id }: { id: string }) {
             onRetry={() => msgs.refetch()}
           />
         ) : messages.length === 0 ? (
-          <p className="m-auto text-sm text-text-muted">Nenhuma mensagem ainda. Diga olá!</p>
+          <span className="mt-6 self-center text-[13px] text-text-subtle">
+            Nenhuma mensagem ainda. Mande a primeira!
+          </span>
         ) : (
           messages.map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                "flex max-w-[82%] flex-col gap-1 rounded-2xl px-3 py-2",
-                m.mine ? "self-end bg-primary text-on-primary" : "self-start bg-surface-2 text-text",
-              )}
-            >
+            <div key={m.id} className={cn("flex flex-col gap-0.5", m.mine ? "items-end" : "items-start")}>
               {m.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.imageUrl} alt="Foto enviada" className="max-h-64 rounded-lg object-cover" />
+                <span
+                  className={cn(
+                    "flex max-w-[260px] p-1",
+                    m.mine
+                      ? "rounded-[16px_16px_4px_16px] bg-primary"
+                      : "rounded-[16px_16px_16px_4px] bg-surface-2",
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={m.imageUrl}
+                    alt="Foto enviada"
+                    className="block max-h-[260px] max-w-[252px] rounded-xl object-cover"
+                  />
+                </span>
               )}
-              {m.text && <p className="break-words whitespace-pre-wrap">{m.text}</p>}
-              <p className={cn("text-[11px]", m.mine ? "text-on-primary/80" : "text-text-subtle")}>
+              {m.text && (
+                <span
+                  className={cn(
+                    "max-w-[min(460px,85%)] px-3.5 py-2.5 text-sm leading-5 break-words whitespace-pre-wrap",
+                    m.mine
+                      ? "rounded-[16px_16px_4px_16px] bg-primary text-on-primary"
+                      : "rounded-[16px_16px_16px_4px] bg-surface-2 text-text",
+                  )}
+                >
+                  {m.text}
+                </span>
+              )}
+              <span className="text-[11px] text-text-subtle">
                 {m.mine ? "Você" : c.profile.name} · {time.format(new Date(m.at))}
-              </p>
+              </span>
             </div>
           ))
         )}
-        <div ref={endRef} />
       </div>
 
       {!c.blocked && (
-        <ul
-          className="flex gap-2 overflow-x-auto border-t border-border px-3 py-2"
-          aria-label="Respostas rápidas"
-        >
+        <ul className="flex flex-wrap gap-1.5 px-5 pb-2.5" aria-label="Respostas rápidas">
           {QUICK_QUESTIONS.map((t) => (
-            <li key={t} className="shrink-0">
+            <li key={t}>
               <button
                 type="button"
                 disabled={quick.isPending}
                 onClick={() => quick.mutate(t)}
-                className="h-9 rounded-full border border-border bg-surface px-3 text-sm hover:bg-surface-2 disabled:opacity-60"
+                className="h-[30px] rounded-full border border-navy-200 bg-surface px-3 text-xs font-semibold text-text-strong hover:bg-surface-2 disabled:opacity-60"
               >
                 {t}
               </button>
@@ -520,35 +636,54 @@ function Thread({ id }: { id: string }) {
         </ul>
       )}
 
-      {file && (
-        <div className="flex items-center gap-2 border-t border-border px-3 py-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={file.url} alt="Prévia da foto" className="size-14 rounded-lg object-cover" />
-          <p className="flex-1 text-sm text-text-muted">Escreva uma legenda (opcional)…</p>
-          <button
-            type="button"
-            onClick={() => {
-              URL.revokeObjectURL(file.url);
-              setFile(null);
-            }}
-            aria-label="Remover foto"
-            className="flex size-9 items-center justify-center rounded-full hover:bg-surface-2"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
+      {file && !c.blocked && (
+        <div className="flex items-center gap-2.5 border-t border-surface-3 px-5 pt-2.5">
+          <span className="relative size-16 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={file.url}
+              alt="Prévia da foto anexada"
+              className="size-16 rounded-lg border border-border object-cover"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                URL.revokeObjectURL(file.url);
+                setFile(null);
+              }}
+              aria-label="Remover foto"
+              className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full border-2 border-surface bg-text text-surface"
+            >
+              <X className="size-3.5" aria-hidden />
+            </button>
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-[13px] leading-[18px] font-semibold text-text">
+              {file.file.name}
+            </span>
+            <span className="text-xs leading-4 text-text-subtle">
+              {Math.max(1, Math.round(file.file.size / 1024))} KB · escreva uma legenda se quiser
+            </span>
+          </span>
         </div>
       )}
       {fileError && (
-        <p role="alert" className="px-3 pb-1 text-xs font-semibold text-danger-text">
+        <p
+          role="alert"
+          className="mx-5 mt-2.5 rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-[13px] leading-[18px] text-danger-text"
+        >
           {fileError}
         </p>
       )}
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!c.blocked && canSend(text, !!file) && !send.isPending) send.mutate();
+          if (ready) send.mutate();
         }}
-        className="flex items-end gap-2 border-t border-border p-3"
+        className={cn(
+          "flex items-center gap-2.5 px-3 pt-3 pb-4 sm:px-5",
+          !file && !fileError && "border-t border-surface-3",
+        )}
       >
         <input
           ref={fileRef}
@@ -566,34 +701,38 @@ function Thread({ id }: { id: string }) {
           disabled={c.blocked || !!file}
           onClick={() => fileRef.current?.click()}
           aria-label="Anexar foto"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border-strong hover:bg-surface-2 disabled:opacity-50"
+          title="Anexar foto"
+          className="flex size-[46px] shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-muted hover:bg-surface-2 disabled:opacity-55"
         >
-          <ImagePlus className="size-5" aria-hidden />
+          <Paperclip className="size-[18px]" aria-hidden />
         </button>
-        <textarea
+        <input
+          ref={inputRef}
+          type="text"
           value={text}
           disabled={c.blocked}
-          rows={1}
           maxLength={MESSAGE_MAX}
           aria-label="Mensagem"
-          placeholder={c.blocked ? "Você bloqueou esta loja. Desbloqueie para mandar mensagens." : "Mensagem"}
+          placeholder={
+            c.blocked
+              ? "Você bloqueou esta loja. Desbloqueie para mandar mensagens."
+              : file
+                ? "Escreva uma legenda (opcional)…"
+                : "Escreva sua mensagem…"
+          }
           onChange={(e) => setText(clipMessage(e.target.value))}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              e.currentTarget.form?.requestSubmit();
-            }
-          }}
-          className="max-h-32 min-h-11 flex-1 resize-none rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-text disabled:opacity-60"
+          className="h-[46px] min-w-0 flex-1 rounded-full border border-border bg-bg px-4 text-sm text-text outline-none focus-visible:border-navy-300 disabled:opacity-55"
         />
         <button
           type="submit"
-          disabled={c.blocked || !canSend(text, !!file) || send.isPending}
+          disabled={!ready}
           aria-label="Enviar"
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 font-bold text-on-primary hover:bg-primary-hover disabled:opacity-50"
+          className={cn(
+            "flex size-[46px] shrink-0 items-center justify-center rounded-full text-white",
+            ready ? "bg-primary hover:bg-primary-hover" : "bg-border-strong",
+          )}
         >
-          <Send className="size-4" aria-hidden />
-          <span className="hidden sm:inline">Enviar</span>
+          <Send className="size-[18px]" aria-hidden />
         </button>
       </form>
 
@@ -612,6 +751,7 @@ function Thread({ id }: { id: string }) {
       {dialog === "delete" && (
         <DeleteDialog
           id={id}
+          name={c.profile.name}
           onClose={() => setDialog(null)}
           onDone={() => {
             refreshAll();
@@ -625,7 +765,7 @@ function Thread({ id }: { id: string }) {
   function unblock() {
     chat.block(id, false).then(
       () => {
-        toast("Loja desbloqueada.");
+        toast(`${c.profile.name} foi desbloqueada. Vocês podem conversar de novo.`);
         refreshAll();
       },
       (e) => toast(e instanceof Error ? e.message : "Não foi possível desbloquear.", "info"),
@@ -633,7 +773,14 @@ function Thread({ id }: { id: string }) {
   }
 }
 
-function KebabMenu({ items }: { items: { label: string; onSelect: () => void; danger?: boolean }[] }) {
+type MenuItem = {
+  label: string;
+  icon: typeof Flag;
+  onSelect: () => void;
+  danger?: boolean;
+};
+
+function KebabMenu({ items }: { items: MenuItem[] }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -659,7 +806,7 @@ function KebabMenu({ items }: { items: { label: string; onSelect: () => void; da
     }
   };
   return (
-    <div className="relative">
+    <div className="relative shrink-0">
       <button
         ref={btnRef}
         type="button"
@@ -667,9 +814,9 @@ function KebabMenu({ items }: { items: { label: string; onSelect: () => void; da
         aria-expanded={open}
         aria-label="Mais opções da conversa"
         onClick={() => setOpen((o) => !o)}
-        className="flex size-10 items-center justify-center rounded-full hover:bg-surface-2"
+        className="flex size-[38px] items-center justify-center rounded-lg border border-border bg-surface text-text-strong hover:bg-surface-2"
       >
-        <EllipsisVertical className="size-5" aria-hidden />
+        <EllipsisVertical className="size-[18px]" aria-hidden />
       </button>
       {open && (
         <>
@@ -683,11 +830,13 @@ function KebabMenu({ items }: { items: { label: string; onSelect: () => void; da
           <ul
             ref={listRef}
             role="menu"
+            aria-label="Opções da conversa"
             onKeyDown={onKey}
-            className="absolute top-11 right-0 z-20 w-52 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-pop"
+            className="absolute top-[46px] right-0 z-20 flex w-[248px] flex-col rounded-xl border border-border bg-surface p-1.5 shadow-pop"
           >
-            {items.map((it) => (
-              <li key={it.label} role="none">
+            {items.map((it, i) => (
+              <li key={it.label} role="none" className="contents">
+                {i === items.length - 1 && <span role="separator" className="mx-0 my-1 h-px bg-surface-3" />}
                 <button
                   type="button"
                   role="menuitem"
@@ -696,10 +845,14 @@ function KebabMenu({ items }: { items: { label: string; onSelect: () => void; da
                     it.onSelect();
                   }}
                   className={cn(
-                    "flex h-11 w-full items-center px-4 text-left text-sm hover:bg-surface-2",
-                    it.danger && "text-danger-text",
+                    "flex h-10 w-full items-center gap-2.5 rounded-lg px-3 text-left text-sm hover:bg-surface-2",
+                    it.danger ? "font-semibold text-danger-text" : "text-text",
                   )}
                 >
+                  <it.icon
+                    className={cn("size-4 shrink-0", it.danger ? "text-danger-text" : "text-text-muted")}
+                    aria-hidden
+                  />
                   {it.label}
                 </button>
               </li>
@@ -707,6 +860,44 @@ function KebabMenu({ items }: { items: { label: string; onSelect: () => void; da
           </ul>
         </>
       )}
+    </div>
+  );
+}
+
+/** Botões do rodapé das janelas: cancelar (contorno) e a ação (cor da ação), alinhados à direita. */
+function DialogActions({
+  confirm,
+  onConfirm,
+  onCancel,
+  pending,
+  tone = "danger",
+}: {
+  confirm: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  pending?: boolean;
+  tone?: "danger" | "primary";
+}) {
+  return (
+    <div className="flex justify-end gap-2 pt-1">
+      <button
+        type="button"
+        onClick={onCancel}
+        className="h-10 rounded-lg border border-border bg-surface px-4 text-sm font-semibold text-text hover:bg-surface-2"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={onConfirm}
+        className={cn(
+          "h-10 rounded-lg px-[18px] text-sm font-bold text-white disabled:opacity-60",
+          tone === "danger" ? "bg-danger hover:opacity-90" : "bg-primary hover:bg-primary-hover",
+        )}
+      >
+        {confirm}
+      </button>
     </div>
   );
 }
@@ -726,72 +917,63 @@ function BlockDialog({
   const m = useMutation({
     mutationFn: () => chat.block(id, true),
     onSuccess: () => {
-      toast(`${name} bloqueada.`);
+      toast(`Você bloqueou ${name}.`);
       onDone();
       onClose();
     },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível bloquear.", "info"),
   });
   return (
-    <Modal title="Bloquear esta loja?" onClose={onClose}>
-      <p className="text-text">
+    <Modal title={`Bloquear ${name}?`} onClose={onClose}>
+      <span className="flex size-[52px] items-center justify-center rounded-full bg-danger-soft text-danger-text">
+        <Ban className="size-6" aria-hidden />
+      </span>
+      <p className="text-sm leading-[21px] text-text-muted">
         A loja não poderá mais enviar mensagens para você por aqui, e você também não poderá responder
         enquanto ela estiver bloqueada. A loja não é avisada. Você pode desbloquear quando quiser.
       </p>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={m.isPending}
-          onClick={() => m.mutate()}
-          className="h-11 flex-1 rounded-lg bg-danger font-bold text-white disabled:opacity-60"
-        >
-          Bloquear
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="h-11 rounded-lg border border-border-strong px-5 font-semibold"
-        >
-          Cancelar
-        </button>
-      </div>
+      <DialogActions
+        confirm="Bloquear"
+        onConfirm={() => m.mutate()}
+        onCancel={onClose}
+        pending={m.isPending}
+      />
     </Modal>
   );
 }
 
-function DeleteDialog({ id, onClose, onDone }: { id: string; onClose: () => void; onDone: () => void }) {
+function DeleteDialog({
+  id,
+  name,
+  onClose,
+  onDone,
+}: {
+  id: string;
+  name: string;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const toast = useToast();
   const m = useMutation({
     mutationFn: () => chat.remove(id),
     onSuccess: () => {
-      toast("Conversa apagada.");
+      toast(`Conversa com ${name} apagada.`);
       onDone();
       onClose();
     },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível apagar.", "info"),
   });
   return (
-    <Modal title="Apagar conversa?" onClose={onClose}>
-      <p className="text-text">
+    <Modal title={`Apagar conversa com ${name}?`} onClose={onClose}>
+      <p className="text-sm leading-[21px] text-text-muted">
         As mensagens e fotos desta conversa serão apagadas só para você. Essa ação não pode ser desfeita.
       </p>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={m.isPending}
-          onClick={() => m.mutate()}
-          className="h-11 flex-1 rounded-lg bg-danger font-bold text-white disabled:opacity-60"
-        >
-          Apagar
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="h-11 rounded-lg border border-border-strong px-5 font-semibold"
-        >
-          Cancelar
-        </button>
-      </div>
+      <DialogActions
+        confirm="Apagar conversa"
+        onConfirm={() => m.mutate()}
+        onCancel={onClose}
+        pending={m.isPending}
+      />
     </Modal>
   );
 }
@@ -816,37 +998,69 @@ function ReportDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
   const m = useMutation({
+    // O bloqueio opcional é pedido na etapa seguinte (protótipo): aqui só a denúncia.
     mutationFn: () =>
-      chat.report({ conversationId: id, reason: reason!, details: details.trim() || undefined, alsoBlock }),
+      chat.report({
+        conversationId: id,
+        reason: reason!,
+        details: details.trim() || undefined,
+        alsoBlock: false,
+      }),
     onSuccess: () => {
       setSent(true);
       onDone();
     },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível enviar a denúncia.", "info"),
   });
+  const finish = useMutation({
+    mutationFn: async () => {
+      if (alsoBlock && !blocked) await chat.block(id, true);
+    },
+    onSuccess: () => {
+      toast(
+        alsoBlock && !blocked
+          ? `Denúncia enviada e ${name} bloqueada.`
+          : "Denúncia enviada. Obrigado por avisar.",
+      );
+      onDone();
+      onClose();
+    },
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível bloquear.", "info"),
+  });
   if (sent)
     return (
-      <Modal title="Recebemos sua denúncia" onClose={onClose}>
-        <p className="text-text">
-          Nossa equipe vai analisar. Obrigado por ajudar a manter a EncontraÊ segura. Você recebe um aviso
-          quando a análise terminar.
+      <Modal title="Recebemos sua denúncia. Nossa equipe vai analisar." onClose={onClose}>
+        <p className="text-sm leading-[21px] text-text-muted">
+          Obrigado por ajudar a manter a EncontraÊ segura. Você recebe um aviso quando a análise terminar.
         </p>
+        {!blocked && (
+          <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-border bg-bg px-3.5 py-3 text-sm text-text">
+            <input
+              type="checkbox"
+              className="size-[18px] accent-primary"
+              checked={alsoBlock}
+              onChange={(e) => setAlsoBlock(e.target.checked)}
+            />
+            <span className="flex flex-col">
+              <b>Também bloquear esta loja</b>
+              <span className="text-xs leading-4 text-text-subtle">
+                {name} não poderá mais enviar mensagens para você.
+              </span>
+            </span>
+          </label>
+        )}
         <button
           type="button"
-          onClick={() => {
-            toast(
-              alsoBlock ? `Denúncia enviada e ${name} bloqueada.` : "Denúncia enviada. Obrigado por avisar.",
-            );
-            onClose();
-          }}
-          className="h-11 rounded-lg bg-primary font-bold text-on-primary"
+          disabled={finish.isPending}
+          onClick={() => finish.mutate()}
+          className="h-11 rounded-lg bg-primary text-[15px] font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
         >
           Concluir
         </button>
       </Modal>
     );
   return (
-    <Modal title="Denunciar conversa" onClose={onClose}>
+    <Modal title={`Denunciar ${name}`} onClose={onClose}>
       <form
         noValidate
         onSubmit={(e) => {
@@ -855,19 +1069,25 @@ function ReportDialog({
           setErrors(er);
           if (!Object.keys(er).length) m.mutate();
         }}
-        className="flex flex-col gap-3"
+        className="flex flex-col gap-4"
       >
-        <p className="text-sm text-text-muted">
+        <p className="text-sm leading-[21px] text-text-muted">
           Por que você está denunciando esta conversa? A loja não fica sabendo quem denunciou.
         </p>
-        <fieldset className="flex flex-col gap-1">
-          <legend className="sr-only">Motivo</legend>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="sr-only">Motivo da denúncia</legend>
           {REPORT_REASONS.map((r) => (
-            <label key={r.id} className="flex min-h-11 items-center gap-3">
+            <label
+              key={r.id}
+              className={cn(
+                "flex cursor-pointer items-center gap-3 rounded-[10px] border px-3.5 py-3 text-sm leading-5 text-text",
+                reason === r.id ? "border-primary bg-selected/50" : "border-border bg-surface",
+              )}
+            >
               <input
                 type="radio"
                 name="reason"
-                className="size-5"
+                className="size-[18px] accent-primary"
                 checked={reason === r.id}
                 onChange={() => {
                   setReason(r.id);
@@ -877,55 +1097,40 @@ function ReportDialog({
               {r.label}
             </label>
           ))}
-          {errors.reason && (
-            <p role="alert" className="text-xs font-semibold text-danger-text">
-              {errors.reason}
-            </p>
-          )}
         </fieldset>
         {reason === "other" && (
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
+          <label className="flex flex-col gap-1.5 text-[13px] font-bold text-text">
             Conte o que aconteceu
             <textarea
               value={details}
               maxLength={400}
               rows={3}
+              placeholder="Descreva rapidamente o problema"
               onChange={(e) => setDetails(e.target.value)}
               aria-invalid={!!errors.details}
-              className="rounded-lg border border-border-strong bg-surface p-3 font-normal"
+              className="resize-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm leading-5 font-normal text-text"
             />
-            {errors.details && (
-              <span role="alert" className="text-xs font-semibold text-danger-text">
-                {errors.details}
-              </span>
-            )}
           </label>
         )}
-        {!blocked && (
-          <label className="flex min-h-11 items-center gap-3">
-            <input
-              type="checkbox"
-              className="size-5"
-              checked={alsoBlock}
-              onChange={(e) => setAlsoBlock(e.target.checked)}
-            />
-            Também bloquear esta loja
-          </label>
+        {(errors.reason || errors.details) && (
+          <p role="alert" className="text-[13px] leading-[18px] text-danger-text">
+            {errors.reason ?? errors.details}
+          </p>
         )}
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            disabled={m.isPending}
-            className="h-11 flex-1 rounded-lg bg-primary font-bold text-on-primary disabled:opacity-60"
-          >
-            Enviar denúncia
-          </button>
+        <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="h-11 rounded-lg border border-border-strong px-5 font-semibold"
+            className="h-10 rounded-lg border border-border bg-surface px-4 text-sm font-semibold text-text hover:bg-surface-2"
           >
             Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={m.isPending}
+            className="h-10 rounded-lg bg-primary px-[18px] text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+          >
+            Enviar denúncia
           </button>
         </div>
       </form>
