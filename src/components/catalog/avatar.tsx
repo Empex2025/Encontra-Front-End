@@ -50,7 +50,9 @@ export function Avatar({
         // eslint-disable-next-line @next/next/no-img-element -- imagens vêm de vários domínios das lojas
         <img src={url} alt="" className="size-full object-cover" />
       ) : (
-        <span aria-hidden>{tone === "navy" ? initialsOf(name) : name.trim().charAt(0).toUpperCase() || "?"}</span>
+        <span aria-hidden>
+          {tone === "navy" ? initialsOf(name) : name.trim().charAt(0).toUpperCase() || "?"}
+        </span>
       )}
     </span>
   );

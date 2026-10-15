@@ -61,9 +61,7 @@ export function UnderlineTabs({
             onKeyDown={(e) => onKey(e, i)}
             className={cn(
               "-mb-px h-12 shrink-0 border-b-[3px] text-base font-bold whitespace-nowrap transition-colors",
-              on
-                ? "border-accent text-text-strong"
-                : "border-transparent text-text-subtle hover:text-text",
+              on ? "border-accent text-text-strong" : "border-transparent text-text-subtle hover:text-text",
             )}
           >
             {t.label}

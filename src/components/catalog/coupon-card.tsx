@@ -29,8 +29,8 @@ export function CouponCard({
 }: {
   coupon: Coupon;
   productTitle?: string;
-  /** `inline`: faixa tracejada dentro da coluna de ações do produto. */
-  variant?: "card" | "inline";
+  /** `inline`: faixa tracejada na coluna de ações do produto; `band`: faixa larga da aba Ofertas da loja. */
+  variant?: "card" | "inline" | "band";
 }) {
   const requireAuth = useRequireAuth();
   const toast = useToast();
@@ -55,6 +55,56 @@ export function CouponCard({
   useResumeAction("coupon", coupon.id, () => {
     if (!claimed) claim.mutate();
   });
+
+  const rule = [
+    productTitle && coupon.priceCents != null
+      ? `${productTitle.length > 40 ? "este produto" : productTitle} sai por ${formatMoney(coupon.priceCents)}`
+      : `${coupon.percentOff}% de desconto`,
+    coupon.minCents ? `compras a partir de ${formatMoney(coupon.minCents)}` : null,
+    untilText ? `válido até ${untilText}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const button = (
+    <button
+      type="button"
+      disabled={claimed || claim.isPending}
+      onClick={() => {
+        if (!requireAuth("coupon", coupon.id)) return;
+        claim.mutate();
+      }}
+      className={
+        variant === "band"
+          ? "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-[22px] text-sm font-extrabold whitespace-nowrap text-on-primary hover:bg-primary-hover disabled:opacity-70"
+          : "inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+      }
+    >
+      {claimed && <Check className="size-4" aria-hidden />}
+      {claimed ? "Cupom guardado" : claim.isPending ? "Guardando…" : "Pegar cupom"}
+    </button>
+  );
+
+  if (variant === "band")
+    return (
+      <section
+        aria-label="Cupom da loja"
+        className="flex flex-col gap-4 rounded-2xl border border-dashed border-accent-border bg-accent-soft px-5 py-4 sm:flex-row sm:items-center"
+      >
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-accent text-on-accent">
+          <Ticket className="size-6" aria-hidden />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-[11px] font-extrabold tracking-[.5px] text-accent-text">CUPOM DO DIA</span>
+          <span className="text-[17px] leading-6 font-extrabold text-text-strong">{coupon.title}</span>
+          <span className="text-[13px] text-accent-text">
+            Código <b>{coupon.code}</b>
+            {rule && ` · ${rule}`}
+          </span>
+        </div>
+        {button}
+      </section>
+    );
 
   return (
     <section
@@ -84,18 +134,7 @@ export function CouponCard({
           {untilText ? ` · válido até ${untilText}` : ""}
         </p>
       </div>
-      <button
-        type="button"
-        disabled={claimed || claim.isPending}
-        onClick={() => {
-          if (!requireAuth("coupon", coupon.id)) return;
-          claim.mutate();
-        }}
-        className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
-      >
-        {claimed && <Check className="size-4" aria-hidden />}
-        {claimed ? "Cupom guardado" : claim.isPending ? "Guardando…" : "Pegar cupom"}
-      </button>
+      {button}
     </section>
   );
 }

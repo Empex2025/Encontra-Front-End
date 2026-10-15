@@ -17,6 +17,7 @@ import { track } from "@/lib/analytics/track";
  * Variantes (Documento de entrega › Produto e Loja):
  * - `button` (padrão): botão com texto que abre uma janela.
  * - `icon`: círculo só com o ícone que abre o painel "Compartilhar este produto" (tela do produto).
+ * - `pill`: pílula com o texto "Compartilhar" e o mesmo painel do `icon` (perfil do prestador).
  * - `menu`: botão redondo de ícone que abre o menu da loja (copiar link, ver como abre, denunciar).
  */
 export function ShareButton({
@@ -35,7 +36,7 @@ export function ShareButton({
   report: string;
   trackTarget?: { targetType: "PRODUCT" | "STORE" | "PROVIDER"; targetId: string };
   label?: string;
-  variant?: "button" | "icon" | "menu";
+  variant?: "button" | "icon" | "menu" | "pill";
 }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLSpanElement>(null);
@@ -44,7 +45,11 @@ export function ShareButton({
   const url = typeof window === "undefined" ? path : `${window.location.origin}${path}`;
   const article = noun === "loja" || noun === "prestador" ? "da" : "do";
   const reportLabel =
-    noun === "produto" ? "Denunciar este anúncio" : noun === "loja" ? "Denunciar esta loja" : "Denunciar este perfil";
+    noun === "produto"
+      ? "Denunciar este anúncio"
+      : noun === "loja"
+        ? "Denunciar esta loja"
+        : "Denunciar este perfil";
 
   const copy = async () => {
     try {
@@ -61,7 +66,7 @@ export function ShareButton({
   };
   const waHref = `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`;
 
-  if (variant === "icon" || variant === "menu") {
+  if (variant !== "button") {
     return (
       <span ref={wrap} className="relative inline-flex">
         <button
@@ -72,18 +77,22 @@ export function ShareButton({
           aria-label={variant === "menu" ? "Mais opções" : label}
           className={cn(
             "flex items-center justify-center text-text-strong hover:bg-selected",
-            variant === "icon"
-              ? "size-11 rounded-full bg-bg"
-              : "h-[38px] w-11 rounded-full border border-border bg-surface",
+            variant === "icon" && "size-11 rounded-full bg-bg",
+            variant === "menu" && "h-[38px] w-11 rounded-full border border-border bg-surface",
+            variant === "pill" &&
+              "h-10 gap-1.5 rounded-full border border-border bg-surface px-3.5 text-[13px] font-bold",
           )}
         >
-          {variant === "icon" ? (
-            <Share2 className="size-5" aria-hidden />
-          ) : (
-            <Share className="size-[18px]" aria-hidden />
+          {variant === "icon" && <Share2 className="size-5" aria-hidden />}
+          {variant === "menu" && <Share className="size-[18px]" aria-hidden />}
+          {variant === "pill" && (
+            <>
+              <Share2 className="size-4" aria-hidden />
+              {label}
+            </>
           )}
         </button>
-        {open && variant === "icon" && (
+        {open && variant !== "menu" && (
           <div
             role="menu"
             className="absolute top-[52px] right-0 z-40 flex w-[300px] max-w-[calc(100vw-32px)] flex-col gap-2 rounded-xl border border-border bg-surface p-3.5 shadow-pop"

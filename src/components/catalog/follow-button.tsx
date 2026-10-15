@@ -105,10 +105,7 @@ export function FollowButton({
           className={cn(
             "flex items-center justify-center text-text-strong hover:bg-surface-2",
             variant === "pill"
-              ? cn(
-                  "h-[38px] w-11 rounded-full border border-border",
-                  bell ? "bg-selected" : "bg-surface",
-                )
+              ? cn("h-[38px] w-11 rounded-full border border-border", bell ? "bg-selected" : "bg-surface")
               : "size-10 rounded-lg border border-border-strong text-text-2",
           )}
         >
