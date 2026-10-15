@@ -1,16 +1,23 @@
 "use client";
 
-import { Copy, ExternalLink, Flag, MessageCircle, Share2 } from "lucide-react";
+import { Copy, ExternalLink, Eye, Flag, Link2, MessageCircle, Share, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
+import { cn } from "@/components/ui/cn";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { useDismiss } from "@/components/ui/use-dismiss";
 import { track } from "@/lib/analytics/track";
 
 /**
  * Compartilhar: o link público é o endereço da própria página (/p, /l ou /s), sem nenhum dado de quem compartilha.
  * `report` leva à tela Denunciar.
+ *
+ * Variantes (Documento de entrega › Produto e Loja):
+ * - `button` (padrão): botão com texto que abre uma janela.
+ * - `icon`: círculo só com o ícone que abre o painel "Compartilhar este produto" (tela do produto).
+ * - `menu`: botão redondo de ícone que abre o menu da loja (copiar link, ver como abre, denunciar).
  */
 export function ShareButton({
   path,
@@ -19,6 +26,7 @@ export function ShareButton({
   report,
   trackTarget,
   label = "Compartilhar",
+  variant = "button",
 }: {
   path: string;
   title: string;
@@ -27,23 +35,139 @@ export function ShareButton({
   report: string;
   trackTarget?: { targetType: "PRODUCT" | "STORE" | "PROVIDER"; targetId: string };
   label?: string;
+  variant?: "button" | "icon" | "menu";
 }) {
   const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLSpanElement>(null);
   const toast = useToast();
+  useDismiss(wrap, open && variant !== "button", () => setOpen(false));
   const url = typeof window === "undefined" ? path : `${window.location.origin}${path}`;
+  const article = noun === "loja" || noun === "prestador" ? "da" : "do";
+  const reportLabel =
+    noun === "produto" ? "Denunciar este anúncio" : noun === "loja" ? "Denunciar esta loja" : "Denunciar este perfil";
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
-      toast(`Link ${noun === "loja" || noun === "prestador" ? "da" : "do"} ${noun} copiado.`);
+      toast(`Link ${article} ${noun} copiado.`);
     } catch {
       toast("Não foi possível copiar. Selecione o link e copie à mão.", "info");
     }
     shared("copy");
+    setOpen(false);
   };
   const shared = (via: string) => {
     if (trackTarget) track({ type: "PRODUCT_SHARED", ...trackTarget, props: { via } });
   };
+  const waHref = `https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`;
+
+  if (variant === "icon" || variant === "menu") {
+    return (
+      <span ref={wrap} className="relative inline-flex">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={variant === "menu" ? "Mais opções" : label}
+          className={cn(
+            "flex items-center justify-center text-text-strong hover:bg-selected",
+            variant === "icon"
+              ? "size-11 rounded-full bg-bg"
+              : "h-[38px] w-11 rounded-full border border-border bg-surface",
+          )}
+        >
+          {variant === "icon" ? (
+            <Share2 className="size-5" aria-hidden />
+          ) : (
+            <Share className="size-[18px]" aria-hidden />
+          )}
+        </button>
+        {open && variant === "icon" && (
+          <div
+            role="menu"
+            className="absolute top-[52px] right-0 z-40 flex w-[300px] max-w-[calc(100vw-32px)] flex-col gap-2 rounded-xl border border-border bg-surface p-3.5 shadow-pop"
+          >
+            <span className="text-xs font-bold text-text-muted">Compartilhar este {noun}</span>
+            <span className="flex h-9 items-center truncate rounded-lg border border-border bg-bg px-2.5 text-xs text-link">
+              <span className="truncate">{url.replace(/^https?:\/\//, "")}</span>
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={copy}
+                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-primary bg-surface text-xs font-bold text-text-strong hover:bg-selected"
+              >
+                <Copy className="size-3.5" aria-hidden />
+                Copiar link
+              </button>
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => shared("whatsapp")}
+                className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-success text-xs font-bold text-white hover:opacity-90"
+              >
+                <MessageCircle className="size-3.5" aria-hidden />
+                WhatsApp
+              </a>
+            </div>
+            <Link href={path} target="_blank" className="text-xs font-bold text-link hover:underline">
+              Ver como abre para quem recebe ›
+            </Link>
+            <span className="h-px bg-border" aria-hidden />
+            <Link href={report} className="text-xs font-semibold text-danger-text hover:underline">
+              {reportLabel}
+            </Link>
+          </div>
+        )}
+        {open && variant === "menu" && (
+          <div
+            role="menu"
+            className="absolute top-[52px] right-0 z-40 flex w-[260px] max-w-[calc(100vw-32px)] flex-col rounded-xl border border-border bg-surface p-2 shadow-pop"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={copy}
+              className="flex h-10 items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] font-semibold text-text hover:bg-surface-2"
+            >
+              <Link2 className="size-4" aria-hidden />
+              Copiar link {article} {noun}
+            </button>
+            <Link
+              href={path}
+              target="_blank"
+              role="menuitem"
+              className="flex h-10 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-semibold text-text hover:bg-surface-2"
+            >
+              <Eye className="size-4" aria-hidden />
+              Ver como abre para quem recebe
+            </Link>
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              role="menuitem"
+              onClick={() => shared("whatsapp")}
+              className="flex h-10 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-semibold text-text hover:bg-surface-2"
+            >
+              <MessageCircle className="size-4" aria-hidden />
+              Enviar pelo WhatsApp
+            </a>
+            <Link
+              href={report}
+              role="menuitem"
+              className="flex h-10 items-center gap-2.5 rounded-lg px-2.5 text-[13px] font-semibold text-danger-text hover:bg-surface-2"
+            >
+              <Flag className="size-4" aria-hidden />
+              {reportLabel}
+            </Link>
+          </div>
+        )}
+      </span>
+    );
+  }
 
   return (
     <>
@@ -77,7 +201,7 @@ export function ShareButton({
               Copiar link
             </button>
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(`${title} ${url}`)}`}
+              href={waHref}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => shared("whatsapp")}
@@ -100,7 +224,7 @@ export function ShareButton({
             className="inline-flex items-center gap-1 text-sm font-semibold text-danger-text hover:underline"
           >
             <Flag className="size-3.5" aria-hidden />
-            Denunciar {noun === "produto" ? "este anúncio" : noun === "loja" ? "esta loja" : "este perfil"}
+            {reportLabel}
           </Link>
         </Modal>
       )}

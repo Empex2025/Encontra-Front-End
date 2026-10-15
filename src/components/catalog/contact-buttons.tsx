@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { MessageCircle, Phone } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId } from "react";
 
@@ -9,6 +9,7 @@ import { useResumeAction } from "@/hooks/use-resume-action";
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { cn } from "@/components/ui/cn";
 import { useToast } from "@/components/ui/toast";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { track } from "@/lib/analytics/track";
 import { actions } from "@/lib/api/actions";
 import type { ProfileSummary } from "@/lib/api/catalog";
@@ -28,6 +29,7 @@ export function ContactButtons({
   chatLabel = "Conversar com a loja",
   target,
   layout = "row",
+  look = "default",
 }: {
   profile: Pick<ProfileSummary, "id" | "whatsapp" | "kind">;
   productId?: string;
@@ -37,6 +39,8 @@ export function ContactButtons({
   chatLabel?: string;
   target: { targetType: "PRODUCT" | "STORE" | "PROVIDER"; targetId: string };
   layout?: "row" | "stack";
+  /** `bold`: botões de 56 px com WhatsApp verde cheio (tela do produto). */
+  look?: "default" | "bold";
 }) {
   const router = useRouter();
   const noWaId = useId();
@@ -63,7 +67,10 @@ export function ContactButtons({
             if (!requireAuth("chat", profile.id)) return;
             chat.mutate();
           }}
-          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-[15px] font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
+          className={cn(
+            "flex flex-1 items-center justify-center gap-2.5 rounded-lg bg-primary px-4 font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60",
+            look === "bold" ? "h-14 text-base" : "h-12 text-[15px]",
+          )}
         >
           <MessageCircle className="size-5" aria-hidden />
           {chat.isPending ? "Abrindo…" : chatLabel}
@@ -74,9 +81,14 @@ export function ContactButtons({
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => track({ type: "WHATSAPP_CLICK", ...target })}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-success px-4 text-[15px] font-bold text-success-text hover:bg-success-soft"
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2.5 rounded-lg px-4 font-bold",
+              look === "bold"
+                ? "h-14 bg-success text-base text-white hover:opacity-90"
+                : "h-12 border border-success text-[15px] text-success-text hover:bg-success-soft",
+            )}
           >
-            <Phone className="size-5" aria-hidden />
+            <WhatsAppIcon className="size-5" />
             Chamar no WhatsApp
           </a>
         ) : (
@@ -84,9 +96,12 @@ export function ContactButtons({
             type="button"
             disabled
             aria-describedby={noWaId}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 text-[15px] font-bold text-text-subtle disabled:cursor-not-allowed"
+            className={cn(
+              "flex flex-1 items-center justify-center gap-2 rounded-lg border border-border px-4 font-bold text-text-subtle disabled:cursor-not-allowed",
+              look === "bold" ? "h-14 text-base" : "h-12 text-[15px]",
+            )}
           >
-            <Phone className="size-5" aria-hidden />
+            <WhatsAppIcon className="size-5" />
             WhatsApp não informado
           </button>
         )}
