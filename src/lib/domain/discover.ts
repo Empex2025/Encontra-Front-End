@@ -120,3 +120,46 @@ export function findStoryPos(groups: StoryGroup[], storyId: string): { g: number
   }
   return null;
 }
+
+/** Iniciais para o círculo do perfil sem foto: "Brilho Limpezas" → "BL", "Hidro" → "HI". */
+export function initials(name: string) {
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter((w) => /\p{L}/u.test(w));
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+const clock = (d: Date) =>
+  d.getMinutes() === 0 ? `${d.getHours()}h` : `${d.getHours()}h${String(d.getMinutes()).padStart(2, "0")}`;
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** "Hoje, 19h às 23h" · "Amanhã, 19h" · "Sábado, 10/10, 19h às 22h". Tudo calculado da data do evento. */
+export function eventWhenText(startIso: string, endIso: string | null, now: Date = new Date()) {
+  const s = new Date(startIso);
+  const e = endIso ? new Date(endIso) : null;
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((day(s) - day(now)) / 86_400_000);
+  const range = e && !Number.isNaN(e.getTime()) ? `${clock(s)} às ${clock(e)}` : clock(s);
+  if (days === 0) return `Hoje, ${range}`;
+  if (days === 1) return `Amanhã, ${range}`;
+  const wd = cap(s.toLocaleDateString("pt-BR", { weekday: "long" }));
+  const dm = s.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  return `${wd}, ${dm}, ${range}`;
+}
+
+/** Selo de situação do cartão "Quando": "Começa em 4 h" nas próximas 24 h; senão, a frase de `eventWhen`. */
+export function eventChip(startIso: string, endIso: string | null, now: Date = new Date()) {
+  const w = eventWhen(startIso, endIso, now);
+  const ms = new Date(startIso).getTime() - now.getTime();
+  if ((w.state === "soon" || w.state === "future") && ms > 0 && ms < 86_400_000) {
+    const min = Math.ceil(ms / 60_000);
+    return {
+      state: w.state,
+      label: min < 60 ? `Começa em ${min} min` : `Começa em ${Math.floor(min / 60)} h`,
+    };
+  }
+  return w;
+}

@@ -19,6 +19,8 @@ export function ShareButton({
   report,
   trackTarget,
   label = "Compartilhar",
+  className,
+  trigger,
 }: {
   path: string;
   title: string;
@@ -27,6 +29,10 @@ export function ShareButton({
   report: string;
   trackTarget?: { targetType: "PRODUCT" | "STORE" | "PROVIDER"; targetId: string };
   label?: string;
+  /** Troca só as classes do botão (ex.: botão sobre vídeo). */
+  className?: string;
+  /** Troca o botão inteiro: recebe a função que abre a janela de compartilhar. */
+  trigger?: (open: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const toast = useToast();
@@ -47,14 +53,21 @@ export function ShareButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold text-text-2 hover:bg-surface-2"
-      >
-        <Share2 className="size-4" aria-hidden />
-        {label}
-      </button>
+      {trigger ? (
+        trigger(() => setOpen(true))
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={
+            className ??
+            "inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold text-text-2 hover:bg-surface-2"
+          }
+        >
+          <Share2 className="size-4" aria-hidden />
+          {label}
+        </button>
+      )}
       {open && (
         <Modal title="Compartilhar" onClose={() => setOpen(false)}>
           <p className="truncate text-sm font-semibold text-text-strong">{title}</p>

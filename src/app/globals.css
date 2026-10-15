@@ -59,6 +59,9 @@
   --cat-pet: #198754;
   --cat-eletronicos: #00154f;
 
+  /* Rótulo "Serviço" no cartão do story */
+  --kind-service: #9f5c2e;
+
   color-scheme: light;
 }
 
@@ -109,6 +112,8 @@
   --cat-pet: #a3cfbb;
   --cat-eletronicos: #c7d2fe;
 
+  --kind-service: #f0b48a;
+
   color-scheme: dark;
 }
 
@@ -147,6 +152,7 @@
   --color-header: var(--header-bg);
   --color-header-border: var(--header-border);
   --color-focus: var(--focus);
+  --color-kind-service: var(--kind-service);
 }
 
 /* Cores fixas da marca (não mudam com o tema) */
@@ -157,6 +163,9 @@
   --color-navy-300: #808daf;
   --color-navy-200: #b3bbcf;
   --color-navy-50: #e6e9f0;
+  --color-navy-900: #000f3b;
+  /* Palco escuro dos Stories (fundo da tela cheia) */
+  --color-stage: #050b24;
   --color-amber: #f4af1b;
   --color-amber-400: #f7bb35;
   --color-amber-50: #fef5e2;
@@ -193,6 +202,26 @@ body {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Entradas suaves (story, cartão do produto, mensagem do chat). */
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
