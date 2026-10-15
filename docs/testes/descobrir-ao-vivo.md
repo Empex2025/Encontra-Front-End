@@ -43,3 +43,13 @@ Abra o site no navegador. Para testar "sem back-end", rode o app sem servidor de
 ## Observação
 
 O rodapé ainda mostra "em breve" ao lado de "Área do lojista" (fora deste fluxo).
+
+## Conferência com o protótipo (fidelidade)
+
+Veja a tabela completa em `docs/fidelidade/descobrir.md`. Itens para conferir lado a lado com os artboards Stories, AoVivo e Evento (1440 px e 390 px):
+
+- **Stories (desktop)**: quadro 9:16 de 432×768 no centro; miniatura do perfil vizinho à direita (com a 1ª foto, nome e "há N h"); setas redondas (a anterior fica apagada no 1º story); coluna de ações ao lado do quadro: curtir (com contagem), enviar, salvar. Etiqueta de produto/serviço em cartão branco com o botão certo para cada tipo (produto: Quero comprar; serviço: Pedir orçamento + Ver perfil). Responder à loja mostra "Mensagem enviada ... Abrir conversa". Com a janela "Compartilhar" aberta, Esc fecha só a janela.
+- **Stories (celular)**: ações sobre o story, à direita; toque nas laterais avança/volta.
+- **Ao vivo**: título, loja, Seguir e curtir sobre o vídeo; Compartilhar e Denunciar no canto do vídeo; "Em destaque agora" com Quero comprar e Ver produto; "Como chegar" e "Lembrar das próximas lives"; painel Chat / Produtos com "Quero comprar" por produto; "Outras lives agora" em duas colunas, abaixo.
+- **Evento**: capa com selo de data; barra Vou / Tenho interesse / Adicionar à agenda / Compartilhar; linha do tempo da programação; "Ofertas no evento" em caixa tracejada; lateral Quando / Onde / Entrada / Para quem; "Outros eventos perto" em duas colunas.
+- Nenhuma barra de rolagem horizontal em 390 px.

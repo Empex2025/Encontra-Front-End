@@ -907,7 +907,7 @@ function TagCard({
         {tag.priceCents !== null && (
           <span className="text-sm leading-5 font-extrabold text-text-strong">
             {tag.kind === "service" ? "A partir de " : ""}
-            {formatMoney(tag.priceCents)}
+            <span className="whitespace-nowrap">{formatMoney(tag.priceCents)}</span>
           </span>
         )}
       </div>
