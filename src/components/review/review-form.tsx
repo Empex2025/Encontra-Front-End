@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ImagePlus, Star, Video, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Camera, Check, ChevronDown, Star, Video, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/components/ui/cn";
 import { PageError } from "@/components/catalog/section-state";
@@ -68,7 +68,7 @@ export function ReviewForm({ tipo, id }: { tipo: string | undefined; id: string 
       <div
         aria-busy="true"
         aria-label="Carregando o item a avaliar"
-        className="mx-auto flex w-full max-w-2xl animate-pulse flex-col gap-4"
+        className="mx-auto flex w-full max-w-[800px] animate-pulse flex-col gap-4"
       >
         <div className="h-8 w-1/2 rounded bg-surface-2" />
         <div className="h-20 rounded-2xl bg-surface-2" />
@@ -265,350 +265,526 @@ function Form({
   };
   const back = () => (dirty ? setLeave(true) : router.push(target.backHref));
 
+  const moreSub = open
+    ? "Toque para fechar"
+    : highlights.length || extras.service || extras.response
+      ? [
+          highlights.length
+            ? `${highlights.length} ${highlights.length === 1 ? "destaque" : "destaques"}`
+            : null,
+          extras.service ? `atendimento ${extras.service}★` : null,
+          extras.response ? `resposta ${extras.response}★` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : "Toque para abrir";
+  const card = "flex flex-col gap-4 rounded-2xl bg-surface px-5 py-6 shadow-sm sm:px-8 sm:py-7";
+  const photosOk = okPhotos.length >= MIN_PHOTOS;
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 pb-28">
+    <div className="mx-auto flex w-full max-w-[800px] flex-col gap-5 pb-28">
       <button
         type="button"
         onClick={back}
-        className="inline-flex items-center gap-1.5 self-start py-2 text-sm font-semibold text-link hover:underline"
+        className="inline-flex items-center gap-1 self-start py-1 text-sm font-semibold text-link hover:underline"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        Voltar {type === "produto" ? "ao produto" : "ao perfil"}
+        Voltar {type === "produto" ? "ao produto" : type === "servico" ? "ao serviço" : "ao perfil"}
       </button>
-      <h1 className="text-2xl font-bold text-text-strong">{TITLE[type]}</h1>
-      <div className="flex items-center gap-3 rounded-2xl border border-border p-3">
-        <span className="size-16 shrink-0 overflow-hidden rounded-xl bg-surface-2">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-[32px] leading-10 font-bold text-text-strong">{TITLE[type]}</h1>
+        <p className="text-base leading-6 text-text-2">
+          Sua opinião ajuda outras pessoas a encontrar bons produtos e serviços perto delas.
+        </p>
+      </div>
+      <div className="flex items-center gap-4 rounded-2xl bg-surface p-4 shadow-sm">
+        <span className="size-[72px] shrink-0 overflow-hidden rounded-lg bg-surface-3">
           {target.imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={target.imageUrl} alt="" className="size-full object-cover" />
           )}
         </span>
-        <div className="min-w-0">
-          <p className="truncate font-bold text-text-strong">{target.title}</p>
-          {target.subtitle && <p className="truncate text-sm text-text-muted">{target.subtitle}</p>}
-          {target.neighborhood && <p className="text-xs text-text-subtle">{target.neighborhood}</p>}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <p className="truncate text-base leading-6 font-semibold text-text">{target.title}</p>
+          {target.subtitle && <p className="truncate text-[13px] leading-5 text-text-2">{target.subtitle}</p>}
+          {target.neighborhood && <p className="text-[13px] leading-5 text-text-2">{target.neighborhood}</p>}
         </div>
       </div>
       {tried && Object.keys(errors).length > 0 && (
-        <p role="alert" className="bg-danger-bg rounded-lg px-3 py-2 text-sm font-semibold text-danger-text">
+        <p
+          role="alert"
+          className="flex items-center gap-2.5 rounded-lg border border-danger/40 bg-danger-soft px-4 py-3.5 text-sm font-semibold text-danger-text"
+        >
+          <AlertCircle className="size-[18px] shrink-0" aria-hidden />
           Falta pouco: confira os itens marcados abaixo para publicar.
         </p>
       )}
 
-      <section aria-labelledby="r1" className="flex flex-col gap-2">
-        <h2 id="r1" className="font-bold text-text-strong">
-          1 · Qual nota você dá? *
-        </h2>
-        <div role="radiogroup" aria-label="Nota" className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={rating === n}
-              aria-label={`${n} ${n === 1 ? "estrela" : "estrelas"}`}
-              onClick={() => setRatingSafe(n)}
-              className="flex size-11 items-center justify-center"
-            >
-              <Star
-                className={cn("size-8", n <= rating ? "fill-accent text-accent" : "text-border-strong")}
-                aria-hidden
-              />
-            </button>
-          ))}
-          <span className="ml-2 text-sm font-semibold text-text-muted">{RATING_LABEL[rating]}</span>
-        </div>
-        {tried && errors.rating && (
-          <p role="alert" className="text-xs font-semibold text-danger-text">
-            {errors.rating}
-          </p>
-        )}
-      </section>
-
-      <section aria-labelledby="r2" className="flex flex-col gap-2">
-        <h2 id="r2" className="font-bold text-text-strong">
-          2 · Fotos e vídeo *
-        </h2>
-        <p className="text-sm text-text-muted">
-          Mínimo de {MIN_PHOTOS} fotos, até {MAX_PHOTOS}. Vídeo opcional de até 60 segundos.
-        </p>
-        <ul
-          className={cn(
-            "flex flex-wrap gap-2 rounded-xl p-1",
-            tried && errors.photos && "ring-2 ring-danger",
-          )}
-        >
-          {photos.map((p, i) => (
-            <li key={p.id} className="relative size-20 overflow-hidden rounded-lg bg-surface-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={`Foto ${i + 1}`} className="size-full object-cover" />
-              {p.status !== "done" && (
-                <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-bold text-white">
-                  {p.status === "uploading" ? "Enviando…" : "Falhou"}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => setPhotos((x) => x.filter((y) => y.id !== p.id))}
-                aria-label={`Remover foto ${i + 1}`}
-                className="absolute top-0.5 right-0.5 flex size-6 items-center justify-center rounded-full bg-black/60 text-white"
-              >
-                <X className="size-3.5" aria-hidden />
-              </button>
-            </li>
-          ))}
-          {photos.length < MAX_PHOTOS && (
-            <li>
-              <button
-                type="button"
-                onClick={() => photoRef.current?.click()}
-                className="flex size-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border-strong text-xs font-semibold text-text-muted hover:bg-surface-2"
-              >
-                <ImagePlus className="size-5" aria-hidden />
-                Adicionar foto {photos.length}/{MAX_PHOTOS}
-              </button>
-            </li>
-          )}
-        </ul>
-        <input
-          ref={photoRef}
-          type="file"
-          accept="image/jpeg,image/png"
-          multiple
-          className="sr-only"
-          tabIndex={-1}
-          onChange={(e) => {
-            addPhotos(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        {tried && errors.photos && (
-          <p role="alert" className="text-xs font-semibold text-danger-text">
-            {errors.photos}
-          </p>
-        )}
-        {video ? (
-          <div className="flex items-center gap-2 rounded-lg bg-surface-2 p-2 text-sm">
-            <Video className="size-4" aria-hidden />
-            <span className="flex-1">
-              {video.status === "uploading"
-                ? "Enviando vídeo…"
-                : video.status === "error"
-                  ? "Falha no envio do vídeo"
-                  : "Vídeo adicionado"}
+      <section aria-labelledby="r1" className={card}>
+        <StepHead n={1} id="r1" title="Qual nota você dá?" required hint="Toque nas estrelas para avaliar." />
+        <div className="flex flex-col gap-3.5 sm:pl-[42px]">
+          <div role="radiogroup" aria-label="Nota" className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  role="radio"
+                  aria-checked={rating === n}
+                  aria-label={`${n} ${n === 1 ? "estrela" : "estrelas"}`}
+                  onClick={() => setRatingSafe(n)}
+                  className="flex items-center justify-center p-0.5"
+                >
+                  <Star
+                    className={cn(
+                      "size-10",
+                      n <= rating ? "fill-accent text-accent-hover" : "text-accent-hover",
+                    )}
+                    aria-hidden
+                  />
+                </button>
+              ))}
+            </div>
+            <span className={cn("text-base leading-6 font-bold", labelTone(rating))}>
+              {RATING_LABEL[rating] || "Sem nota"}
             </span>
-            <button
-              type="button"
-              onClick={() => setVideo(null)}
-              aria-label="Remover vídeo"
-              className="flex size-8 items-center justify-center rounded-full hover:bg-border"
-            >
-              <X className="size-4" aria-hidden />
-            </button>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => videoRef.current?.click()}
-            className="inline-flex h-10 items-center gap-1.5 self-start rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2"
-          >
-            <Video className="size-4" aria-hidden />
-            Adicionar vídeo (opcional)
-          </button>
-        )}
-        <input
-          ref={videoRef}
-          type="file"
-          accept="video/mp4"
-          className="sr-only"
-          tabIndex={-1}
-          onChange={(e) => {
-            void addVideo(e.target.files?.[0]);
-            e.target.value = "";
-          }}
+          {tried && errors.rating && <FieldError>{errors.rating}</FieldError>}
+        </div>
+      </section>
+
+      <section aria-labelledby="r2" className={card}>
+        <StepHead
+          n={2}
+          id="r2"
+          title="Fotos e vídeo"
+          required
+          hint={`Mínimo de ${MIN_PHOTOS} fotos, até ${MAX_PHOTOS}. Vídeo opcional de até 60 segundos.`}
         />
-        {mediaError && (
-          <p role="alert" className="text-xs font-semibold text-danger-text">
-            {mediaError}
+        <div className="flex flex-col gap-3.5 sm:pl-[42px]">
+          <ul className="flex flex-wrap gap-3">
+            {photos.map((p, i) => (
+              <li key={p.id} className="relative size-[120px] overflow-hidden rounded-lg bg-surface-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={`Foto ${i + 1}`} className="size-full object-cover" />
+                {p.status !== "done" && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-xs font-bold text-white">
+                    {p.status === "uploading" ? "Enviando…" : "Falhou"}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPhotos((x) => x.filter((y) => y.id !== p.id))}
+                  aria-label={`Remover foto ${i + 1}`}
+                  className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-navy/75 text-white"
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </li>
+            ))}
+            {video && (
+              <li className="relative flex size-[120px] flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg bg-surface-3 text-center text-xs font-bold text-text-strong">
+                <Video className="size-6" aria-hidden />
+                {video.status === "uploading"
+                  ? "Enviando vídeo…"
+                  : video.status === "error"
+                    ? "Falha no envio"
+                    : "Vídeo adicionado"}
+                <button
+                  type="button"
+                  onClick={() => setVideo(null)}
+                  aria-label="Remover vídeo"
+                  className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-navy/75 text-white"
+                >
+                  <X className="size-4" aria-hidden />
+                </button>
+              </li>
+            )}
+            {photos.length < MAX_PHOTOS && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => photoRef.current?.click()}
+                  className={cn(
+                    "flex size-[120px] flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed bg-bg text-[13px] font-semibold text-text-strong hover:bg-surface-2",
+                    tried && errors.photos ? "border-danger" : "border-navy-300",
+                  )}
+                >
+                  <Camera className="size-6" aria-hidden />
+                  <span>Adicionar foto</span>
+                  <span className="text-[11px] font-medium text-text-muted">
+                    {photos.length}/{MAX_PHOTOS}
+                  </span>
+                </button>
+              </li>
+            )}
+            {!video && (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => videoRef.current?.click()}
+                  className="flex size-[120px] flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-navy-300 bg-bg text-[13px] font-semibold text-text-strong hover:bg-surface-2"
+                >
+                  <Video className="size-6" aria-hidden />
+                  <span>Adicionar vídeo</span>
+                  <span className="text-[11px] font-medium text-text-muted">opcional</span>
+                </button>
+              </li>
+            )}
+          </ul>
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            multiple
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(e) => {
+              addPhotos(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={videoRef}
+            type="file"
+            accept="video/mp4"
+            className="sr-only"
+            tabIndex={-1}
+            onChange={(e) => {
+              void addVideo(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+          <p className="text-[13px] leading-5 text-text-muted">
+            JPG, PNG ou MP4. Evite rostos de outras pessoas e dados pessoais nas imagens.
           </p>
-        )}
-        <p className="text-xs text-text-subtle">
-          JPG, PNG ou MP4. Evite rostos de outras pessoas e dados pessoais nas imagens.
-        </p>
+          {tried && errors.photos && <FieldError>{errors.photos}</FieldError>}
+          {mediaError && <FieldError>{mediaError}</FieldError>}
+        </div>
       </section>
 
-      <section aria-labelledby="r3" className="flex flex-col gap-2">
-        <h2 id="r3" className="font-bold text-text-strong">
-          3 · Quer contar mais? (opcional)
-        </h2>
-        <textarea
-          value={text}
-          maxLength={COMMENT_MAX}
-          rows={4}
-          onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
-          aria-label="Comentário"
-          className="rounded-lg border border-border-strong bg-surface p-3 text-text"
+      <section aria-labelledby="r3" className={card}>
+        <StepHead
+          n={3}
+          id="r3"
+          title="Quer contar mais?"
+          optional
+          hint="Fale do que achou do produto ou serviço e do atendimento."
         />
-        <p className="self-end text-xs text-text-subtle">
-          {text.length}/{COMMENT_MAX}
-        </p>
+        <div className="flex flex-col gap-3.5 sm:pl-[42px]">
+          <textarea
+            value={text}
+            maxLength={COMMENT_MAX}
+            rows={5}
+            onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
+            aria-label="Seu comentário (opcional)"
+            placeholder="Ex.: Fui atendido rápido pelo WhatsApp e era igual ao das fotos…"
+            className="min-h-32 w-full resize-y rounded-lg border border-border bg-surface px-4 py-3.5 text-[15px] leading-6 text-text placeholder:text-text-subtle"
+          />
+          <p className="self-end text-[13px] leading-5 text-text-muted">
+            {text.length}/{COMMENT_MAX}
+          </p>
+        </div>
       </section>
 
-      <section aria-labelledby="r4" className="flex flex-col gap-2">
+      <section aria-labelledby="r4" className="flex flex-col rounded-2xl bg-surface shadow-sm">
         <button
           type="button"
           id="r4"
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
-          className="flex h-11 items-center justify-between rounded-lg border border-border px-3 text-left font-bold text-text-strong hover:bg-surface-2"
+          className="flex items-center justify-between gap-4 rounded-2xl px-5 py-[22px] text-left sm:px-8"
         >
-          4 · Destaques e atendimento (opcional)<span aria-hidden>{open ? "−" : "+"}</span>
+          <span className="flex items-start gap-3.5">
+            <StepBadge n={4} />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-xl leading-7 font-bold text-text-strong">
+                Destaques e atendimento{" "}
+                <span className="text-sm font-medium text-text-muted">(opcional)</span>
+              </span>
+              <span className="text-sm leading-5 text-text-2">{moreSub}</span>
+            </span>
+          </span>
+          <ChevronDown
+            className={cn("size-5 shrink-0 text-text-strong transition-transform", open && "rotate-180")}
+            aria-hidden
+          />
         </button>
         {open && (
-          <div className="flex flex-col gap-4 p-1">
-            <fieldset className="flex flex-col gap-2">
-              <legend className="mb-1 text-sm font-semibold text-text-strong">
+          <div className="flex flex-col gap-5 px-5 pb-7 sm:pr-8 sm:pl-[74px]">
+            <fieldset className="flex flex-col gap-2.5">
+              <legend className="mb-2.5 text-sm leading-5 font-bold text-text">
                 O que mais chamou sua atenção?
               </legend>
               <ul className="flex flex-wrap gap-2">
-                {highlightsFor(rating).map((h) => (
-                  <li key={h}>
-                    <button
-                      type="button"
-                      aria-pressed={highlights.includes(h)}
-                      onClick={() =>
-                        setHighlights((x) => (x.includes(h) ? x.filter((y) => y !== h) : [...x, h]))
-                      }
-                      className={cn(
-                        "h-10 rounded-full border px-3 text-sm font-semibold",
-                        highlights.includes(h)
-                          ? "border-primary bg-primary text-on-primary"
-                          : "border-border-strong text-text hover:bg-surface-2",
-                      )}
-                    >
-                      {h}
-                    </button>
-                  </li>
-                ))}
+                {highlightsFor(rating).map((h) => {
+                  const on = highlights.includes(h);
+                  return (
+                    <li key={h}>
+                      <button
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setHighlights((x) => (on ? x.filter((y) => y !== h) : [...x, h]))}
+                        className={cn(
+                          "inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold",
+                          on
+                            ? "border-primary bg-primary text-on-primary"
+                            : "border-border-strong text-text hover:bg-surface-2",
+                        )}
+                      >
+                        {on && <Check className="size-4" aria-hidden />}
+                        {h}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </fieldset>
-            {(
-              [
-                ["service", "Atendimento da loja"],
-                ["response", "Tempo de resposta"],
-              ] as const
-            ).map(([k, label]) => (
-              <div key={k} role="radiogroup" aria-label={label} className="flex items-center gap-2">
-                <span className="w-44 text-sm font-semibold text-text-strong">{label}</span>
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={extras[k] === n}
-                    aria-label={`${label}: ${n}`}
-                    onClick={() => setExtras((x) => ({ ...x, [k]: x[k] === n ? 0 : n }))}
-                    className={cn(
-                      "size-10 rounded-full border text-sm font-bold",
-                      extras[k] === n
-                        ? n <= 2
-                          ? "border-danger bg-danger text-white"
-                          : n === 3
-                            ? "border-warning bg-warning text-on-accent"
-                            : "border-success bg-success text-white"
-                        : "border-border-strong text-text-2",
-                    )}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            ))}
+            <div className="grid gap-x-4 gap-y-3.5 sm:grid-cols-[200px_1fr] sm:items-center">
+              {(
+                [
+                  ["service", "Atendimento da loja"],
+                  ["response", "Tempo de resposta"],
+                ] as const
+              ).map(([k, label]) => (
+                <Fragment key={k}>
+                  <span className="text-sm leading-5 font-semibold text-text">{label}</span>
+                  <div role="radiogroup" aria-label={label} className="flex items-center gap-3">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          role="radio"
+                          aria-checked={extras[k] === n}
+                          aria-label={`${label}: ${n} ${n === 1 ? "estrela" : "estrelas"}`}
+                          onClick={() => setExtras((x) => ({ ...x, [k]: x[k] === n ? 0 : n }))}
+                          className="flex items-center justify-center p-0.5"
+                        >
+                          <Star
+                            className={cn("size-7 text-accent-hover", n <= extras[k] && "fill-accent")}
+                            aria-hidden
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <span className={cn("text-base leading-6 font-bold", labelTone(extras[k]))}>
+                      {extras[k] ? RATING_LABEL[extras[k]] : ""}
+                    </span>
+                  </div>
+                </Fragment>
+              ))}
+            </div>
           </div>
         )}
       </section>
 
-      <label className="flex items-start gap-3 rounded-xl border border-border p-3">
-        <input
-          type="checkbox"
-          role="switch"
-          checked={showName}
-          onChange={(e) => setShowName(e.target.checked)}
-          className="mt-0.5 size-5"
-        />
-        <span>
-          <span className="block font-semibold text-text-strong">Mostrar meu nome na avaliação</span>
-          <span className="text-sm text-text-muted">
-            Será exibido como <b>{displayName(me?.name, showName)}</b>
+      <section className="flex items-center justify-between gap-4 rounded-2xl bg-surface px-5 py-5 shadow-sm sm:px-8">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-base leading-6 font-bold text-text-strong">
+            Mostrar meu nome na avaliação
           </span>
-        </span>
-      </label>
+          <span className="text-[13px] leading-5 text-text-2">
+            Será exibido como <strong>{displayName(me?.name, showName)}</strong>
+          </span>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showName}
+          aria-label="Mostrar meu nome na avaliação"
+          onClick={() => setShowName((v) => !v)}
+          className={cn(
+            "relative h-[30px] w-[52px] shrink-0 rounded-full transition-colors",
+            showName ? "bg-primary" : "bg-border-strong",
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-[3px] size-6 rounded-full bg-white shadow transition-[left]",
+              showName ? "left-[25px]" : "left-[3px]",
+            )}
+          />
+        </button>
+      </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface p-3 max-md:bottom-16">
-        <div className="mx-auto flex max-w-2xl flex-wrap items-center gap-3">
-          <p className="text-xs text-text-muted" aria-live="polite">
-            {rating > 0 ? "✓" : "○"} Nota · {okPhotos.length >= MIN_PHOTOS ? "✓" : "○"} Fotos{" "}
-            {Math.min(okPhotos.length, MIN_PHOTOS)}/{MIN_PHOTOS}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface px-4 py-3 shadow-[0_-4px_6px_rgba(0,0,0,0.06)] max-md:bottom-16 lg:py-4">
+        <div className="mx-auto flex max-w-[800px] flex-wrap items-center justify-between gap-3">
+          <p className="flex items-center gap-4 text-[13px] leading-5 font-semibold" aria-live="polite">
+            <CheckPill ok={rating > 0} label="Nota" />
+            <CheckPill ok={photosOk} label={`Fotos ${Math.min(okPhotos.length, MIN_PHOTOS)}/${MIN_PHOTOS}`} />
           </p>
-          <button
-            type="button"
-            onClick={saveDraft}
-            className="ml-auto h-11 rounded-lg border border-border-strong px-4 text-sm font-semibold hover:bg-surface-2"
-          >
-            Salvar rascunho
-          </button>
-          <button
-            type="button"
-            disabled={publish.isPending}
-            aria-disabled={uploading || undefined}
-            onClick={onPublish}
-            className="h-11 rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-60"
-          >
-            {publish.isPending ? "Publicando…" : uploading ? "Aguardando envio…" : "Publicar avaliação"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={saveDraft}
+              className="h-12 rounded-lg border border-primary bg-surface px-5 text-base font-medium text-text-strong hover:bg-selected"
+            >
+              Salvar rascunho
+            </button>
+            <button
+              type="button"
+              disabled={publish.isPending}
+              aria-disabled={uploading || undefined}
+              onClick={onPublish}
+              className="h-12 min-w-[210px] rounded-lg bg-primary px-6 text-base font-semibold text-on-primary hover:bg-primary-hover disabled:opacity-80"
+            >
+              {publish.isPending ? "Publicando…" : uploading ? "Aguardando envio…" : "Publicar avaliação"}
+            </button>
+          </div>
         </div>
       </div>
 
       {leave && (
         <Modal title="Sair sem publicar?" onClose={() => setLeave(false)}>
-          <p className="text-text">
-            Você preencheu parte da avaliação. Se sair agora, o que escreveu se perde (a não ser que salve um
-            rascunho).
+          <p className="text-text-2">
+            Você pode salvar como rascunho e terminar depois. Se descartar, a nota, o texto e os destaques
+            serão perdidos (as fotos nunca ficam no rascunho).
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => router.push(target.backHref)}
-              className="h-11 flex-1 rounded-lg bg-danger font-bold text-white"
+              className="h-11 rounded-lg px-4 font-semibold text-danger-text hover:bg-danger-soft"
             >
-              Sair
+              Descartar
             </button>
             <button
               type="button"
               onClick={() => setLeave(false)}
-              className="h-11 rounded-lg border border-border-strong px-5 font-semibold"
+              className="h-11 rounded-lg border border-primary px-4 font-medium text-text-strong hover:bg-selected"
             >
-              Continuar avaliando
+              Continuar editando
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                saveDraft();
+                router.push(target.backHref);
+              }}
+              className="h-11 rounded-lg bg-primary px-4 font-semibold text-on-primary hover:bg-primary-hover"
+            >
+              Salvar e sair
             </button>
           </div>
         </Modal>
       )}
       {done && (
         <Modal title="Avaliação enviada!" onClose={() => router.push(target.backHref)}>
-          <p className="text-text">Ela aparece na página em até 24 horas, depois de passar pela análise.</p>
-          <p className="rounded-lg bg-surface-2 p-3 text-sm font-semibold text-text-strong">
-            ★ {done.rating} · {done.photos} fotos · {done.video ? "1 vídeo" : "sem vídeo"} ·{" "}
-            {done.comment ? "com comentário" : "sem comentário"}
+          <p className="text-text-2">
+            {me?.name ? `Obrigado, ${me.name.split(" ")[0]}. ` : "Obrigado. "}
+            Sua avaliação passa por uma checagem rápida e aparece na página em até 24 horas.
           </p>
-          <button
-            type="button"
-            onClick={() => router.push(target.backHref)}
-            className="h-11 rounded-lg bg-primary font-bold text-on-primary"
-          >
-            Voltar
-          </button>
+          <p className="flex flex-wrap justify-center gap-x-5 gap-y-1 rounded-lg bg-bg p-3.5 text-sm text-text">
+            <span>
+              <strong className="text-accent-text">★ {done.rating}</strong> nota
+            </span>
+            <span>{done.photos} fotos</span>
+            <span>{done.video ? "1 vídeo" : "sem vídeo"}</span>
+            <span>{done.comment ? "com comentário" : "sem comentário"}</span>
+          </p>
+          <div className="flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={() => router.push(target.backHref)}
+              className="h-12 rounded-lg bg-primary font-semibold text-on-primary hover:bg-primary-hover"
+            >
+              Voltar {type === "produto" ? "ao produto" : type === "servico" ? "ao serviço" : "ao perfil"}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(routes.explorar)}
+              className="h-12 rounded-lg border border-primary font-medium text-text-strong hover:bg-selected"
+            >
+              Avaliar outro produto ou serviço
+            </button>
+          </div>
         </Modal>
       )}
     </div>
+  );
+}
+
+function labelTone(n: number) {
+  return n >= 4
+    ? "text-success-text"
+    : n === 3
+      ? "text-accent-text"
+      : n >= 1
+        ? "text-danger-text"
+        : "text-text-subtle";
+}
+
+function StepBadge({ n }: { n: number }) {
+  return (
+    <span
+      aria-hidden
+      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-selected text-[13px] font-bold text-text-strong"
+    >
+      {n}
+    </span>
+  );
+}
+
+function StepHead({
+  n,
+  id,
+  title,
+  hint,
+  required,
+  optional,
+}: {
+  n: number;
+  id: string;
+  title: string;
+  hint: string;
+  required?: boolean;
+  optional?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3.5">
+      <StepBadge n={n} />
+      <div className="flex flex-col gap-0.5">
+        <h2 id={id} className="text-xl leading-7 font-bold text-text-strong">
+          {title}
+          {required && (
+            <span className="ml-1 text-danger" aria-hidden>
+              *
+            </span>
+          )}
+          {optional && <span className="ml-1.5 text-sm font-medium text-text-muted">(opcional)</span>}
+        </h2>
+        <p className="text-sm leading-5 text-text-2">{hint}</p>
+      </div>
+    </div>
+  );
+}
+
+function FieldError({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      role="alert"
+      className="flex items-center gap-1.5 text-[13px] leading-5 font-semibold text-danger-text"
+    >
+      <AlertCircle className="size-4 shrink-0" aria-hidden />
+      {children}
+    </p>
+  );
+}
+
+function CheckPill({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <span className={cn("flex items-center gap-1.5", ok ? "text-success-text" : "text-text-muted")}>
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-[18px] items-center justify-center rounded-full text-white",
+          ok ? "bg-success" : "bg-border-strong",
+        )}
+      >
+        <Check className="size-3" strokeWidth={3} />
+      </span>
+      {label}
+    </span>
   );
 }

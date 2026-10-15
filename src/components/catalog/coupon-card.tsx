@@ -29,8 +29,8 @@ export function CouponCard({
 }: {
   coupon: Coupon;
   productTitle?: string;
-  /** `inline`: faixa tracejada na coluna de ações do produto; `band`: faixa larga da aba Ofertas da loja. */
-  variant?: "card" | "inline" | "band";
+  /** `inline`: faixa tracejada na coluna de ações do produto; `band`: faixa larga da aba Ofertas da loja; `cta`: botão âmbar de 48 px da página pública. */
+  variant?: "card" | "inline" | "band" | "cta";
 }) {
   const requireAuth = useRequireAuth();
   const toast = useToast();
@@ -75,15 +75,28 @@ export function CouponCard({
         claim.mutate();
       }}
       className={
-        variant === "band"
-          ? "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-[22px] text-sm font-extrabold whitespace-nowrap text-on-primary hover:bg-primary-hover disabled:opacity-70"
-          : "inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
+        variant === "cta"
+          ? "inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-accent px-5 text-[15px] font-extrabold text-on-accent hover:bg-accent-hover disabled:opacity-70"
+          : variant === "band"
+            ? "inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-primary px-[22px] text-sm font-extrabold whitespace-nowrap text-on-primary hover:bg-primary-hover disabled:opacity-70"
+            : "inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 text-sm font-bold text-on-primary hover:bg-primary-hover disabled:opacity-70"
       }
     >
       {claimed && <Check className="size-4" aria-hidden />}
       {claimed ? "Cupom guardado" : claim.isPending ? "Guardando…" : "Pegar cupom"}
     </button>
   );
+
+  if (variant === "cta")
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-[13px] leading-5 text-text-2">
+          Cupom <b className="text-text-strong">{coupon.title}</b> · código <b>{coupon.code}</b>
+          {rule && ` · ${rule}`}
+        </p>
+        {button}
+      </div>
+    );
 
   if (variant === "band")
     return (

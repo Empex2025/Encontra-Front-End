@@ -245,6 +245,8 @@ export const reports = {
     targetName: string | null;
     reason: string;
     description: string;
+    /** Chave de uma imagem enviada por `POST /uploads/presign` (purpose `help`). */
+    attachmentKey?: string;
   }) => api("/reports", protocolSchema, { method: "POST", body }),
 };
 

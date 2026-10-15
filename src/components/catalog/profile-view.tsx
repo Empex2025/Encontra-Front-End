@@ -6,7 +6,6 @@ import {
   BadgeCheck,
   Bell,
   Check,
-  Copy,
   Eye,
   Flag,
   Heart,
