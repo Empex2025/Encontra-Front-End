@@ -40,3 +40,10 @@ Corpo `{ "ids": ["r1"] }`. Idempotente. 204.
                "period": "7 dias", "direction": "down", "href": "/explorar?q=gasolina&lente=prices" } ] }
 ```
 - Até 5. `direction` ∈ `up`, `down`, `flat`. Só com base de cálculo real (`basis` obrigatório) e preços atualizados.
+
+## Revisão de fidelidade ao protótipo (15/10/2026)
+
+Em `GET /discovery/prices`, dois campos opcionais:
+
+- `items[].series`: preços recentes, do mais antigo ao mais novo (mínimo 2 valores, em reais), para o minigráfico. Sem `series`, o gráfico não aparece.
+- `headline`: `{ "title": "A gasolina caiu 3,2% perto de você esta semana", "detail": "Menor preço agora: R$ 5,79 no Posto Avenida, a 1,6 km.", "direction": "down", "href": "/explorar?q=gasolina" }`. Faixa de destaque do Radar do bairro; só aparece se o servidor mandar (precisa de base real, como o resto do bloco).

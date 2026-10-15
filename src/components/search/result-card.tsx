@@ -1,20 +1,42 @@
-import { BadgeCheck, House, MapPin, Star } from "lucide-react";
-import Link from "next/link";
+"use client";
 
+import { useMutation } from "@tanstack/react-query";
+import { BadgeCheck, CircleCheck, Heart, House, MapPin, Play, ShoppingBag, Star, Store } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+
+import { useRequireAuth } from "@/components/auth/auth-invite";
 import { CompareButton } from "@/components/comparison/compare-button";
 import { cn } from "@/components/ui/cn";
+import { useToast } from "@/components/ui/toast";
+import { useResumeAction } from "@/hooks/use-resume-action";
+import { track } from "@/lib/analytics/track";
+import { actions } from "@/lib/api/actions";
 import type { SearchItem } from "@/lib/api/search";
 import { categoryById } from "@/lib/domain/categories";
 import { discountPct, formatDayMonth, formatKm, formatMoney, formatRating } from "@/lib/format";
 import { liveHref, lojaHref, prestadorHref, produtoHref } from "@/lib/routes";
 
 const STATUS = {
-  open: { label: "Aberto agora", dot: "bg-success", text: "text-success-text" },
-  soon: { label: "Fecha em breve", dot: "bg-accent-hover", text: "text-accent-text" },
-  closed: { label: "Fechado", dot: "bg-danger", text: "text-danger-text" },
+  open: {
+    label: "Aberta agora",
+    place: "Aberto agora",
+    dot: "bg-success",
+    cls: "border-success/30 bg-success-soft text-success-text",
+  },
+  soon: {
+    label: "Fecha em breve",
+    place: "Fecha em breve",
+    dot: "bg-accent-hover",
+    cls: "border-accent-border bg-accent-soft text-accent-text",
+  },
+  closed: {
+    label: "Fechada",
+    place: "Fechado",
+    dot: "bg-danger",
+    cls: "border-danger/30 bg-danger-soft text-danger-text",
+  },
 } as const;
-
-const TYPE_LABEL = { product: "Produto", service: "Serviço", place: "Lugar" } as const;
 
 /** Destino do card (Documento de entrega › Explorar, regra 18). */
 export function resultHref(item: SearchItem) {
@@ -32,21 +54,255 @@ export function targetTypeOf(item: SearchItem) {
   return item.profile?.kind === "provider" ? ("PROVIDER" as const) : ("STORE" as const);
 }
 
+const compact = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+/** 1500 → "1,5k". Contagens pequenas ficam inteiras. */
+const kcount = (n: number) => (n >= 1000 ? `${compact.format(n / 1000)}k` : String(n));
+
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+
+export type ResultCardVariant = "auto" | "reel";
+
+/**
+ * Card de resultado, com as três formas do protótipo: produto (foto alta, preço, loja), serviço (especialidades,
+ * "a partir de", prestador) e lugar/experiência (foto cheia com degradê). `reel` é o card vertical de "Acontecendo
+ * perto de você" (ao vivo, promoções e ofertas). Só mostra o que o servidor trouxe: sem dado, a linha some.
+ */
 export function ResultCard({
   item,
   onOpen,
   reason,
+  variant = "auto",
+  compare = true,
 }: {
   item: SearchItem;
   onOpen?: () => void;
   /** Motivo de o item aparecer (ex.: "Mais perto"), vindo do servidor. */
   reason?: string | null;
+  variant?: ResultCardVariant;
+  /** Pílula "Comparar" no pé do card (Explorar, listas). Na Home fica de fora, como no protótipo. */
+  compare?: boolean;
 }) {
+  if (variant === "reel") return <ReelCard item={item} onOpen={onOpen} />;
+  if (item.type === "service") return <ServiceCard item={item} onOpen={onOpen} compare={compare} />;
+  if (item.type === "place") return <PlaceCard item={item} onOpen={onOpen} reason={reason} />;
+  return <ProductCard item={item} onOpen={onOpen} reason={reason} compare={compare} />;
+}
+
+/* ---------- peças comuns ---------- */
+
+const cardCls =
+  "group relative flex min-w-0 flex-col gap-3 rounded-2xl bg-surface p-2 pb-3 shadow-raised transition duration-150 hover:-translate-y-0.5 hover:shadow-pop";
+
+/** Link esticado: o título cobre o card inteiro; botões (coração, comparar) ficam por cima com `relative z-10`. */
+const stretched =
+  "after:absolute after:inset-0 after:z-[1] after:content-[''] focus-visible:outline-none group-has-[a:focus-visible]:underline";
+
+function Media({ item, className, light }: { item: SearchItem; className?: string; light?: boolean }) {
   const cat = item.categoryId ? categoryById(item.categoryId) : undefined;
   const CatIcon = cat?.icon;
+  return (
+    <>
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- imagens vêm de vários domínios das lojas
+        <img
+          src={item.imageUrl}
+          alt=""
+          loading="lazy"
+          className={cn("absolute inset-0 size-full object-cover", className)}
+        />
+      ) : (
+        <span
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ color: light ? undefined : cat?.colorVar }}
+          aria-hidden
+        >
+          {CatIcon && <CatIcon className={cn("size-12", light ? "text-white/80" : "opacity-80")} />}
+        </span>
+      )}
+    </>
+  );
+}
+
+function SponsoredTag({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "absolute z-[2] inline-flex h-5 items-center rounded bg-black/55 px-2 text-[10px] font-bold tracking-wide text-white",
+        className,
+      )}
+    >
+      Patrocinado
+    </span>
+  );
+}
+
+function ViewsPill({ n, className }: { n: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "absolute z-[2] inline-flex h-[22px] items-center gap-1 rounded-full bg-black/30 px-2 text-[11px] font-semibold text-white",
+        className,
+      )}
+    >
+      <Play className="size-2.5 fill-white" aria-hidden />
+      <span>{kcount(n)}</span>
+      <span className="sr-only">visualizações</span>
+    </span>
+  );
+}
+
+/** Coração do card. Visitante vê o convite para entrar; depois do login a ação é retomada. */
+function CardHeart({ item, className }: { item: SearchItem; className?: string }) {
+  const requireAuth = useRequireAuth();
+  const toast = useToast();
+  const [on, setOn] = useState(item.favorited ?? false);
+  const favType = item.type === "place" ? "profile" : item.type;
+  const favId = item.type === "place" ? (item.profile?.id ?? item.id) : item.id;
+
+  const m = useMutation({
+    mutationFn: (next: boolean) => actions.favorite(favType, favId, next),
+    onMutate: (next) => setOn(next),
+    onSuccess: (_d, next) => {
+      toast(next ? "Salvo em Meus Favoritos." : "Removido dos favoritos.");
+      if (next && item.type === "product")
+        track({ type: "PRODUCT_FAVORITE", targetType: "PRODUCT", targetId: item.id });
+    },
+    onError: (e, next) => {
+      setOn(!next);
+      toast(e instanceof Error ? e.message : "Não foi possível salvar agora.", "info");
+    },
+  });
+  useResumeAction("favorite", favId, () => {
+    if (!on) m.mutate(true);
+  });
+
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      aria-label={`${on ? "Remover dos favoritos" : "Salvar nos favoritos"}: ${item.title}`}
+      disabled={m.isPending}
+      onClick={() => {
+        if (!requireAuth("favorite", favId)) return;
+        m.mutate(!on);
+      }}
+      className={cn(
+        "absolute z-10 flex size-8 items-center justify-center rounded-full bg-white text-navy shadow-card transition-transform hover:scale-110 disabled:opacity-60",
+        className,
+      )}
+    >
+      <Heart className={cn("size-4", on && "fill-danger text-danger")} aria-hidden />
+    </button>
+  );
+}
+
+function StatusChip({ status }: { status: NonNullable<SearchItem["status"]> }) {
+  const s = STATUS[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex h-[22px] shrink-0 items-center gap-1.5 rounded border px-2 text-[11px] leading-4 font-bold whitespace-nowrap",
+        s.cls,
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", s.dot)} aria-hidden />
+      {s.label}
+    </span>
+  );
+}
+
+function Avatar({ item, size = "md" }: { item: SearchItem; size?: "sm" | "md" }) {
+  const name = item.profile?.name ?? item.title;
+  const box = size === "md" ? "size-8 text-[10px]" : "size-7 text-[10px]";
+  return item.profile?.avatarUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element -- fotos de perfil vêm de armazenamento externo
+    <img src={item.profile.avatarUrl} alt="" className={cn("shrink-0 rounded-full object-cover", box)} />
+  ) : (
+    <span
+      aria-hidden
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-primary font-bold text-on-primary",
+        box,
+      )}
+    >
+      {initials(name)}
+    </span>
+  );
+}
+
+function Rating({ item, extra }: { item: SearchItem; extra?: React.ReactNode }) {
+  const hasRating = item.rating !== null && item.reviewCount > 0;
+  if (!hasRating && !extra) return null;
+  return (
+    <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-text-muted">
+      {hasRating && (
+        <>
+          <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
+          <span className="font-semibold text-text">{formatRating(item.rating as number)}</span>
+          <span>({item.reviewCount})</span>
+          <span className="sr-only">avaliações</span>
+        </>
+      )}
+      {hasRating && extra && (
+        <span aria-hidden className="mx-0.5 text-border-strong">
+          ·
+        </span>
+      )}
+      {extra}
+    </p>
+  );
+}
+
+function Where({ item }: { item: SearchItem }) {
+  return (
+    <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-text-muted">
+      <MapPin className="size-3.5 shrink-0 fill-accent-hover text-accent-hover" aria-hidden />
+      {item.distanceKm !== null ? (
+        <>
+          <span className="font-semibold text-text">{formatKm(item.distanceKm)}</span>
+          {item.neighborhood && (
+            <>
+              <span aria-hidden className="mx-0.5 text-border-strong">
+                ·
+              </span>
+              <span className="truncate">{item.neighborhood}</span>
+            </>
+          )}
+        </>
+      ) : (
+        <span className="truncate">
+          {item.neighborhood ? `${item.neighborhood} · ` : ""}distância indisponível
+        </span>
+      )}
+    </p>
+  );
+}
+
+function PriceDate({ item }: { item: SearchItem }) {
+  const d = item.price?.updatedAt ? formatDayMonth(item.price.updatedAt) : null;
+  return d ? <span className="text-[11px] leading-4 text-text-subtle">Preço informado em {d}</span> : null;
+}
+
+/* ---------- produto ---------- */
+
+function ProductCard({
+  item,
+  onOpen,
+  reason,
+  compare,
+}: {
+  item: SearchItem;
+  onOpen?: () => void;
+  reason?: string | null;
+  compare: boolean;
+}) {
   const pct = item.price ? discountPct(item.price.amountCents, item.price.oldAmountCents) : 0;
-  const priceDate = item.price?.updatedAt ? formatDayMonth(item.price.updatedAt) : null;
-  const status = item.status ? STATUS[item.status] : null;
   // destaque (regra 19): oferta sem preço antigo > novo > atende em casa
   const highlight =
     item.offerText && !item.price?.oldAmountCents
@@ -58,144 +314,391 @@ export function ResultCard({
           : null;
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition-shadow hover:shadow-raised">
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface-2">
-        {item.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- imagens vêm de vários domínios das lojas
-          <img src={item.imageUrl} alt="" loading="lazy" className="size-full object-cover" />
-        ) : (
-          <div className="flex size-full items-center justify-center" style={{ color: cat?.colorVar }}>
-            {CatIcon && <CatIcon className="size-10 opacity-80" aria-hidden />}
-          </div>
-        )}
-        <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
-          {item.live && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-danger px-2.5 py-1 text-xs font-bold text-white">
-              <span className="size-1.5 animate-pulse rounded-full bg-white" aria-hidden />
-              Ao vivo
-            </span>
-          )}
-          {pct > 0 && (
-            <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-on-accent">
-              -{pct}%
-            </span>
-          )}
-        </div>
-        {item.sponsored && (
-          <span className="absolute top-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
-            Patrocinado
+    <article className={cardCls}>
+      <div className="relative h-[260px] overflow-hidden rounded-lg bg-surface-2">
+        <Media item={item} />
+        {typeof item.viewCount === "number" && <ViewsPill n={item.viewCount} className="top-2.5 left-2.5" />}
+        {item.sponsored && <SponsoredTag className="top-10 left-2.5" />}
+        {reason && (
+          <span className="absolute bottom-2.5 left-2.5 z-[2] inline-flex h-6 items-center rounded-full bg-white px-2.5 text-xs font-bold text-navy">
+            {reason}
           </span>
         )}
+        <CardHeart item={item} className="top-2 right-2" />
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-3.5">
-        {reason && (
-          <p className="self-start rounded-full bg-selected px-2 py-0.5 text-[11px] font-bold text-link">
-            {reason}
-          </p>
-        )}
-        <p className="text-xs font-semibold text-text-subtle">
-          {TYPE_LABEL[item.type]}
-          {cat && <span> · {cat.name}</span>}
-        </p>
-        <h3 className="line-clamp-2 text-base leading-6 font-bold text-text-strong">
-          <Link
-            href={resultHref(item)}
-            onClick={onOpen}
-            className="group-has-[:focus-visible]:underline after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
-          >
+      <div className="flex flex-col gap-2 px-1">
+        <h3 className="truncate text-sm leading-5 font-medium text-text">
+          <Link href={resultHref(item)} onClick={onOpen} className={stretched} title={item.title}>
             {item.title}
           </Link>
         </h3>
-        {item.profile && (
-          <p className="flex items-center gap-1 truncate text-sm text-text-muted">
-            <span className="truncate">{item.profile.name}</span>
-            {item.profile.verified && (
-              <BadgeCheck className="size-4 shrink-0 text-link" aria-label="Identidade verificada" />
-            )}
-          </p>
-        )}
+        <div className="flex flex-col gap-1.5">
+          <Rating
+            item={item}
+            extra={
+              typeof item.soldCount === "number" ? (
+                <>
+                  <ShoppingBag className="size-3.5 shrink-0" aria-hidden />
+                  <span>{kcount(item.soldCount)} vendidos</span>
+                </>
+              ) : null
+            }
+          />
+          <Where item={item} />
+        </div>
 
         {item.price && (
-          <div className="flex flex-wrap items-baseline gap-x-2">
-            {item.price.unit && <span className="text-xs text-text-subtle">{item.price.unit}</span>}
-            <span className="text-lg font-bold text-text-strong">{formatMoney(item.price.amountCents)}</span>
-            {item.price.oldAmountCents && pct > 0 && (
-              <span className="text-sm text-text-subtle line-through">
-                {formatMoney(item.price.oldAmountCents)}
+          <div className="flex flex-col">
+            <div className="flex flex-wrap items-center gap-x-2">
+              {item.price.unit && <span className="text-xs text-text-muted">{item.price.unit}</span>}
+              {item.price.oldAmountCents && pct > 0 && (
+                <>
+                  <span className="text-xs text-text-subtle line-through">
+                    {formatMoney(item.price.oldAmountCents)}
+                  </span>
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] leading-4 font-extrabold text-on-accent">
+                    {pct}% OFF
+                  </span>
+                </>
+              )}
+              <span className="text-xl leading-7 font-bold text-text-strong">
+                {formatMoney(item.price.amountCents)}
               </span>
-            )}
-            {priceDate && (
-              <span className="w-full text-xs text-text-subtle">Preço informado em {priceDate}</span>
-            )}
+            </div>
+            <PriceDate item={item} />
           </div>
         )}
-
         {highlight && (
           <p className={cn("self-start rounded-md px-2 py-1 text-xs font-semibold", highlight.cls)}>
             {highlight.text}
           </p>
         )}
 
-        <div className="mt-auto flex flex-col gap-1 pt-1 text-sm">
-          <p className="flex items-center gap-1 text-text-muted">
-            <MapPin className="size-3.5 shrink-0" aria-hidden />
-            {item.distanceKm !== null ? (
-              <span>
-                {formatKm(item.distanceKm)}
-                {item.neighborhood && ` · ${item.neighborhood}`}
-              </span>
-            ) : (
-              <span>{item.neighborhood ? `${item.neighborhood} · ` : ""}distância indisponível</span>
-            )}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {item.live ? (
-              <span className="text-xs font-semibold text-danger-text">{item.live.viewers} assistindo</span>
-            ) : (
-              status && (
-                <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", status.text)}>
-                  <span className={cn("size-2 rounded-full", status.dot)} aria-hidden />
-                  {status.label}
+        {item.profile && (
+          <>
+            <div className="h-px bg-surface-3" />
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Avatar item={item} />
+                <span className="truncate text-xs leading-4 font-semibold text-text">
+                  {item.profile.name}
                 </span>
-              )
-            )}
-            {item.rating !== null && item.reviewCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-text-muted">
-                <Star className="size-3.5 fill-accent text-accent" aria-hidden />
-                <span className="font-semibold text-text">{formatRating(item.rating)}</span>
-                <span>({item.reviewCount})</span>
-                <span className="sr-only">avaliações</span>
-              </span>
-            )}
-            {item.type === "service" && item.homeService && highlight?.text !== "Atende em casa" && (
-              <span className="inline-flex items-center gap-1 text-xs text-text-muted">
-                <House className="size-3.5" aria-hidden />
-                Atende em casa
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="pt-1">
-          <CompareButton item={item} />
-        </div>
+                {item.profile.verified && (
+                  <BadgeCheck className="size-3.5 shrink-0 text-link" aria-label="Identidade verificada" />
+                )}
+              </div>
+              {item.status && <StatusChip status={item.status} />}
+            </div>
+          </>
+        )}
+        {!item.profile && item.status && <StatusChip status={item.status} />}
+        {compare && <CompareButton item={item} />}
       </div>
     </article>
   );
 }
 
-export function ResultCardSkeleton() {
+/* ---------- serviço ---------- */
+
+function ServiceCard({ item, onOpen, compare }: { item: SearchItem; onOpen?: () => void; compare: boolean }) {
+  const cat = item.categoryId ? categoryById(item.categoryId) : undefined;
+  const CatIcon = cat?.icon;
+  const modeLabel = item.homeService ? "Atende em domicílio" : item.serviceNote ? "Atende no local" : null;
+
+  return (
+    <article className={cardCls}>
+      <div className="relative h-60 overflow-hidden rounded-lg bg-surface-2">
+        <Media item={item} />
+        {typeof item.viewCount === "number" && <ViewsPill n={item.viewCount} className="top-2.5 left-2.5" />}
+        {item.sponsored && (
+          <SponsoredTag className={item.viewCount ? "top-10 left-2.5" : "top-2.5 left-2.5"} />
+        )}
+        <span className="absolute top-2.5 right-2.5 z-[2] inline-flex h-6 items-center rounded-full bg-white px-2.5 text-xs font-bold text-navy">
+          Serviço
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-2 px-1">
+        {cat && CatIcon && (
+          <span className="inline-flex h-6 max-w-full items-center gap-1.5 self-start overflow-hidden rounded-full bg-selected pr-2.5 pl-2 text-xs leading-4 font-bold whitespace-nowrap text-text-strong">
+            <CatIcon className="size-3.5 shrink-0" aria-hidden />
+            <span className="truncate">{cat.name}</span>
+          </span>
+        )}
+        <h3 className="truncate text-sm leading-5 font-medium text-text">
+          <Link href={resultHref(item)} onClick={onOpen} className={stretched} title={item.title}>
+            {item.title}
+          </Link>
+        </h3>
+        {item.specialties && item.specialties.length > 0 && (
+          <p className="truncate text-xs leading-4 text-text-subtle">{item.specialties.join(" • ")}</p>
+        )}
+        {item.price ? (
+          <div className="flex flex-col">
+            <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+              {item.price.unit && (
+                <span className="text-xs leading-4 text-text-muted">{item.price.unit}</span>
+              )}
+              <span className="text-xl leading-7 font-bold text-text-strong">
+                {formatMoney(item.price.amountCents)}
+              </span>
+            </div>
+            <PriceDate item={item} />
+          </div>
+        ) : item.offerText ? (
+          <span className="self-start rounded-md bg-accent-soft px-2 py-1 text-xs font-semibold text-accent-text">
+            {item.offerText}
+          </span>
+        ) : (
+          <span className="text-xs leading-4 text-text-subtle">Preço sob consulta</span>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <Rating
+            item={item}
+            extra={
+              typeof item.doneCount === "number" ? (
+                <>
+                  <CircleCheck className="size-3.5 shrink-0" aria-hidden />
+                  <span>{kcount(item.doneCount)} serviços feitos</span>
+                </>
+              ) : null
+            }
+          />
+          <Where item={item} />
+          {modeLabel && (
+            <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-text-muted">
+              {item.homeService ? (
+                <House className="size-3.5 shrink-0" aria-hidden />
+              ) : (
+                <Store className="size-3.5 shrink-0" aria-hidden />
+              )}
+              <span className="font-bold text-text">{modeLabel}</span>
+              {item.serviceNote && (
+                <>
+                  <span aria-hidden className="mx-0.5 text-border-strong">
+                    ·
+                  </span>
+                  <span className="truncate">{item.serviceNote}</span>
+                </>
+              )}
+            </p>
+          )}
+        </div>
+        {item.profile && (
+          <>
+            <div className="h-px bg-surface-3" />
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <Avatar item={item} size="sm" />
+                <span className="truncate text-xs leading-4 font-semibold text-text">
+                  {item.profile.name}
+                </span>
+                {item.profile.verified && (
+                  <BadgeCheck className="size-3.5 shrink-0 text-link" aria-label="Identidade verificada" />
+                )}
+              </div>
+              {item.status && <StatusChip status={item.status} />}
+            </div>
+          </>
+        )}
+        {compare && <CompareButton item={item} />}
+      </div>
+    </article>
+  );
+}
+
+/* ---------- lugar / experiência ---------- */
+
+function PlaceCard({
+  item,
+  onOpen,
+  reason,
+}: {
+  item: SearchItem;
+  onOpen?: () => void;
+  reason?: string | null;
+}) {
+  const cat = item.categoryId ? categoryById(item.categoryId) : undefined;
+  const plaque = item.scheduleLabel ?? (item.status ? STATUS[item.status].place : null);
+  const dot = item.status ? STATUS[item.status].dot : "bg-accent-hover";
+  return (
+    <article className="card group relative flex h-[420px] min-w-0 flex-col justify-end overflow-hidden rounded-2xl bg-navy-700 text-white shadow-raised transition duration-150 hover:-translate-y-0.5 hover:shadow-pop">
+      <Media item={item} light />
+      <span aria-hidden className="scrim-place pointer-events-none absolute inset-0" />
+      {plaque && (
+        <span className="absolute top-3 left-3 z-[2] inline-flex h-6 items-center gap-1.5 rounded bg-white px-2 text-[11px] leading-4 font-bold text-text-strong">
+          <span className={cn("size-1.5 rounded-full", dot)} aria-hidden />
+          {plaque}
+        </span>
+      )}
+      {item.sponsored && <SponsoredTag className="top-11 left-3" />}
+      <CardHeart item={item} className="top-2.5 right-2.5" />
+      <div className="relative z-[2] flex flex-col gap-2 p-3">
+        {(reason || cat) && (
+          <span className="inline-flex h-6 items-center self-start rounded-full bg-white/20 px-2.5 text-xs leading-4 font-bold whitespace-nowrap">
+            {reason ?? cat?.name}
+          </span>
+        )}
+        <h3 className="truncate text-[15px] leading-5 font-bold">
+          <Link href={resultHref(item)} onClick={onOpen} className={stretched} title={item.title}>
+            {item.title}
+          </Link>
+        </h3>
+        <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-white/85">
+          {item.rating !== null && item.reviewCount > 0 && (
+            <>
+              <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
+              <span className="font-semibold text-white">{formatRating(item.rating)}</span>
+              <span>({item.reviewCount})</span>
+              <span aria-hidden className="mx-0.5 text-white/60">
+                ·
+              </span>
+            </>
+          )}
+          <span className="truncate">
+            {item.distanceKm !== null ? formatKm(item.distanceKm) : "distância indisponível"}
+            {item.neighborhood && ` · ${item.neighborhood}`}
+          </span>
+        </p>
+        {item.profile && (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Avatar item={item} size="sm" />
+            <span className="truncate text-xs leading-4 font-semibold">{item.profile.name}</span>
+            {item.profile.verified && (
+              <BadgeCheck className="size-3.5 shrink-0" aria-label="Identidade verificada" />
+            )}
+          </div>
+        )}
+        {item.price && (
+          <p className="flex items-baseline gap-1.5 text-white">
+            {item.price.unit && <span className="text-xs text-white/80">{item.price.unit}</span>}
+            <span className="text-xl leading-7 font-extrabold text-accent">
+              {formatMoney(item.price.amountCents)}
+            </span>
+          </p>
+        )}
+        {!item.price && item.offerText && (
+          <p className="text-sm leading-5 font-extrabold text-accent">{item.offerText}</p>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/* ---------- reel (Acontecendo perto de você) ---------- */
+
+function ReelCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
+  const pct = item.price ? discountPct(item.price.amountCents, item.price.oldAmountCents) : 0;
+  const tag = item.live
+    ? { text: "AO VIVO", cls: "bg-danger text-white", live: true }
+    : pct > 0
+      ? { text: `${pct}% OFF`, cls: "bg-accent text-on-accent", live: false }
+      : item.offerText
+        ? { text: "Oferta", cls: "bg-accent text-on-accent", live: false }
+        : item.isNew
+          ? { text: "Novo", cls: "bg-white text-navy", live: false }
+          : null;
+  const right = item.live
+    ? `${item.live.viewers} assistindo`
+    : typeof item.viewCount === "number"
+      ? kcount(item.viewCount)
+      : null;
+
+  return (
+    <article
+      className={cn(
+        "group relative h-[380px] min-w-0 overflow-hidden rounded-2xl bg-navy-700 text-white shadow-raised transition duration-150 hover:-translate-y-0.5 hover:shadow-pop",
+        item.live && "outline-[3px] -outline-offset-[3px] outline-danger",
+      )}
+    >
+      <Media item={item} light />
+      <span aria-hidden className="scrim-reel pointer-events-none absolute inset-0" />
+      {tag && (
+        <span
+          className={cn(
+            "absolute top-2.5 left-2.5 z-[2] inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-extrabold",
+            tag.cls,
+          )}
+        >
+          {tag.live && <span className="size-[7px] animate-pulse rounded-full bg-white" aria-hidden />}
+          {tag.text}
+        </span>
+      )}
+      {right && (
+        <span className="absolute top-2.5 right-2.5 z-[2] inline-flex h-[22px] items-center gap-1 rounded-full bg-black/35 px-2 text-[11px] font-semibold">
+          <Play className="size-2.5 fill-white" aria-hidden />
+          {right}
+        </span>
+      )}
+      {item.live && (
+        <span
+          aria-hidden
+          className="absolute top-[38%] left-1/2 z-[2] flex size-[52px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white/80 bg-white/25 transition-transform group-hover:scale-110"
+        >
+          <Play className="size-[18px] fill-white" aria-hidden />
+        </span>
+      )}
+      {item.sponsored && <SponsoredTag className="top-10 left-2.5" />}
+      <div className="absolute inset-x-0 bottom-0 z-[2] flex flex-col gap-1.5 p-3">
+        {item.profile && (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full border-2 border-amber bg-navy-700 text-[9px] font-extrabold">
+              {initials(item.profile.name)}
+            </span>
+            <span className="truncate text-xs font-bold">{item.profile.name}</span>
+            {item.distanceKm !== null && (
+              <span className="shrink-0 text-[11px] whitespace-nowrap text-white/75">
+                · {formatKm(item.distanceKm)}
+              </span>
+            )}
+          </div>
+        )}
+        <h3 className="text-[15px] leading-5 font-bold">
+          <Link
+            href={resultHref(item)}
+            onClick={onOpen}
+            className={cn("line-clamp-2", stretched)}
+            title={item.title}
+          >
+            {item.title}
+          </Link>
+        </h3>
+        {item.price ? (
+          <p className="text-sm leading-5 font-extrabold text-amber">
+            {item.price.unit ? `${item.price.unit} ` : ""}
+            {formatMoney(item.price.amountCents)}
+          </p>
+        ) : item.offerText ? (
+          <p className="line-clamp-1 text-sm leading-5 font-extrabold text-amber">{item.offerText}</p>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+export function ResultCardSkeleton({ variant = "auto" }: { variant?: ResultCardVariant | "tall" }) {
+  if (variant === "reel" || variant === "tall")
+    return (
+      <div
+        aria-hidden
+        className={cn(
+          "animate-pulse rounded-2xl bg-surface-2",
+          variant === "reel" ? "h-[380px]" : "h-[420px]",
+        )}
+      />
+    );
   return (
     <div
       aria-hidden
-      className="flex animate-pulse flex-col overflow-hidden rounded-2xl border border-border bg-surface"
+      className="flex animate-pulse flex-col gap-3 rounded-2xl bg-surface p-2 pb-3 shadow-card"
     >
-      <div className="aspect-[4/3] bg-surface-2" />
-      <div className="flex flex-col gap-2 p-3.5">
-        <div className="h-3 w-1/3 rounded bg-surface-2" />
+      <div className="h-[260px] rounded-lg bg-surface-2" />
+      <div className="flex flex-col gap-2 px-1">
         <div className="h-4 w-4/5 rounded bg-surface-2" />
-        <div className="h-4 w-1/2 rounded bg-surface-2" />
-        <div className="mt-2 h-3 w-2/3 rounded bg-surface-2" />
+        <div className="h-3 w-1/2 rounded bg-surface-2" />
+        <div className="h-3 w-2/3 rounded bg-surface-2" />
+        <div className="h-6 w-1/3 rounded bg-surface-2" />
       </div>
     </div>
   );

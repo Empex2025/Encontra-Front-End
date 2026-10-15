@@ -51,6 +51,8 @@ export const storyGroupSchema = z.object({
   following: z.boolean(),
   /** Todos os stories do grupo já vistos por esta conta (o servidor guarda). */
   seen: z.boolean().optional(),
+  /** Perfil ao vivo agora: a Home mostra "AO VIVO" no círculo. */
+  live: z.object({ id: z.string() }).nullable().optional(),
   /** Destaque do perfil: no lugar do tipo aparece "Destaque" e no lugar do km, o nome. */
   highlight: z.object({ id: z.string(), name: z.string() }).nullable(),
   stories: z.array(storySchema).min(1),

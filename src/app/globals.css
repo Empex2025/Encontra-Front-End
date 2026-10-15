@@ -216,3 +216,23 @@ body {
     }
   }
 }
+
+/* Degradês dos cards com foto cheia (protótipo): escurecem o topo e, mais forte, o pé, para o texto branco ler. */
+.scrim-reel {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 8, 35, 0.45) 0%,
+    rgba(0, 8, 35, 0) 25%,
+    rgba(0, 8, 35, 0) 45%,
+    rgba(0, 8, 35, 0.94) 100%
+  );
+}
+.scrim-place {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 8, 35, 0.35) 0%,
+    rgba(0, 8, 35, 0) 22%,
+    rgba(0, 8, 35, 0) 42%,
+    rgba(0, 8, 35, 0.92) 100%
+  );
+}
