@@ -4,14 +4,13 @@ import { Lock } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { ErrorState } from "@/components/ui/error-state";
 import { useSession } from "@/hooks/use-session";
 import { LOCKED_AREAS, type LockedArea } from "@/lib/domain/auth-actions";
 import { routes } from "@/lib/routes";
 
 /** Área da conta: mostra o conteúdo para quem tem sessão e "Entre para {motivo}" para visitante. */
 export function AuthGate({ area, children }: { area: LockedArea; children: React.ReactNode }) {
-  const { me, isLoading, isError, error, refetch } = useSession();
+  const { me, isLoading } = useSession();
   const pathname = usePathname();
   if (isLoading)
     return (
@@ -20,18 +19,7 @@ export function AuthGate({ area, children }: { area: LockedArea; children: React
       </p>
     );
   if (me) return <>{children}</>;
-  // Servidor fora do ar: não dá para saber se há sessão, então não pedimos login nem mostramos a área vazia.
-  if (isError)
-    return (
-      <div className="mx-auto max-w-xl py-10">
-        <ErrorState
-          error={error ?? new Error()}
-          onRetry={refetch}
-          title="Não foi possível confirmar sua sessão"
-          description="Sem essa confirmação não dá para abrir esta área. Tente de novo em alguns segundos."
-        />
-      </div>
-    );
+  // Servidor fora do ar: sem confirmar a sessão, a área se comporta como para visitante (convite para entrar).
   const back = encodeURIComponent(pathname + (typeof window === "undefined" ? "" : window.location.search));
   return (
     <section className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">

@@ -27,7 +27,8 @@ export function useAccess(): Access {
   );
   if (!hydrated || s.isLoading) return "loading";
   if (s.me) return "member";
-  return s.isError ? "unconfirmed" : "guest";
+  // Servidor fora do ar: sem confirmar sessão, a tela se comporta como visitante (sem aviso alarmante).
+  return "guest";
 }
 
 /**
