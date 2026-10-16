@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
+  ChevronLeft,
   CalendarPlus,
   Check,
   Clock,
@@ -79,9 +79,9 @@ export function HappeningView({ id }: { id: string }) {
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6">
       <Link
         href={routes.home}
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-link hover:underline lg:min-h-5"
+        className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-link hover:underline lg:min-h-4"
       >
-        <ArrowLeft className="size-4" aria-hidden /> Voltar para o início
+        <ChevronLeft className="size-4" aria-hidden /> Voltar para o início
       </Link>
       {q.isPending ? (
         <div role="status" aria-busy="true" aria-label="Carregando evento" className="flex flex-col gap-4">

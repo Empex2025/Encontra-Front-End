@@ -128,6 +128,7 @@ const otherLivesSchema = z.object({
       coverUrl: nstr,
       profileName: z.string(),
       place: nstr,
+      distanceKm: z.number().nonnegative().nullable().optional(),
     }),
   ),
 });

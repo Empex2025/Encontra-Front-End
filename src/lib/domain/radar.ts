@@ -1,17 +1,16 @@
 import type { Prices, RadarItem, RadarKind } from "@/lib/api/radar";
-import { RADAR_KINDS } from "@/lib/api/radar";
 import { formatMoney } from "@/lib/format";
 
 export const RADAR_KIND_LABEL: Record<RadarKind, string> = {
-  new: "Novidades",
   price: "Preços",
-  follow: "Quem sigo",
+  new: "Novidades",
+  follow: "Quem você segue",
   alert: "Alertas",
 };
 
 /** Visitante só vê Novidades e Preços (Documento de entrega). */
 export const radarTabs = (guest: boolean): ("all" | RadarKind)[] =>
-  guest ? ["all", "new", "price"] : ["all", ...RADAR_KINDS];
+  guest ? ["all", "price", "new"] : ["all", "price", "new", "follow", "alert"];
 
 /** Itens de tipos conhecidos, no máximo 8; tipos que o front não conhece são ignorados. */
 export function visibleRadarItems(items: RadarItem[], guest: boolean): (RadarItem & { kind: RadarKind })[] {

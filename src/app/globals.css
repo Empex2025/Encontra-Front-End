@@ -306,4 +306,16 @@ body {
 /* Campos das telas de entrada: o foco é a borda azul + anel de 3 px (protótipo), sem o contorno global. */
 .auth-field:focus-visible {
   outline: none;
+
+/* Pulso âmbar (protótipo): atalho "Perto agora" e sino do Meu Radar. Respeita "reduzir movimento" (regra acima). */
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 175, 27, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(244, 175, 27, 0);
+  }
+}
+.ring-pulse {
+  animation: ring-pulse 1.8s ease-out infinite;
 }

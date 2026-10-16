@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { cn } from "@/components/ui/cn";
 import { InlineError } from "@/components/ui/inline-state";
+import { useToast } from "@/components/ui/toast";
 import { useSession } from "@/hooks/use-session";
 import { radar, type Radar, type RadarKind } from "@/lib/api/radar";
 import {
@@ -35,6 +36,7 @@ export function HomeRadar() {
   const { me, isGuest, isLoading } = useSession();
   const qc = useQueryClient();
   const router = useRouter();
+  const toast = useToast();
   const [tab, setTab] = useState<"all" | RadarKind>("all");
   const key = ["radar", "mine", !!me];
   const q = useQuery({
@@ -89,7 +91,7 @@ export function HomeRadar() {
   };
 
   const ghostBtn =
-    "flex h-11 items-center justify-center rounded-lg border border-navy-300 px-4 text-sm font-bold text-white hover:bg-navy-700";
+    "flex h-11 items-center justify-center rounded-lg border border-navy-500 px-4 text-sm font-bold text-white hover:bg-navy-700";
 
   return (
     <section
@@ -98,7 +100,7 @@ export function HomeRadar() {
     >
       <div className="flex min-w-0 flex-col gap-3.5">
         <span className="inline-flex items-center gap-2 text-[13px] font-extrabold tracking-[0.6px] text-amber uppercase">
-          <span className="flex size-9 items-center justify-center rounded-full bg-amber text-navy">
+          <span className="ring-pulse flex size-9 items-center justify-center rounded-full bg-amber text-navy">
             <Bell className="size-[18px]" strokeWidth={2.2} aria-hidden />
           </span>
           Meu Radar
@@ -112,10 +114,10 @@ export function HomeRadar() {
             : "Você não precisa ficar procurando: a gente avisa quando um preço cai, uma loja que você segue lança algo ou surge algo novo perto."}
         </p>
         {isGuest ? (
-          <div className="flex flex-col gap-2">
+          <div className="mt-1 flex flex-col gap-2">
             <Link
               href={routes.cadastro}
-              className="flex h-[42px] items-center justify-center rounded-lg bg-amber px-4 text-sm font-bold text-navy hover:bg-amber-400"
+              className="flex h-[42px] items-center justify-center rounded-lg bg-amber px-4 text-sm font-extrabold text-navy hover:bg-amber-400"
             >
               Criar conta e ativar meu radar
             </Link>
@@ -124,12 +126,15 @@ export function HomeRadar() {
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="mt-1 flex flex-col gap-2">
             {unseen > 0 && (
               <button
                 type="button"
-                onClick={() => seen.mutate(unseenIds)}
-                className="h-[42px] rounded-lg bg-amber px-4 text-sm font-bold text-navy hover:bg-amber-400"
+                onClick={() => {
+                  seen.mutate(unseenIds);
+                  toast("Tudo visto. Avisamos quando aparecer algo novo.");
+                }}
+                className="h-[42px] rounded-lg bg-amber px-4 text-sm font-extrabold text-navy hover:bg-amber-400"
               >
                 Marcar tudo como visto
               </button>
@@ -139,7 +144,7 @@ export function HomeRadar() {
             </Link>
           </div>
         )}
-        {line && <p className="text-xs leading-[14px] text-navy-300">{line}</p>}
+        {line && !isGuest && <p className="text-xs text-navy-300">{line}</p>}
       </div>
 
       <div className="flex min-w-0 flex-col gap-3">
@@ -152,7 +157,7 @@ export function HomeRadar() {
           />
         ) : (
           <>
-            <div role="tablist" aria-label="Tipos de aviso" className="flex flex-wrap gap-2">
+            <div role="tablist" aria-label="Filtrar radar" className="flex flex-wrap gap-2">
               {tabs.map((t) => {
                 const on = t.id === tab;
                 return (
@@ -163,15 +168,15 @@ export function HomeRadar() {
                     aria-selected={on}
                     onClick={() => setTab(t.id)}
                     className={cn(
-                      "inline-flex h-[34px] items-center gap-2 rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap",
-                      on ? "border-white bg-white text-navy" : "border-navy-700 text-white hover:bg-navy-700",
+                      "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-bold whitespace-nowrap",
+                      on ? "border-white bg-white text-navy" : "border-navy-500 text-white hover:bg-white/10",
                     )}
                   >
                     {t.label}
                     <span
                       className={cn(
-                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold",
-                        on ? "bg-navy text-white" : "bg-navy-700 text-white",
+                        "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[5px] text-[11px]",
+                        on ? "bg-navy text-white" : "bg-white/15 text-white",
                       )}
                     >
                       {t.count}
@@ -198,26 +203,31 @@ export function HomeRadar() {
                     <button
                       type="button"
                       onClick={() => open(i.id, i.href ?? null)}
-                      className="flex h-16 w-full items-center gap-3 rounded-xl bg-white/10 px-3.5 text-left transition-colors hover:bg-white/15"
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left transition-colors hover:bg-white/[0.14]",
+                        i.seen ? "bg-white/[0.04]" : "bg-white/[0.09]",
+                      )}
                     >
                       <span
-                        className={cn(
-                          "flex size-10 shrink-0 items-center justify-center rounded-[10px]",
-                          s.box,
-                        )}
+                        className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", s.box)}
                       >
                         <Icon className="size-5" aria-hidden />
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm leading-5 font-bold">{i.title}</span>
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span
+                          className={cn(
+                            "block truncate text-sm leading-5",
+                            i.seen ? "font-medium" : "font-bold",
+                          )}
+                        >
+                          {i.title}
+                        </span>
                         {i.detail && (
                           <span className="block truncate text-xs leading-4 text-navy-200">{i.detail}</span>
                         )}
                       </span>
-                      <span className="flex shrink-0 flex-col items-end gap-1.5 self-stretch py-2.5">
-                        <span className="text-[11px] leading-3 text-navy-300">
-                          {formatTimeAgo(i.at) ?? ""}
-                        </span>
+                      <span className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="text-[11px] text-navy-300">{formatTimeAgo(i.at) ?? ""}</span>
                         {!i.seen && !isGuest && (
                           <>
                             <span aria-hidden className="size-2 rounded-full bg-amber" />
