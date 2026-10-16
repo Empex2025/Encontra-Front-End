@@ -1,6 +1,10 @@
 import { cn } from "./cn";
 
-/** Chave liga/desliga (role="switch"). `locked` mostra ligada e sem poder mudar. */
+/**
+ * Chave liga/desliga (role="switch"), no formato do protótipo: linha com título 15/600, apoio de 13 px e
+ * chave 44×26. Verde ligada, cinza desligada, azul-acinzentada quando fixa (`locked`).
+ * `bare` devolve só a chave (para quem monta a linha por conta própria).
+ */
 export function Switch({
   checked,
   onChange,
@@ -8,6 +12,8 @@ export function Switch({
   hint,
   locked,
   disabled,
+  bare,
+  onLocked,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -15,34 +21,37 @@ export function Switch({
   hint?: string;
   locked?: boolean;
   disabled?: boolean;
+  bare?: boolean;
+  /** Chamado ao tocar numa chave fixa (para explicar por que ela não muda). */
+  onLocked?: () => void;
 }) {
   const off = locked || disabled;
+  const control = (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      aria-disabled={off || undefined}
+      onClick={() => (locked ? onLocked?.() : !off && onChange(!checked))}
+      className={cn(
+        "flex h-[26px] w-11 shrink-0 items-center rounded-full p-[3px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+        locked ? "bg-navy-300" : checked ? "bg-success" : "bg-border-strong",
+        locked ? "cursor-not-allowed" : disabled && "cursor-not-allowed opacity-60",
+        checked ? "justify-end" : "justify-start",
+      )}
+    >
+      <span className="size-5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)]" />
+    </button>
+  );
+  if (bare) return control;
   return (
-    <div className="flex min-h-12 items-center justify-between gap-4 py-2">
-      <div className="min-w-0">
-        <p className="font-semibold text-text-strong">{label}</p>
-        {hint && <p className="text-sm text-text-muted">{hint}</p>}
+    <div className="flex min-h-12 items-center justify-between gap-4 py-3.5">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="text-[15px] font-semibold text-text">{label}</p>
+        {hint && <p className="text-[13px] leading-[18px] text-text-subtle">{hint}</p>}
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={off}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
-          checked ? "bg-primary" : "bg-border-strong",
-          off && "opacity-60",
-        )}
-      >
-        <span
-          className={cn(
-            "absolute top-0.5 left-0.5 size-6 rounded-full bg-surface shadow transition-transform",
-            checked && "translate-x-5",
-          )}
-        />
-      </button>
+      {control}
     </div>
   );
 }

@@ -128,19 +128,9 @@ export function ReportForm() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-[32px] leading-10 font-bold text-text-strong">Denunciar</h1>
-        <p className="text-base leading-6 text-text-2">
-          Viu algo errado? Conte para a gente. Sua denúncia é anônima para a loja.
-        </p>
-      </div>
-
+    <div className="flex w-full flex-col gap-6">
       {sent ? (
-        <section
-          role="status"
-          className="flex flex-col items-start gap-3.5 rounded-2xl bg-surface p-6 shadow-sm sm:p-8"
-        >
+        <section role="status" className="flex flex-col items-start gap-3.5 py-2">
           <span className="flex size-14 items-center justify-center rounded-full bg-success text-white">
             <Check className="size-7" strokeWidth={3} aria-hidden />
           </span>
@@ -178,11 +168,7 @@ export function ReportForm() {
           </div>
         </section>
       ) : (
-        <form
-          onSubmit={submit}
-          noValidate
-          className="flex flex-col gap-6 rounded-2xl bg-surface p-5 shadow-sm sm:p-8"
-        >
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
           <fieldset className="flex flex-col gap-2.5">
             <legend className="mb-2.5 text-sm leading-5 font-bold text-text">
               O que você quer denunciar?

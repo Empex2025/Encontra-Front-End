@@ -34,6 +34,7 @@
   --accent-text: #a86704;
   --accent-soft: #fef5e2;
   --accent-border: #fcd780;
+  --accent-ink: #5c3a02;
 
   --success: #198754;
   --success-text: #146c43;
@@ -90,6 +91,7 @@
   --accent-text: #fbb931;
   --accent-soft: #3a220f;
   --accent-border: #3a220f;
+  --accent-ink: #fbb931;
 
   --success-text: #5ee0a8;
   --success-soft: #0e2f2a;
@@ -143,6 +145,7 @@
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
+  --color-accent-ink: var(--accent-ink);
   --color-success: var(--success);
   --color-success-text: var(--success-text);
   --color-success-soft: var(--success-soft);
