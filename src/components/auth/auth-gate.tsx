@@ -10,7 +10,7 @@ import { routes } from "@/lib/routes";
 
 /** Área da conta: mostra o conteúdo para quem tem sessão e "Entre para {motivo}" para visitante. */
 export function AuthGate({ area, children }: { area: LockedArea; children: React.ReactNode }) {
-  const { me, isLoading } = useSession();
+  const { me, isLoading, isError, refetch } = useSession();
   const pathname = usePathname();
   if (isLoading)
     return (
@@ -19,7 +19,6 @@ export function AuthGate({ area, children }: { area: LockedArea; children: React
       </p>
     );
   if (me) return <>{children}</>;
-  // Servidor fora do ar: sem confirmar a sessão, a área se comporta como para visitante (convite para entrar).
   const back = encodeURIComponent(pathname + (typeof window === "undefined" ? "" : window.location.search));
   return (
     <section className="mx-auto flex max-w-md flex-col items-center gap-4 py-16 text-center">
@@ -49,6 +48,18 @@ export function AuthGate({ area, children }: { area: LockedArea; children: React
         >
           Voltar para o início
         </Link>
+        {isError && (
+          <p role="status" className="text-xs text-text-subtle">
+            Sem resposta do servidor para confirmar sua sessão.{" "}
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="font-semibold text-link underline"
+            >
+              Tentar de novo
+            </button>
+          </p>
+        )}
       </div>
     </section>
   );
