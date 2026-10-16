@@ -20,7 +20,7 @@ describe("radar", () => {
     expect(radarHeadline(3)).toBe("Seu radar encontrou 3 novidades");
   });
   it("visitante só vê novidades e preços", () => {
-    expect(radarTabs(true)).toEqual(["all", "new", "price"]);
+    expect(radarTabs(true)).toEqual(["all", "price", "new"]);
     const items = [item("a", "new"), item("b", "follow"), item("c", "price"), item("d", "xyz")];
     expect(visibleRadarItems(items, true).map((i) => i.id)).toEqual(["a", "c"]);
     expect(visibleRadarItems(items, false).map((i) => i.id)).toEqual(["a", "b", "c"]);

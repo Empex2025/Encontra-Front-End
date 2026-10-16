@@ -58,9 +58,9 @@ export function errorExplanation(error: unknown): string {
     if (error.code === "TIMEOUT") return "Está demorando mais que o normal.";
     if (error.status === 0) return "Sem conexão com o servidor.";
     if (error.status >= 500) return `O servidor respondeu com erro (código ${error.status}).`;
-    if (error.status === 404) return "Esta informação ainda não está disponível na fonte de dados.";
+    if (error.status === 404) return "Esta informação não está disponível agora.";
   }
-  return "A resposta do servidor não pôde ser lida.";
+  return "Não conseguimos ler a resposta.";
 }
 
 /** Erro de uma seção: mensagem clara, aviso de fonte não conectada e "Tentar de novo". */
@@ -80,10 +80,7 @@ export function SectionError({
       className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4"
     >
       <p className="font-bold text-text-strong">Não foi possível carregar {what}.</p>
-      <p className="text-sm text-text-muted">
-        {errorExplanation(error)} Se a fonte de dados ainda não estiver conectada, esta seção fica sem
-        informações até a conexão existir.
-      </p>
+      <p className="text-sm text-text-muted">{errorExplanation(error)} Tente de novo em instantes.</p>
       <button
         type="button"
         onClick={onRetry}
@@ -153,8 +150,7 @@ export function PageError({
     >
       <h1 className="text-2xl font-bold text-text-strong">Não foi possível carregar {what}</h1>
       <p className="text-text-muted">
-        {errorExplanation(error)} Isso é uma falha ao buscar os dados, não quer dizer que {what} não exista.
-        Se a fonte de dados ainda não estiver conectada, a página fica sem informações.
+        {errorExplanation(error)} Isso não quer dizer que {what} não exista. Tente de novo em instantes.
       </p>
       <div className="flex flex-wrap justify-center gap-2">
         <button

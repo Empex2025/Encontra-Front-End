@@ -66,3 +66,12 @@ Proposta do front para combinar com o back-end. Campos tirados do Documento de e
 | `status` | `open` \| `soon` \| `closed` \| `null` | `null` = horário não informado |
 | `availability` | `in_stock` \| `out_of_stock` \| `unknown` | só produto; `unknown` não exibe selo |
 | `lat`, `lng` | número \| `null` | para o mapa; nunca inventados |
+
+
+## Perguntar às lojas perto (`POST /search/asks`) — proposta
+
+Caminho "Perguntar às lojas perto" da busca sem resultado (Explorar). Exige conta (visitante vê o convite "Entre para perguntar às lojas" e a ação é retomada depois do login).
+
+Pedido: `{ "term": "conserto de relógio", "radiusKm": 5, "lat": -9.66, "lng": -35.73 }` (ou `where` no lugar de `lat`/`lng`).
+
+Resposta `200`: `{ "profilesNotified": 6 }`. O servidor envia “alguém faz {term}?” às lojas e prestadores do ramo dentro do raio e abre as conversas (as respostas chegam em Conversas). `profilesNotified` é o número real de perfis avisados; o front mostra exatamente esse número.

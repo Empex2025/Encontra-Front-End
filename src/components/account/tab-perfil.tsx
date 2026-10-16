@@ -1,12 +1,11 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck } from "lucide-react";
+import { Check } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { OtpStep } from "@/components/auth/otp-step";
-import { Modal } from "@/components/ui/modal";
-import { TextField } from "@/components/ui/text-field";
+import { cn } from "@/components/ui/cn";
 import { useToast } from "@/components/ui/toast";
 import { account, type Profile } from "@/lib/api/account";
 import { authApi, type OtpChallenge } from "@/lib/api/auth";
@@ -21,7 +20,7 @@ import {
   validateProfile,
 } from "@/lib/domain/account";
 
-import { btnOutline, btnPrimary, Card, errMsg } from "./shared";
+import { btnPrimary, Card, errMsg, Field, readonlyBox } from "./shared";
 
 export function TabPerfil({ profile }: { profile: Profile }) {
   const qc = useQueryClient();
@@ -54,55 +53,59 @@ export function TabPerfil({ profile }: { profile: Profile }) {
   };
 
   return (
-    <Card title="Seus dados">
-      <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-        <TextField
-          label="Nome completo"
-          value={name}
-          maxLength={NAME_MAX}
-          autoComplete="name"
-          error={errors.name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <TextField
-          label="E-mail"
-          type="email"
-          value={email}
-          maxLength={EMAIL_MAX}
-          autoComplete="email"
-          error={errors.email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-bold text-text-strong">Celular</span>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="flex h-12 min-w-44 flex-1 items-center rounded-lg border border-border bg-surface-2 px-3 whitespace-nowrap text-text">
-              {profile.phone}
-            </span>
-            {profile.phoneVerified && (
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-success-text">
-                <BadgeCheck className="size-4" aria-hidden /> Confirmado
+    <Card
+      title="Meu perfil"
+      aside="Lojas e prestadores só veem seu nome, e o telefone apenas se você chamar no WhatsApp."
+    >
+      <form id="form-perfil" onSubmit={submit} className="flex flex-col gap-4" noValidate>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            label="Nome completo"
+            value={name}
+            maxLength={NAME_MAX}
+            autoComplete="name"
+            error={errors.name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Field
+            label="E-mail"
+            type="email"
+            value={email}
+            maxLength={EMAIL_MAX}
+            autoComplete="email"
+            error={errors.email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-bold text-text">Celular</span>
+            <div className="flex gap-2">
+              <span className={cn(readonlyBox, "flex-1 justify-between gap-2")}>
+                <span className="truncate">{profile.phone}</span>
+                {profile.phoneVerified && (
+                  <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-success-text">
+                    <Check className="size-[13px]" strokeWidth={3} aria-hidden /> Confirmado
+                  </span>
+                )}
               </span>
-            )}
-            <button type="button" className={btnOutline} onClick={() => setPhoneOpen(true)}>
-              Trocar
-            </button>
+              <button
+                type="button"
+                className="inline-flex h-11 shrink-0 items-center rounded-lg border border-primary bg-surface px-3.5 text-[13px] font-bold text-text-strong hover:bg-surface-2"
+                onClick={() => setPhoneOpen(true)}
+              >
+                Trocar
+              </button>
+            </div>
+            <p className="text-xs text-text-subtle">
+              O número só muda depois que você digitar o código enviado por SMS.
+            </p>
           </div>
-          <p className="text-sm text-text-muted">
-            O número só muda depois que você digitar o código enviado por SMS.
-          </p>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-bold text-text-strong">CPF</span>
-          <span className="flex h-12 items-center rounded-lg border border-border bg-surface-2 px-3 text-text-muted">
-            {profile.cpfMasked}
-          </span>
-          <p className="text-sm text-text-muted">O CPF não pode ser alterado.</p>
-        </div>
-        <div>
-          <button type="submit" className={btnPrimary} disabled={!changed || save.isPending}>
-            {save.isPending ? "Salvando…" : "Salvar alterações"}
-          </button>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[13px] font-bold text-text">CPF</span>
+            <span className={cn(readonlyBox, "text-text-subtle")}>{profile.cpfMasked}</span>
+            <p className="text-xs text-text-subtle">
+              O CPF não pode ser alterado. Fale com o suporte se houver erro.
+            </p>
+          </div>
         </div>
       </form>
       {phoneOpen && (
@@ -115,6 +118,12 @@ export function TabPerfil({ profile }: { profile: Profile }) {
           }}
         />
       )}
+      <div className="flex flex-wrap items-center gap-3 border-t border-surface-2 pt-4 sm:justify-end">
+        {changed && <span className="text-[13px] text-accent-text">Você tem alterações não salvas</span>}
+        <button type="submit" form="form-perfil" className={btnPrimary} disabled={!changed || save.isPending}>
+          {save.isPending ? "Salvando…" : "Salvar alterações"}
+        </button>
+      </div>
     </Card>
   );
 }
@@ -142,7 +151,11 @@ function PhoneDialog({ onClose, onDone }: { onClose: () => void; onDone: (p: Pro
   };
 
   return (
-    <Modal title="Trocar celular" onClose={onClose}>
+    <div
+      role="group"
+      aria-label="Trocar celular"
+      className="flex flex-col gap-3 rounded-xl border border-surface-3 bg-bg p-4"
+    >
       {challenge ? (
         <OtpStep
           initial={challenge}
@@ -155,12 +168,14 @@ function PhoneDialog({ onClose, onDone }: { onClose: () => void; onDone: (p: Pro
           onBack={() => setChallenge(null)}
         />
       ) : (
-        <form onSubmit={send} className="flex flex-col gap-4" noValidate>
-          <TextField
+        <form onSubmit={send} className="flex flex-col gap-3 sm:flex-row sm:items-end" noValidate>
+          <Field
+            className="flex-1"
             label="Novo celular"
+            type="tel"
             inputMode="tel"
             autoComplete="tel"
-            placeholder="(82) 99999-9999"
+            placeholder="(82) 9 0000-0000"
             value={phone}
             error={error || undefined}
             onChange={(e) => setPhone(cleanPhoneInput(e.target.value))}
@@ -168,8 +183,15 @@ function PhoneDialog({ onClose, onDone }: { onClose: () => void; onDone: (p: Pro
           <button type="submit" className={btnPrimary} disabled={busy}>
             {busy ? "Enviando…" : "Enviar código por SMS"}
           </button>
+          <button
+            type="button"
+            className="inline-flex h-11 items-center px-3 text-[13px] font-semibold text-text-muted"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
         </form>
       )}
-    </Modal>
+    </div>
   );
 }

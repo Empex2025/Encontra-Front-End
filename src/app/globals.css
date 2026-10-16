@@ -34,6 +34,7 @@
   --accent-text: #a86704;
   --accent-soft: #fef5e2;
   --accent-border: #fcd780;
+  --accent-ink: #5c3a02;
 
   --success: #198754;
   --success-text: #146c43;
@@ -58,6 +59,9 @@
   --cat-auto: #6c757d;
   --cat-pet: #198754;
   --cat-eletronicos: #00154f;
+
+  /* Rótulo "Serviço" no cartão do story */
+  --kind-service: #9f5c2e;
 
   color-scheme: light;
 }
@@ -87,6 +91,7 @@
   --accent-text: #fbb931;
   --accent-soft: #3a220f;
   --accent-border: #3a220f;
+  --accent-ink: #fbb931;
 
   --success-text: #5ee0a8;
   --success-soft: #0e2f2a;
@@ -108,6 +113,8 @@
   --cat-auto: #ced4da;
   --cat-pet: #a3cfbb;
   --cat-eletronicos: #c7d2fe;
+
+  --kind-service: #f0b48a;
 
   color-scheme: dark;
 }
@@ -138,6 +145,7 @@
   --color-accent-text: var(--accent-text);
   --color-accent-soft: var(--accent-soft);
   --color-accent-border: var(--accent-border);
+  --color-accent-ink: var(--accent-ink);
   --color-success: var(--success);
   --color-success-text: var(--success-text);
   --color-success-soft: var(--success-soft);
@@ -147,6 +155,7 @@
   --color-header: var(--header-bg);
   --color-header-border: var(--header-border);
   --color-focus: var(--focus);
+  --color-kind-service: var(--kind-service);
 }
 
 /* Cores fixas da marca (não mudam com o tema) */
@@ -157,9 +166,15 @@
   --color-navy-300: #808daf;
   --color-navy-200: #b3bbcf;
   --color-navy-50: #e6e9f0;
+  --color-navy-900: #000f3b;
+  /* Palco escuro dos Stories (fundo da tela cheia) */
+  --color-stage: #050b24;
   --color-amber: #f4af1b;
   --color-amber-400: #f7bb35;
   --color-amber-50: #fef5e2;
+  /* Fundo das telas de entrada (foto do protótipo indisponível: cinza do protótipo + véu) */
+  --color-charcoal: #343a40;
+  --color-charcoal-900: #212529;
 
   --shadow-card: 0px 1px 1.5px rgba(0, 0, 0, 0.1);
   --shadow-raised: 0px 4px 6px rgba(0, 0, 0, 0.12);
@@ -196,6 +211,26 @@ body {
   }
 }
 
+/* Entradas suaves (story, cartão do produto, mensagem do chat). */
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Corações da live: sobem e somem em 1,7 s. */
 @keyframes floatup {
   from {
@@ -215,4 +250,73 @@ body {
       opacity: 0;
     }
   }
+}
+
+/* Degradês dos cards com foto cheia (protótipo): escurecem o topo e, mais forte, o pé, para o texto branco ler. */
+.scrim-reel {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 8, 35, 0.45) 0%,
+    rgba(0, 8, 35, 0) 25%,
+    rgba(0, 8, 35, 0) 45%,
+    rgba(0, 8, 35, 0.94) 100%
+  );
+}
+.scrim-place {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 8, 35, 0.35) 0%,
+    rgba(0, 8, 35, 0) 22%,
+    rgba(0, 8, 35, 0) 42%,
+    rgba(0, 8, 35, 0.92) 100%
+  );
+}
+
+/* Entrada: cartão que sobe suave e confete do "Tudo pronto" (protótipo: rise / pop). */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.anim-rise {
+  animation: rise 0.3s ease-out both;
+}
+.anim-pop {
+  animation: pop 0.45s ease-out both;
+}
+
+/* Campos das telas de entrada: o foco é a borda azul + anel de 3 px (protótipo), sem o contorno global. */
+.auth-field:focus-visible {
+  outline: none;
+}
+
+/* Pulso âmbar (protótipo): atalho "Perto agora" e sino do Meu Radar. Respeita "reduzir movimento" (regra acima). */
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 175, 27, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(244, 175, 27, 0);
+  }
+}
+.ring-pulse {
+  animation: ring-pulse 1.8s ease-out infinite;
 }

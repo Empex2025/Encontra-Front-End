@@ -151,3 +151,13 @@ Código pronto (PR #8), **não validado com a API real** (testado no navegador c
 - Erro de `/me/location` não se distingue de "sem local definido" no cabeçalho.
 - "Reservar" aparece nas ações do convite de login, mas não há tela de reserva.
 - Player de live sem `streamUrl` e Socket.IO seguem dependendo de serviço externo; mapa depende do provedor e de `GET /map` (`ui/map-panel.tsx` é o ponto de troca).
+
+
+## Fidelidade ao protótipo (16/10/2026) — dependem do back-end
+
+- `POST /search/asks` ("Perguntar às lojas perto"): contrato proposto em `docs/contratos/busca.md`.
+- Ofertas/Comparar: `GET /offers` (`sort=ending`, `endsAt`, `offerSlug`, `lowestPrices[]`, `distanceKm`/`categoryId` nos cupons); `GET /search` (`comparable`, `hasDiscount`, `openNow`, `serviceMode`, `verified`, `related[]`); `GET /comparisons/view` (`card` opcional). Ver `docs/contratos/decidir.md` e `comparar.md`.
+- Entrada: login Google/Apple (sem rota; botões desabilitados com aviso); aviso de exclusão de conta antes do login.
+- Ajuda/Institucional/Estados: `GET /help/faq` (`items[].link`, `support`), `GET /legal/{doc}` (`summary`), `GET /status` (`until`). Texto de "Como funciona" e descrições de cookies fixos no código: revisão jurídica.
+- Ao vivo: `distanceKm` opcional em `GET /lives`.
+- Sem cache offline para a tela "sem internet" com itens salvos; sem dado "senha alterada há…".

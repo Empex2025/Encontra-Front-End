@@ -101,3 +101,12 @@ Para o botão "Comparar" saber o grupo sem outra chamada, cada item de `GET /sea
 ## Dados que já existem e alimentam o quadro
 
 Preço e data da atualização, loja/prestador, distância, nota e avaliações, disponibilidade, vendidos, horário, atende em domicílio. Nada novo precisa ser coletado do lojista para a comparação funcionar; critérios sem dado aparecem como "Não informado".
+
+## Extensões da fidelidade ao protótipo (16/10/2026)
+
+Aditivas e opcionais.
+
+- **`GET /search` na tela de seleção:** novos filtros `comparable=1` (só itens com `group`), `hasDiscount=1`, `openNow=1`, `serviceMode=home`, `verified=1`; `sort` aceita também `price_desc` (maior preço) e `sold` (mais vendidos). A resposta ganha `related: string[]` (buscas relacionadas; padrão `[]`, a linha some sem dados).
+- **`GET /comparisons/view`:** cada item pode trazer `card` (um `SearchItem` completo) para o quadro mostrar o mesmo cartão da pesquisa. Sem `card`, o quadro usa o cartão enxuto com os dados da comparação.
+- A seleção (até 3, mesmo `group`) continua no navegador; cada entrada guarda um instantâneo (`title`, `imageUrl`, `priceCents`, `categoryId`) só para desenhar a bandeja "Sua comparação" sem nova chamada.
+- Rota do quadro: `/comparar/quadro`; a seleção/pesquisa fica em `/comparar?q=`.

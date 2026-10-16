@@ -18,6 +18,10 @@ export const formatDayMonth = (iso: string) => {
 export const discountPct = (cents: number, oldCents: number | null) =>
   oldCents && oldCents > cents ? Math.round((1 - cents / oldCents) * 100) : 0;
 
+const int = new Intl.NumberFormat("pt-BR");
+/** 1249 → "1.249" (milhar com ponto, como no protótipo do produto). */
+export const formatInt = (n: number) => int.format(n);
+
 const compact = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 /** 12400 → "12,4 mil"; abaixo de 1.000 fica o número inteiro. */
 export const formatCount = (n: number) => (n >= 1000 ? `${compact.format(n / 1000)} mil` : String(n));

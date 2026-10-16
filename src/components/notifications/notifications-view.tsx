@@ -1,18 +1,18 @@
 "use client";
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck, Settings2, ShieldAlert, Store, Ticket, X } from "lucide-react";
+import { Bell, Lock, Settings, Star, Store, Ticket, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { NotificationPrefsForm } from "@/components/account/notification-prefs";
 import { AlertsPanel } from "@/components/alerts/alerts-panel";
 import { LockedBody, useAccess } from "@/components/auth/session-gate";
+import { NotificationPrefsDialog } from "@/components/notifications/prefs-dialog";
 import { cn } from "@/components/ui/cn";
+import { EmptyCard } from "@/components/ui/empty-card";
 import { ErrorState } from "@/components/ui/error-state";
-import { EmptyState, ListSkeleton } from "@/components/ui/list-states";
-import { Modal } from "@/components/ui/modal";
+import { ListSkeleton } from "@/components/ui/list-states";
 import { useToast } from "@/components/ui/toast";
 import { queryKeys } from "@/lib/api/endpoints";
 import { me, type Notification, notifications, type NotificationType } from "@/lib/api/me";
@@ -28,13 +28,40 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]["id"] | "gerenciar";
 
-const TYPE_META: Record<NotificationType, { label: string; icon: typeof Bell }> = {
-  alert: { label: "Alerta", icon: Bell },
-  coupon: { label: "Cupom", icon: Ticket },
-  store: { label: "Loja", icon: Store },
-  activity: { label: "Atividade", icon: CheckCheck },
-  security: { label: "Segurança", icon: ShieldAlert },
-};
+/** Rótulo, ícone e cores de cada tipo (protótipo › Notificações: etiqueta colorida + ícone no quadrado). */
+const TYPE_META: Record<NotificationType, { label: string; icon: typeof Bell; tile: string; chip: string }> =
+  {
+    alert: {
+      label: "Alertas",
+      icon: Bell,
+      tile: "bg-accent-soft text-accent-text",
+      chip: "bg-accent-soft text-accent-text",
+    },
+    coupon: {
+      label: "Ofertas e cupons",
+      icon: Ticket,
+      tile: "bg-success-soft text-success-text",
+      chip: "bg-success-soft text-success-text",
+    },
+    store: {
+      label: "Lojas que sigo",
+      icon: Store,
+      tile: "bg-selected text-link",
+      chip: "bg-selected text-link",
+    },
+    activity: {
+      label: "Minha atividade",
+      icon: Star,
+      tile: "bg-[color-mix(in_srgb,var(--cat-esporte)_14%,transparent)] text-[color:var(--cat-esporte)]",
+      chip: "bg-[color-mix(in_srgb,var(--cat-esporte)_14%,transparent)] text-[color:var(--cat-esporte)]",
+    },
+    security: {
+      label: "Segurança",
+      icon: Lock,
+      tile: "bg-surface-2 text-text-muted",
+      chip: "bg-surface-2 text-text-muted",
+    },
+  };
 
 export function NotificationsView() {
   const router = useRouter();
@@ -77,14 +104,17 @@ export function NotificationsView() {
   const markAll = useMutation({
     mutationFn: () => notifications.readAll(type),
     onSuccess: () => {
-      toast("Tudo marcado como lido.");
+      toast("Todas marcadas como lidas.");
       refresh();
     },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível marcar como lidas.", "info"),
   });
   const remove = useMutation({
     mutationFn: notifications.remove,
-    onSuccess: refresh,
+    onSuccess: () => {
+      toast("Notificação removida.");
+      refresh();
+    },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível remover.", "info"),
   });
 
@@ -102,13 +132,14 @@ export function NotificationsView() {
           gerenciar: 0,
         }[id] ?? 0)
       : 0;
+  const manage = tab === "gerenciar";
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-text-strong">Notificações</h1>
-          <p className="text-sm text-text-muted" aria-live="polite">
+    <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-5">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[32px] leading-10 font-bold text-text-strong">Notificações</h1>
+          <p className="text-base text-text-muted" aria-live="polite">
             {!member
               ? "Seus avisos aparecem aqui depois que você entrar."
               : total === null
@@ -125,18 +156,17 @@ export function NotificationsView() {
             type="button"
             disabled={!total || markAll.isPending}
             onClick={() => markAll.mutate()}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2 disabled:opacity-50"
+            className="h-10 rounded-lg border border-border bg-surface px-3.5 text-[13px] font-semibold text-text-strong hover:bg-surface-2 disabled:opacity-50"
           >
-            <CheckCheck className="size-4" aria-hidden />
-            Marcar todas como lidas
+            ✓ Marcar todas como lidas
           </button>
           <button
             type="button"
             disabled={!member}
             onClick={() => setPrefsOpen(true)}
-            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2 disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border bg-surface px-3.5 text-[13px] font-semibold text-text-strong hover:bg-surface-2 disabled:opacity-50"
           >
-            <Settings2 className="size-4" aria-hidden />
+            <Settings className="size-4 shrink-0" aria-hidden />
             Preferências
           </button>
         </div>
@@ -144,16 +174,10 @@ export function NotificationsView() {
 
       <div
         role="tablist"
-        aria-label="Filtros de notificações"
-        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1"
+        aria-label="Filtrar notificações"
+        className="flex flex-wrap items-center gap-2 border-b border-surface-3 pb-3"
       >
-        {[
-          ...TABS,
-          {
-            id: "gerenciar" as const,
-            label: `Gerenciar alertas (${alertsTotal.data ? alertsTotal.data.items.length : "—"})`,
-          },
-        ].map((t) => (
+        {TABS.map((t) => (
           <button
             key={t.id}
             role="tab"
@@ -161,24 +185,38 @@ export function NotificationsView() {
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "flex h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold",
+              "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-bold",
               tab === t.id
                 ? "border-primary bg-primary text-on-primary"
-                : "border-border bg-surface text-text hover:bg-surface-2",
+                : "border-border bg-surface text-text-2 hover:bg-surface-2",
             )}
           >
-            {t.label}
+            <span>{t.label}</span>
             {bubble(t.id) > 0 && (
-              <span className="rounded-full bg-danger px-1.5 text-xs font-bold text-white">
+              <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-danger px-[5px] text-[11px] text-white">
                 {bubble(t.id)}
               </span>
             )}
           </button>
         ))}
+        <span className="flex-1" />
+        <button
+          role="tab"
+          type="button"
+          aria-selected={manage}
+          onClick={() => setTab("gerenciar")}
+          className={cn(
+            "inline-flex h-9 items-center gap-1.5 rounded-full border-[1.5px] border-accent-hover px-4 text-[13px] font-extrabold text-text-strong",
+            manage ? "bg-accent-soft" : "bg-surface hover:bg-accent-soft/60",
+          )}
+        >
+          <Bell className="size-4 shrink-0" aria-hidden />
+          Gerenciar alertas ({alertsTotal.data ? alertsTotal.data.items.length : "—"})
+        </button>
       </div>
 
-      {tab === "gerenciar" ? (
-        <AlertsPanel access={access} />
+      {manage ? (
+        <AlertsPanel access={access} variant="notificacoes" />
       ) : !member ? (
         <LockedBody
           access={access}
@@ -194,17 +232,20 @@ export function NotificationsView() {
           onRetry={() => q.refetch()}
         />
       ) : items.length === 0 ? (
-        <EmptyState
+        <EmptyCard
           icon={<Bell className="size-8 text-text-subtle" aria-hidden />}
-          title="Nenhuma notificação por aqui."
-          hint="Quando um preço baixar, um cupom chegar ou alguém que você segue publicar algo, avisamos aqui."
+          title="Nada por aqui ainda."
+          hint="Quando algo acontecer com o que você segue ou pediu para acompanhar, aparece aqui."
+          className="py-12"
         />
       ) : (
-        <div className="flex flex-col gap-5">
+        <>
           {groupNotifications(items).map((g) => (
             <section key={g.id} aria-label={g.label} className="flex flex-col gap-2">
-              <h2 className="text-sm font-bold tracking-wide text-text-subtle uppercase">{g.label}</h2>
-              <ul className="flex flex-col gap-2">
+              <h2 className="mt-2 text-[13px] leading-5 font-bold tracking-[.5px] text-text-subtle uppercase">
+                {g.label}
+              </h2>
+              <ul className="flex flex-col overflow-hidden rounded-2xl bg-surface shadow-card">
                 {g.items.map((n) => (
                   <Row
                     key={n.id}
@@ -221,14 +262,14 @@ export function NotificationsView() {
               type="button"
               disabled={q.isFetchingNextPage}
               onClick={() => q.fetchNextPage()}
-              className="self-center rounded-lg border border-border-strong px-5 py-2.5 text-sm font-bold"
+              className="self-center rounded-lg border border-border bg-surface px-5 py-2.5 text-sm font-bold text-text-strong hover:bg-surface-2"
             >
               {q.isFetchingNextPage ? "Carregando…" : "Ver mais"}
             </button>
           )}
-        </div>
+        </>
       )}
-      {prefsOpen && <PrefsDialog onClose={() => setPrefsOpen(false)} />}
+      {prefsOpen && <NotificationPrefsDialog onClose={() => setPrefsOpen(false)} />}
     </div>
   );
 }
@@ -240,65 +281,69 @@ function Row({ n, onRead, onRemove }: { n: Notification; onRead: () => void; onR
   return (
     <li
       className={cn(
-        "relative flex gap-3 rounded-2xl border p-4",
-        n.read ? "border-border bg-surface" : "border-primary/40 bg-surface-2",
+        "flex items-start gap-3.5 border-b border-surface-2 px-5 py-4 last:border-b-0",
+        !n.read && "bg-selected/40",
       )}
     >
       <button
         type="button"
         onClick={onRead}
         aria-label={n.read ? n.title : `${n.title} (marcar como lida)`}
-        className="flex min-w-0 flex-1 gap-3 text-left"
+        className="flex min-w-0 flex-1 items-start gap-3.5 text-left"
       >
-        <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-surface-2 text-text-2">
-          {n.imageUrl ? (
+        <span
+          className={cn(
+            "relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl",
+            meta.tile,
+          )}
+        >
+          <Icon className="size-[22px]" aria-hidden />
+          {n.imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={n.imageUrl} alt="" className="size-full object-cover" />
-          ) : (
-            <Icon className="size-5" aria-hidden />
+            <img src={n.imageUrl} alt="" className="absolute inset-0 size-full object-cover" />
           )}
         </span>
-        <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-xs text-text-subtle">
-            {[meta.label, formatTimeAgo(n.createdAt)].filter(Boolean).join(" · ")}
+        <span className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex h-5 items-center rounded px-2 text-[11px] font-bold whitespace-nowrap",
+                meta.chip,
+              )}
+            >
+              {meta.label}
+            </span>
+            <span className="text-xs text-text-subtle">{formatTimeAgo(n.createdAt)}</span>
           </span>
-          <span className={cn("text-text-strong", !n.read && "font-bold")}>{n.title}</span>
-          {n.text && <span className="text-sm text-text-muted">{n.text}</span>}
+          <span className={cn("text-[15px] leading-[22px] text-text", n.read ? "font-medium" : "font-bold")}>
+            {n.title}
+          </span>
+          {n.text && <span className="text-[13px] leading-5 text-text-muted">{n.text}</span>}
         </span>
       </button>
-      <div className="flex shrink-0 flex-col items-end justify-between gap-2">
-        <span className="flex items-center gap-1">
-          {!n.read && <span className="bg-info size-2.5 rounded-full" role="img" aria-label="Não lida" />}
+      <div className="flex shrink-0 items-center gap-2.5 max-sm:flex-col-reverse max-sm:items-end">
+        {n.action && href && (
+          <Link
+            href={href}
+            onClick={onRead}
+            className="inline-flex h-9 items-center rounded-lg border border-primary bg-surface px-3.5 text-[13px] font-bold whitespace-nowrap text-text-strong hover:bg-surface-2"
+          >
+            {n.action.label}
+          </Link>
+        )}
+        <span className="flex items-center gap-2.5">
+          {!n.read && <span className="size-2.5 rounded-full bg-danger" role="img" aria-label="Não lida" />}
           <button
             type="button"
             onClick={onRemove}
             aria-label={`Remover notificação: ${n.title}`}
-            className="flex size-9 items-center justify-center rounded-full text-text-subtle hover:bg-surface-2"
+            title="Remover"
+            className="flex size-8 items-center justify-center rounded-full text-text-subtle hover:bg-surface-2"
           >
-            <X className="size-4" aria-hidden />
+            <X className="size-[18px]" aria-hidden />
           </button>
         </span>
-        {n.action && href && (
-          <Link href={href} onClick={onRead} className="text-sm font-semibold text-link hover:underline">
-            {n.action.label} ›
-          </Link>
-        )}
       </div>
     </li>
-  );
-}
-
-function PrefsDialog({ onClose }: { onClose: () => void }) {
-  return (
-    <Modal title="Preferências de notificação" onClose={onClose}>
-      <NotificationPrefsForm />
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-4 h-11 w-full rounded-lg border border-border-strong font-semibold hover:bg-surface-2"
-      >
-        Fechar
-      </button>
-    </Modal>
   );
 }

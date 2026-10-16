@@ -10,16 +10,39 @@ Proposta do front para combinar com o back-end. Abertos a visitantes na leitura;
 {
   "groups": [
     {
-      "profile": { "id": "…", "slug": "…", "name": "Loja A", "kind": "store|provider", "verified": true, "avatarUrl": null, "typeLabel": "Moda" },
+      "profile": {
+        "id": "…",
+        "slug": "…",
+        "name": "Loja A",
+        "kind": "store|provider",
+        "verified": true,
+        "avatarUrl": null,
+        "typeLabel": "Moda"
+      },
       "distanceKm": 2.4,
       "following": false,
       "seen": false,
       "highlight": null,
       "stories": [
         {
-          "id": "…", "mediaUrl": "…", "mediaType": "image|video", "caption": "…", "publishedAt": "…",
-          "views": 120, "likes": 8, "liked": false, "saved": false,
-          "tag": { "kind": "product|service|offer|place", "title": "…", "priceCents": 27990, "productId": "…", "productSlug": "…", "couponId": null, "imageUrl": null }
+          "id": "…",
+          "mediaUrl": "…",
+          "mediaType": "image|video",
+          "caption": "…",
+          "publishedAt": "…",
+          "views": 120,
+          "likes": 8,
+          "liked": false,
+          "saved": false,
+          "tag": {
+            "kind": "product|service|offer|place",
+            "title": "…",
+            "priceCents": 27990,
+            "productId": "…",
+            "productSlug": "…",
+            "couponId": null,
+            "imageUrl": null
+          }
         }
       ]
     }
@@ -47,12 +70,40 @@ Proposta do front para combinar com o back-end. Abertos a visitantes na leitura;
 
 ```json
 {
-  "id": "…", "title": "…", "place": "Centro, Maceió",
-  "profile": { "id": "…", "slug": "…", "name": "…", "kind": "store", "verified": true, "following": false, "whatsapp": null },
-  "viewers": 124, "likes": 340, "startedAt": "…", "endedAt": null, "coverUrl": null, "streamUrl": null,
+  "id": "…",
+  "title": "…",
+  "place": "Centro, Maceió",
+  "profile": {
+    "id": "…",
+    "slug": "…",
+    "name": "…",
+    "kind": "store",
+    "verified": true,
+    "following": false,
+    "whatsapp": null
+  },
+  "viewers": 124,
+  "likes": 340,
+  "startedAt": "…",
+  "endedAt": null,
+  "coverUrl": null,
+  "streamUrl": null,
   "status": "live|ended",
-  "products": [{ "id": "…", "slug": "…", "title": "…", "priceCents": 27990, "oldPriceCents": null, "tag": "20% off", "imageUrl": null, "pinned": true }],
-  "reminder": false, "lat": null, "lng": null
+  "products": [
+    {
+      "id": "…",
+      "slug": "…",
+      "title": "…",
+      "priceCents": 27990,
+      "oldPriceCents": null,
+      "tag": "20% off",
+      "imageUrl": null,
+      "pinned": true
+    }
+  ],
+  "reminder": false,
+  "lat": null,
+  "lng": null
 }
 ```
 
@@ -61,7 +112,7 @@ Proposta do front para combinar com o back-end. Abertos a visitantes na leitura;
 - Chat: `GET /lives/{id}/messages?after={messageId}` → `{ items: [{ id, author, fromStore, mine, text, sentAt }] }` (o front consulta a cada 3 s e mostra as 40 últimas); `POST /lives/{id}/messages { text }` (1–200 caracteres; pede sessão) → a mensagem criada.
 - Curtir: `POST /lives/{id}/like` → `{ likes }`; cada toque soma 1, não há descurtir (pede sessão).
 - Lembrete por loja: `POST|DELETE /lives/{id}/reminder` (já em `decidir.md`); vale para a loja da live. Pede sessão.
-- Outras lives: `GET /lives?status=live&lat&lng&radiusKm&exclude={id}` → `{ items: [{ id, title, viewers, coverUrl, profileName, place }] }`.
+- Outras lives: `GET /lives?status=live&lat&lng&radiusKm&exclude={id}` → `{ items: [{ id, title, viewers, coverUrl, profileName, place, distanceKm? }] }` (`distanceKm` opcional: aparece como "· 0,9 km" no cartão, como no protótipo).
 - Denunciar: `POST /reports { type: "live", targetId }` (tipos novos: `live` e `evento`).
 - "Quero comprar": `POST /conversations { profileId, productId, draft, origin: { kind: "live", id } }`.
 - **Socket.IO** (`live:message`, `live:viewers`, `live:pinned`, `live:ended`) fica para depois: hoje o front consulta periodicamente. O envio de mensagem já devolve a mensagem criada, então trocar por Socket.IO não muda o contrato acima.
@@ -72,14 +123,28 @@ Proposta do front para combinar com o back-end. Abertos a visitantes na leitura;
 
 ```json
 {
-  "id": "…", "title": "…",
+  "id": "…",
+  "title": "…",
   "organizer": { "name": "Loja A", "slug": "loja-a", "profileId": "…", "kind": "store" },
-  "neighborhood": "Farol", "distanceKm": 2.4, "address": "Rua A, 10", "lat": null, "lng": null,
-  "startsAt": "…", "endsAt": null, "free": true, "priceCents": null, "coverUrl": null, "about": "…",
+  "neighborhood": "Farol",
+  "distanceKm": 2.4,
+  "address": "Rua A, 10",
+  "lat": null,
+  "lng": null,
+  "startsAt": "…",
+  "endsAt": null,
+  "free": true,
+  "priceCents": null,
+  "coverUrl": null,
+  "about": "…",
   "schedule": [{ "time": "19:00", "title": "Abertura", "detail": null }],
   "offer": { "…": "mesmo formato de cupom (id, title, code, percentOff, validUntil, claimed)" },
-  "going": 12, "interested": 30, "tags": ["Pet friendly"],
-  "myAttendance": null, "attendeesPreview": [{ "name": "Ana", "avatarUrl": null }], "followedGoing": 2,
+  "going": 12,
+  "interested": 30,
+  "tags": ["Pet friendly"],
+  "myAttendance": null,
+  "attendeesPreview": [{ "name": "Ana", "avatarUrl": null }],
+  "followedGoing": 2,
   "signupWhatsapp": null
 }
 ```

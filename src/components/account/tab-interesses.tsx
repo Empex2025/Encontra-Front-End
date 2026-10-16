@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/components/ui/cn";
@@ -54,10 +53,20 @@ function Form({ initial }: { initial: string[] }) {
   };
   const changed = picked.length !== initial.length || picked.some((x) => !initial.includes(x));
 
+  const enough = picked.length >= 3;
   return (
-    <Card title="Seus interesses">
-      <p className="text-sm text-text-muted">Usamos para decidir o que mostrar primeiro. Mínimo de 3.</p>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <Card
+      title="Seus interesses"
+      aside={
+        <span className={cn("font-bold", enough ? "text-success-text" : "text-danger-text")}>
+          {picked.length === 1 ? "1 escolhido" : `${picked.length} escolhidos`}
+        </span>
+      }
+    >
+      <p className="text-sm text-text-muted">
+        Escolha pelo menos 3. Eles decidem o que aparece primeiro em Descobrir, nos stories e nas ofertas.
+      </p>
+      <ul className="flex flex-wrap gap-2">
         {CATEGORIES.map((c) => {
           const on = picked.includes(c.id);
           const Icon = c.icon;
@@ -68,19 +77,19 @@ function Form({ initial }: { initial: string[] }) {
                 aria-pressed={on}
                 onClick={() => toggle(c.id)}
                 className={cn(
-                  "relative flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold",
+                  "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-[13px] font-semibold whitespace-nowrap",
                   on
-                    ? "border-primary bg-selected text-text-strong"
+                    ? "border-primary bg-primary text-on-primary"
                     : "border-border bg-surface text-text-2 hover:border-navy-300",
                 )}
               >
-                <Icon className="size-6" style={{ color: c.colorVar }} aria-hidden />
+                <Icon
+                  className="size-4"
+                  style={on ? undefined : { color: c.colorVar }}
+                  aria-hidden
+                />
+                {on && <span aria-hidden>✓</span>}
                 {c.name}
-                {on && (
-                  <span className="absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-primary text-on-primary">
-                    <Check className="size-3.5" aria-hidden />
-                  </span>
-                )}
               </button>
             </li>
           );
@@ -91,7 +100,7 @@ function Form({ initial }: { initial: string[] }) {
           {error}
         </p>
       )}
-      <div>
+      <div className="flex justify-end border-t border-surface-2 pt-4">
         <button
           type="button"
           className={btnPrimary}

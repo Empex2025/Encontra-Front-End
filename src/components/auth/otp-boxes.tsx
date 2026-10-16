@@ -13,6 +13,8 @@ export function OtpBoxes({
   disabled,
   tone = "idle",
   label,
+  gap = 12,
+  autoFocus,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -20,12 +22,20 @@ export function OtpBoxes({
   disabled?: boolean;
   tone?: "idle" | "error" | "ok";
   label: string;
+  /** espaço entre as caixas em px (12 no cadastro, 10 na recuperação de senha) */
+  gap?: 10 | 12;
+  /** foca a 1ª caixa ao abrir a etapa (protótipo) */
+  autoFocus?: boolean;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const focus = (i: number) => refs.current[Math.min(Math.max(i, 0), OTP_LENGTH - 1)]?.focus();
 
   return (
-    <div role="group" aria-label={label} className="flex justify-between gap-2">
+    <div
+      role="group"
+      aria-label={label}
+      className={cn("flex justify-center", gap === 10 ? "gap-2.5" : "gap-3")}
+    >
       {Array.from({ length: OTP_LENGTH }, (_, i) => (
         <input
           key={i}
@@ -34,6 +44,7 @@ export function OtpBoxes({
           }}
           value={value[i] ?? ""}
           inputMode="numeric"
+          autoFocus={autoFocus && i === 0}
           autoComplete={i === 0 ? "one-time-code" : "off"}
           aria-label={`Dígito ${i + 1} de ${OTP_LENGTH}`}
           disabled={disabled}
@@ -63,10 +74,10 @@ export function OtpBoxes({
           }}
           onFocus={(e) => e.currentTarget.select()}
           className={cn(
-            "h-14 w-full min-w-0 rounded-lg border bg-surface text-center text-xl font-bold text-text-strong outline-none focus:ring-2 focus:ring-focus/40 disabled:opacity-60",
-            tone === "error" && "border-danger",
-            tone === "ok" && "border-success-text bg-success-soft",
-            tone === "idle" && "border-border-strong focus:border-primary",
+            "auth-field h-14 w-full max-w-[52px] min-w-0 flex-1 rounded-lg border bg-surface text-center text-[22px] font-bold text-text-strong transition-[border-color,box-shadow] outline-none focus:ring-[3px] focus:ring-selected",
+            tone === "error" && "border-danger bg-danger-soft",
+            tone === "ok" && "border-success bg-success-soft",
+            tone === "idle" && "border-navy-300 focus:border-primary dark:border-border-strong",
           )}
         />
       ))}

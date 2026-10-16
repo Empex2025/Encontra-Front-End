@@ -40,6 +40,24 @@ export const REPORT_REASONS = [
 ] as const;
 export type ReportReason = (typeof REPORT_REASONS)[number]["id"];
 
+const TZ = "America/Maceio";
+const hhmm = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
+const ddmm = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: TZ });
+const weekday = new Intl.DateTimeFormat("pt-BR", { weekday: "short", timeZone: TZ });
+// Maceió é UTC−3 o ano todo: o dia civil é o dia do instante deslocado em 3 h.
+const civilDay = (d: Date) => Math.floor((d.getTime() - 3 * 3600_000) / 86_400_000);
+
+/** Hora na lista de conversas (protótipo): hoje "10:16", ontem "ontem", até 6 dias "qua", antes "28/09". */
+export function listTimeLabel(iso: string, now: Date = new Date()): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const diff = civilDay(now) - civilDay(d);
+  if (diff <= 0) return hhmm.format(d);
+  if (diff === 1) return "ontem";
+  if (diff <= 6) return weekday.format(d).replace(".", "");
+  return ddmm.format(d);
+}
+
 /** Erros da denúncia por campo. "Outro" exige o relato (até 400). */
 export function validateReport(reason: ReportReason | null, details: string): Record<string, string> {
   const e: Record<string, string> = {};

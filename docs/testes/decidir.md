@@ -50,19 +50,20 @@ Checar: nenhuma página em branco; nenhum texto "em breve".
 
 **Oferta `/o/ALGUM-ENDERECO`**
 
-- Sem prazo: "Prazo da oferta não informado". **Sinais de confiança**, **Onde fica**, **Mais desta loja**, **Parecidos perto** sempre presentes. Oferta encerrada mostra o aviso "Oferta encerrada".
+- Página pública própria (sem menu lateral): cabeçalho com **Entrar** e **Criar conta grátis**, cartão com foto, loja, preço, contagem regressiva, **Pegar cupom**, **WhatsApp**, **Como chegar** e **Conversar**; coluna lateral "Como este link aparece no WhatsApp" e convite para criar conta (só para visitante).
+- Sem prazo: "Prazo da oferta não informado". **Sinais de confiança**, **Mais desta loja**, **Parecidos perto** (somem se vazios). Oferta encerrada mostra o aviso "Oferta encerrada".
 
 **Lista pública `/listas/ALGUM-TOKEN`**
 
-- Filtros Tudo / Produtos / Serviços / Lugares com contagem (cinza se zero). Lista vazia: "Esta lista ainda não tem itens".
+- Mesma página pública (sem menu lateral). Faixa "Fulano te enviou isto pelo EncontraÊ" só se a lista trouxer o primeiro nome do dono. Filtros Tudo / Produtos / Serviços / Lugares com contagem (cinza se zero). Lista vazia: "Esta lista ainda não tem itens".
 
 **Avaliações (abas Avaliações do produto/loja/prestador)**
 
 - Sem avaliações: nota "—", barras "—", mensagem "Ainda não há avaliações". Com avaliações: botões **Útil** (pede conta se for visitante) e **Denunciar** em cada uma. Avaliação sem texto mostra "Esta pessoa deu a nota sem escrever comentário".
 
-**Avaliar `/avaliar?tipo=produto&id=ALGUM-ENDERECO`** (logado): esqueleto enquanto carrega; 404 → "Não encontramos…"; erro → **Tentar de novo**; formulário completo (nota, fotos, comentário, rascunho).
+**Avaliar `/avaliar?tipo=produto&id=ALGUM-ENDERECO`** (logado): esqueleto enquanto carrega; 404 → "Não encontramos…"; erro → **Tentar de novo**; quatro cartões numerados (nota com estrelas de 40 px, fotos e vídeo em quadrados tracejados de 120 px, comentário, "Destaques e atendimento" que abre e fecha), chave "Mostrar meu nome", barra inferior com "Nota ✓ / Fotos 0/2", **Salvar rascunho** e **Publicar avaliação**. Voltar com algo preenchido pergunta **Descartar / Continuar editando / Salvar e sair**. Depois de publicar: resumo e dois botões.
 
-**Denunciar**: com `?tipo=…&id=…` o nome vem preenchido.
+**Denunciar `/denunciar`**: com `?tipo=…&id=…` o tipo e o nome vêm preenchidos. Tipo em chips, motivo em 6 opções (2 colunas), descrição (mínimo 10), **Anexar print** (escolhe uma imagem JPG/PNG de até 5 MB; precisa de `POST /uploads/presign`), "A loja não fica sabendo quem denunciou". Depois de enviar: protocolo, resumo e **Fazer outra denúncia**.
 
 ## C. No celular (largura ~390 px)
 

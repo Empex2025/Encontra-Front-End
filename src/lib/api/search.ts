@@ -29,6 +29,8 @@ export const searchItemSchema = z.object({
       name: z.string(),
       kind: z.enum(["store", "provider"]),
       verified: z.boolean(),
+      /** Foto do perfil; sem ela o card mostra as iniciais. */
+      avatarUrl: z.string().nullable().optional(),
     })
     .nullable(),
   categoryId: categoryId.nullable(),
@@ -57,6 +59,16 @@ export const searchItemSchema = z.object({
   availability: z.enum(["in_stock", "out_of_stock", "unknown"]).optional(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
+  /* Campos opcionais dos cards (protótipo). Ausente = o card não mostra a informação. Contrato: docs/contratos/home.md */
+  viewCount: z.number().int().nonnegative().nullable().optional(),
+  soldCount: z.number().int().nonnegative().nullable().optional(),
+  doneCount: z.number().int().nonnegative().nullable().optional(),
+  specialties: z.array(z.string()).optional(),
+  /** Detalhe de onde o serviço atende (ex.: "até 8 km" em domicílio, "Salão próprio" no local). */
+  serviceNote: z.string().nullable().optional(),
+  /** Quando é, para eventos e experiências (ex.: "Hoje, 20h"). */
+  scheduleLabel: z.string().nullable().optional(),
+  favorited: z.boolean().optional(),
 });
 export type SearchItem = z.infer<typeof searchItemSchema>;
 
@@ -149,4 +161,31 @@ export function createWant(body: {
   maxPriceCents: number | null;
 }) {
   return api("/me/wants", wantSchema, { method: "POST", body });
+}
+
+/**
+ * "Perguntar às lojas perto" (Explorar, busca sem resultado). Contrato proposto em docs/contratos/busca.md:
+ * o servidor envia “alguém faz {term}?” às lojas e prestadores do ramo no raio e abre as conversas.
+ */
+export const askStoresSchema = z.object({ profilesNotified: z.number().int().nonnegative() });
+export type AskStoresResult = z.infer<typeof askStoresSchema>;
+
+export function askStores(body: {
+  term: string;
+  radiusKm: number;
+  lat: number | null;
+  lng: number | null;
+  where: string;
+}) {
+  const hasPoint = body.lat !== null && body.lng !== null;
+  return api("/search/asks", askStoresSchema, {
+    method: "POST",
+    body: {
+      term: body.term,
+      radiusKm: body.radiusKm,
+      lat: hasPoint ? body.lat : undefined,
+      lng: hasPoint ? body.lng : undefined,
+      where: hasPoint ? undefined : body.where,
+    },
+  });
 }

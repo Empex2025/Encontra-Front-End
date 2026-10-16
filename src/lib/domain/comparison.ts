@@ -9,7 +9,19 @@ export const MAX_PRIORITIES = 3;
 export const DIFFERS_ID = "differs";
 
 export type CompareGroup = { id: string; label: string };
-export type CompareEntry = { ref: string; group: CompareGroup; origin: string };
+/**
+ * Item escolhido para comparar. `title`, `imageUrl`, `priceCents` e `categoryId` são o que a pessoa viu ao escolher
+ * (só para a bandeja "Sua comparação"); o quadro sempre busca os dados atuais no servidor.
+ */
+export type CompareEntry = {
+  ref: string;
+  group: CompareGroup;
+  origin: string;
+  title?: string;
+  imageUrl?: string | null;
+  priceCents?: number | null;
+  categoryId?: string | null;
+};
 
 export type AddResult = "added" | "removed" | "full" | "other_group";
 

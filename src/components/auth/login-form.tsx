@@ -1,5 +1,7 @@
 "use client";
 
+import { CircleCheck } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,10 +13,14 @@ import { ApiError } from "@/lib/api/client";
 import { safeReturnTo } from "@/lib/domain/validation";
 import { routes } from "@/lib/routes";
 
-import { AuthCard, FormError, PrimaryButton } from "./auth-card";
-import { PasswordField, TextField } from "@/components/ui/text-field";
+import { AuthBackdrop, AuthPanel, FormError, linkCls, PrimaryButton } from "./auth-card";
+import { AuthCheckbox, AuthPasswordField, AuthTextField } from "./auth-fields";
+import { SocialButtons } from "./social-buttons";
 
-/** Entrar (Documento de entrega › Fluxo 1 › CadLogin). Sem Google/Apple na 1ª versão (Decisão 7). */
+/** Endereço da área do comerciante: só vira link quando a hospedagem define (não existe no app do consumidor). */
+const MERCHANT_URL = process.env.NEXT_PUBLIC_MERCHANT_URL;
+
+/** Entrar (artboard CadLogin): cartão de 440 px com o cartão amarelo deslocado atrás. */
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -34,6 +40,9 @@ export function LoginForm() {
   useEffect(() => {
     if (me && !cancelled) router.replace(returnTo);
   }, [me, cancelled, returnTo, router]);
+
+  const back = params.get("voltar");
+  const withBack = (href: string) => (back ? `${href}?voltar=${encodeURIComponent(returnTo)}` : href);
 
   const loginOk = login.trim().length >= 5;
   const passOk = password.length >= 1;
@@ -64,79 +73,125 @@ export function LoginForm() {
   };
 
   return (
-    <AuthCard title="Entrar na sua conta" subtitle="Encontre produtos e serviços perto de você.">
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+    <AuthBackdrop
+      footer={
+        MERCHANT_URL ? (
+          <>
+            É lojista ou prestador?{" "}
+            <a href={MERCHANT_URL} className="font-bold text-amber-400 hover:underline">
+              Acesse a área do comerciante
+            </a>
+          </>
+        ) : undefined
+      }
+    >
+      <AuthPanel width={440} offset>
+        <div className="flex flex-col items-center gap-2 text-center">
+          <Image
+            src="/brand/simbolo.png"
+            alt=""
+            width={44}
+            height={44}
+            className="size-11 rounded-xl object-cover"
+            priority
+          />
+          <h1 className="text-[22px] leading-7 font-extrabold tracking-[-0.2px] text-text-strong">
+            Encontra<span className="text-amber">Ê</span>
+            <span className="sr-only"> · Entrar na sua conta</span>
+          </h1>
+          <p className="text-sm leading-5 text-text-muted">Encontre produtos e serviços perto de você</p>
+        </div>
+
         {cancelled && (
           <p
             role="status"
-            className="rounded-lg bg-success-soft px-3 py-2 text-sm font-semibold text-success-text"
+            className="anim-rise -my-2 flex items-start gap-2.5 rounded-lg border border-success/40 bg-success-soft px-3.5 py-3 text-[13px] leading-[19px] text-success-text"
           >
-            Exclusão cancelada. Que bom ter você de volta! Sua conta continua ativa.
+            <CircleCheck className="mt-px size-[18px] shrink-0" aria-hidden />
+            <span>
+              <b>Exclusão cancelada.</b> Que bom ter você de volta! Sua conta continua ativa.
+            </span>
           </p>
         )}
-        <TextField
-          label="CPF ou e-mail"
-          value={login}
-          onChange={(e) => setLogin(e.target.value.slice(0, 80))}
-          autoComplete="username"
-          inputMode="email"
-          error={tried && !loginOk ? "Digite seu CPF ou e-mail." : undefined}
-        />
-        <PasswordField
-          label="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value.slice(0, 64))}
-          autoComplete="current-password"
-          error={tried && !passOk ? "Digite sua senha." : undefined}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="flex min-h-11 items-center gap-3 text-sm text-text-2">
-            <input
-              type="checkbox"
-              checked={keep}
-              onChange={(e) => setKeep(e.target.checked)}
-              className="size-5 accent-[var(--primary)]"
+
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            <AuthTextField
+              label="CPF ou e-mail"
+              value={login}
+              onChange={(e) => setLogin(e.target.value.slice(0, 80))}
+              placeholder="Digite aqui…"
+              autoComplete="username"
+              inputMode="email"
+              error={tried && !loginOk ? "Digite seu CPF ou e-mail." : undefined}
             />
-            <span>
-              <span className="font-semibold text-text-strong">Manter conectado</span>
-              <span className="block text-xs text-text-muted">Por 30 dias neste aparelho</span>
-            </span>
-          </label>
-          <Link
-            href="/entrar/recuperar"
-            className="inline-flex h-11 items-center text-sm font-semibold text-link hover:underline"
-          >
-            Esqueci minha senha
-          </Link>
+            <div className="flex flex-col gap-1">
+              <AuthPasswordField
+                label="Senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value.slice(0, 64))}
+                placeholder="Sua senha"
+                autoComplete="current-password"
+                error={tried && !passOk ? "Digite sua senha." : undefined}
+              />
+              <div className="mt-1 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  <AuthCheckbox
+                    checked={keep}
+                    onChange={setKeep}
+                    aria-labelledby="keep-l"
+                    aria-describedby="keep-d"
+                  />
+                  <span className="flex flex-col gap-0.5">
+                    <span
+                      id="keep-l"
+                      onClick={() => setKeep((v) => !v)}
+                      className="cursor-pointer text-[13px] leading-[18px] font-semibold text-text-2"
+                    >
+                      Manter conectado
+                    </span>
+                    <span id="keep-d" className="text-xs leading-4 text-text-subtle">
+                      Por 30 dias neste aparelho
+                    </span>
+                  </span>
+                </div>
+                <Link
+                  href={withBack("/entrar/recuperar")}
+                  className={`${linkCls} inline-flex min-h-6 items-center text-xs leading-[18px] whitespace-nowrap`}
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {serverError && <FormError>{serverError}</FormError>}
+
+          <PrimaryButton wide looksDisabled={!valid} loading={busy || cancelled}>
+            {cancelled || busy ? "Entrando…" : "Entrar"}
+          </PrimaryButton>
+        </form>
+
+        <div className="-my-1 flex items-center gap-3">
+          <span className="h-px flex-1 bg-surface-3" />
+          <span className="text-xs text-text-subtle">ou</span>
+          <span className="h-px flex-1 bg-surface-3" />
         </div>
+        <SocialButtons />
 
-        {serverError && <FormError>{serverError}</FormError>}
-
-        <PrimaryButton looksDisabled={!valid} loading={busy || cancelled}>
-          {cancelled ? "Entrando…" : busy ? "Entrando…" : "Entrar"}
-        </PrimaryButton>
-      </form>
-
-      <p className="text-center text-sm text-text-muted">
-        Não tem uma conta?{" "}
-        <Link href={routes.cadastro} className="font-bold text-link hover:underline">
-          Cadastre-se
-        </Link>
-      </p>
-      <div className="flex flex-col items-center gap-1 border-t border-border pt-4 text-sm">
+        <p className="text-center text-sm leading-5 text-text-muted">
+          Não tem uma conta?{" "}
+          <Link href={withBack(routes.cadastro)} className={linkCls}>
+            Cadastre-se
+          </Link>
+        </p>
         <Link
           href="/boas-vindas"
-          className="inline-flex h-11 items-center font-semibold text-link hover:underline"
+          className="-mt-2 inline-flex min-h-6 items-center self-center text-[13px] font-bold text-link hover:underline"
         >
           Explorar sem cadastro ›
         </Link>
-        <Link
-          href={routes.ajuda}
-          className="inline-flex h-11 items-center text-text-muted hover:text-text-strong hover:underline"
-        >
-          Precisa de ajuda para entrar? Central de Ajuda
-        </Link>
-      </div>
-    </AuthCard>
+      </AuthPanel>
+    </AuthBackdrop>
   );
 }

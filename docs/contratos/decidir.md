@@ -12,11 +12,17 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
 
 ```json
 {
-  "id": "…", "slug": "tenis-corrida-x", "title": "Tênis de corrida X", "description": "…",
-  "categoryId": "esporte", "group": { "id": "tenis", "label": "Tênis" },
+  "id": "…",
+  "slug": "tenis-corrida-x",
+  "title": "Tênis de corrida X",
+  "description": "…",
+  "categoryId": "esporte",
+  "group": { "id": "tenis", "label": "Tênis" },
   "media": [{ "id": "…", "type": "image", "url": "…", "posterUrl": null, "viewsText": null }],
   "profile": "ProfileSummary (abaixo)",
-  "rating": 4.8, "reviewCount": 120, "sold": 340,
+  "rating": 4.8,
+  "reviewCount": 120,
+  "sold": 340,
   "price": { "amountCents": 27990, "oldAmountCents": 34990, "updatedAt": "2026-10-10T10:00:00Z" },
   "location": { "distanceKm": 2.4, "neighborhood": "Farol", "city": "Maceió", "lat": null, "lng": null },
   "sizes": [{ "label": "42", "available": false }],
@@ -24,7 +30,15 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
   "maxQuantity": 6,
   "storeBadges": ["Estacionamento", "Retirada na loja", "Pix e cartão na loja"],
   "specs": [{ "label": "Peso", "value": "280 g" }],
-  "coupon": { "id": "…", "title": "10% OFF em tênis", "code": "ESPORTE10", "percentOff": 10, "priceCents": 25191, "validUntil": "2026-10-12T23:59:00-03:00", "claimed": false },
+  "coupon": {
+    "id": "…",
+    "title": "10% OFF em tênis",
+    "code": "ESPORTE10",
+    "percentOff": 10,
+    "priceCents": 25191,
+    "validUntil": "2026-10-12T23:59:00-03:00",
+    "claimed": false
+  },
   "sameLine": { "count": 3, "fromCents": 23990, "promoCount": 2 },
   "favorited": false,
   "alert": null,
@@ -43,12 +57,21 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
 
 ```json
 {
-  "id": "…", "slug": "loja-a", "kind": "store", "name": "Loja A", "handle": "lojaa",
-  "avatarUrl": null, "verified": true, "verification": "verified",
-  "followers": 12400, "following": false,
+  "id": "…",
+  "slug": "loja-a",
+  "kind": "store",
+  "name": "Loja A",
+  "handle": "lojaa",
+  "avatarUrl": null,
+  "verified": true,
+  "verification": "verified",
+  "followers": 12400,
+  "following": false,
   "status": { "state": "open", "text": "Aberto agora · fecha às 19h" },
-  "whatsapp": "5582999998888", "responseTime": "~5 min",
-  "live": { "id": "…", "viewers": 12 }, "categoryId": "esporte"
+  "whatsapp": "5582999998888",
+  "responseTime": "~5 min",
+  "live": { "id": "…", "viewers": 12 },
+  "categoryId": "esporte"
 }
 ```
 
@@ -64,10 +87,19 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
 
 ```json
 {
-  "bio": "…", "categoryLabel": "Esporte", "coverUrl": null,
+  "bio": "…",
+  "categoryLabel": "Esporte",
+  "coverUrl": null,
   "stats": { "rating": 4.9, "reviewCount": 320, "products": 120, "posts": 48, "respondsPct": 98 },
   "followedBy": { "names": ["Ana", "Bruno"], "others": 3 },
-  "address": { "street": "Rua …", "neighborhood": "Centro", "city": "Maceió", "lat": null, "lng": null, "distanceKm": 1.2 },
+  "address": {
+    "street": "Rua …",
+    "neighborhood": "Centro",
+    "city": "Maceió",
+    "lat": null,
+    "lng": null,
+    "distanceKm": 1.2
+  },
   "hours": [{ "day": 1, "text": "09:00–19:00" }],
   "since": { "business": 2009, "platform": 2024 },
   "badges": ["Retira hoje na loja", "Entrega no bairro", "Troca em 30 dias"],
@@ -83,16 +115,23 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
 
 ```json
 {
-  "title": "Eletricista residencial", "group": { "id": "eletricista", "label": "Eletricista" },
-  "serviceMode": "home", "homeRadiusKm": 8, "areas": ["Farol", "Ponta Verde"],
-  "jobsDone": 210, "yearsExperience": 12, "recommendPct": 97,
+  "title": "Eletricista residencial",
+  "group": { "id": "eletricista", "label": "Eletricista" },
+  "serviceMode": "home",
+  "homeRadiusKm": 8,
+  "areas": ["Farol", "Ponta Verde"],
+  "jobsDone": 210,
+  "yearsExperience": 12,
+  "recommendPct": 97,
   "nextSlot": "Hoje, 14h",
-  "services": [{ "id": "…", "name": "Troca de tomada", "description": "…", "durationMinutes": 30, "fromCents": 8000 }],
+  "services": [
+    { "id": "…", "name": "Troca de tomada", "description": "…", "durationMinutes": 30, "fromCents": 8000 }
+  ],
   "photos": [{ "id": "…", "url": "…" }]
 }
 ```
 
-  `serviceMode`: `local`, `home` ou `both`. `fromCents: 0` ou `null` = "Sob orçamento". Com `nextSlot` o selo mostra o próximo horário livre; senão `responseTime`.
+`serviceMode`: `local`, `home` ou `both`. `fromCents: 0` ou `null` = "Sob orçamento". Com `nextSlot` o selo mostra o próximo horário livre; senão `responseTime`.
 
 ### `GET /profiles/{slug}/products?q&sort&cat&page&limit`
 
@@ -112,13 +151,32 @@ Parâmetros: `filter` (`all`, `photos`, `5`…`1`), `sort` (`recent` padrão, `h
 
 ```json
 {
-  "summary": { "average": 4.8, "total": 120, "distribution": { "5": 100, "4": 12, "3": 5, "2": 2, "1": 1 },
-               "attributes": [{ "label": "Atendimento", "value": 4.9 }], "recommendPct": 97 },
+  "summary": {
+    "average": 4.8,
+    "total": 120,
+    "distribution": { "5": 100, "4": 12, "3": 5, "2": 2, "1": 1 },
+    "attributes": [{ "label": "Atendimento", "value": 4.9 }],
+    "recommendPct": 97
+  },
   "filters": [{ "id": "all", "label": "Todas", "count": 120 }],
-  "items": [{ "id": "…", "author": "Maria S.", "createdAt": "…", "context": "Comprou e retirou na loja", "sizeLabel": "42",
-              "rating": 5, "text": "…", "photoUrls": [], "helpfulCount": 3, "markedHelpful": false,
-              "reply": { "author": "Loja A", "text": "…", "createdAt": "…" } }],
-  "total": 120, "page": 1, "limit": 5
+  "items": [
+    {
+      "id": "…",
+      "author": "Maria S.",
+      "createdAt": "…",
+      "context": "Comprou e retirou na loja",
+      "sizeLabel": "42",
+      "rating": 5,
+      "text": "…",
+      "photoUrls": [],
+      "helpfulCount": 3,
+      "markedHelpful": false,
+      "reply": { "author": "Loja A", "text": "…", "createdAt": "…" }
+    }
+  ],
+  "total": 120,
+  "page": 1,
+  "limit": 5
 }
 ```
 
@@ -134,20 +192,20 @@ Parâmetros: `filter` (`all`, `photos`, `5`…`1`), `sort` (`recent` padrão, `h
 
 ## Ações (conta)
 
-| Rota | Corpo | Resposta |
-|---|---|---|
-| `POST /profiles/{id}/follow`, `DELETE …` | — | 204. Seguidores ±1 no servidor |
-| `PUT /profiles/{id}/bell` `{ enabled }` | | 204. Sino só vale para quem segue |
-| `POST /me/favorites` `{ type: "product"\|"profile", id }`, `DELETE /me/favorites/{type}/{id}` | | 204. Ao favoritar produto, o servidor guarda o **preço e a data do momento** (para avisar baixa) |
-| `POST /me/alerts` | `{ productId, conditions: ["restock","price_drop","promo","other_store"], belowCents?, size?, radiusKm: 5\|10\|20, channels: ["site","whatsapp","email"] }` | `Alert` com `expiresAt` (30 dias). **Um alerta por produto e pessoa: criar de novo substitui.** `price_drop` com `belowCents` opcional; 422 `ALERT_NO_CONDITION` |
-| `DELETE /me/alerts/{id}` | | 204 |
-| `POST /coupons/{id}/claim` | — | `Coupon` com `claimed: true`. Um por loja por pessoa; 409 `COUPON_ALREADY_CLAIMED`; 410 `COUPON_EXPIRED` |
-| `POST /conversations` | `{ profileId, productId?, serviceId?, draft?: string }` | `{ id }`. Cria ou reabre a conversa carregando loja, produto, título, preço e foto. `draft` é rascunho (só com quantidade > 1 ou pergunta pronta) |
-| `POST /quotes` | `{ profileId, serviceId, when: "today"\|"tomorrow"\|"week"\|"flexible", neighborhood?, details?, via: "chat"\|"whatsapp" }` | `{ id, conversationId \| null, whatsappUrl \| null }`. Cria a conversa e aparece em Atividade › Orçamentos. `details` até 400 caracteres |
-| `POST /reviews/{id}/helpful`, `DELETE …` | — | `{ helpfulCount }`. Um voto por pessoa |
-| `POST /lives/{id}/reminder`, `DELETE …` | — | 204. Avisa 10 min antes |
-| `POST /posts/{id}/like`, `DELETE …` | — | `{ likes }` |
-| `POST /me/wants` | (contrato da busca) | |
+| Rota                                                                                          | Corpo                                                                                                                                                       | Resposta                                                                                                                                                         |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /profiles/{id}/follow`, `DELETE …`                                                      | —                                                                                                                                                           | 204. Seguidores ±1 no servidor                                                                                                                                   |
+| `PUT /profiles/{id}/bell` `{ enabled }`                                                       |                                                                                                                                                             | 204. Sino só vale para quem segue                                                                                                                                |
+| `POST /me/favorites` `{ type: "product"\|"profile", id }`, `DELETE /me/favorites/{type}/{id}` |                                                                                                                                                             | 204. Ao favoritar produto, o servidor guarda o **preço e a data do momento** (para avisar baixa)                                                                 |
+| `POST /me/alerts`                                                                             | `{ productId, conditions: ["restock","price_drop","promo","other_store"], belowCents?, size?, radiusKm: 5\|10\|20, channels: ["site","whatsapp","email"] }` | `Alert` com `expiresAt` (30 dias). **Um alerta por produto e pessoa: criar de novo substitui.** `price_drop` com `belowCents` opcional; 422 `ALERT_NO_CONDITION` |
+| `DELETE /me/alerts/{id}`                                                                      |                                                                                                                                                             | 204                                                                                                                                                              |
+| `POST /coupons/{id}/claim`                                                                    | —                                                                                                                                                           | `Coupon` com `claimed: true`. Um por loja por pessoa; 409 `COUPON_ALREADY_CLAIMED`; 410 `COUPON_EXPIRED`                                                         |
+| `POST /conversations`                                                                         | `{ profileId, productId?, serviceId?, draft?: string }`                                                                                                     | `{ id }`. Cria ou reabre a conversa carregando loja, produto, título, preço e foto. `draft` é rascunho (só com quantidade > 1 ou pergunta pronta)                |
+| `POST /quotes`                                                                                | `{ profileId, serviceId, when: "today"\|"tomorrow"\|"week"\|"flexible", neighborhood?, details?, via: "chat"\|"whatsapp" }`                                 | `{ id, conversationId \| null, whatsappUrl \| null }`. Cria a conversa e aparece em Atividade › Orçamentos. `details` até 400 caracteres                         |
+| `POST /reviews/{id}/helpful`, `DELETE …`                                                      | —                                                                                                                                                           | `{ helpfulCount }`. Um voto por pessoa                                                                                                                           |
+| `POST /lives/{id}/reminder`, `DELETE …`                                                       | —                                                                                                                                                           | 204. Avisa 10 min antes                                                                                                                                          |
+| `POST /posts/{id}/like`, `DELETE …`                                                           | —                                                                                                                                                           | `{ likes }`                                                                                                                                                      |
+| `POST /me/wants`                                                                              | (contrato da busca)                                                                                                                                         |                                                                                                                                                                  |
 
 `Coupon`: `{ id, title, code, percentOff, minCents, validUntil, claimed }`.
 
@@ -174,6 +232,15 @@ Resposta: **igual à de `GET /search`** (itens, `total`, `facets.categories` só
 ```
 
 `coupons` = cupons do dia das lojas dentro do raio (até 10). `claimed` considera a pessoa logada; resgate pelo mesmo `POST /coupons/{id}/claim` do Produto. Só entram itens com desconto/oferta ativa de verdade; sem oferta → lista vazia (a tela mostra estado vazio e o convite "Quero em promoção").
+
+### Extensões da fidelidade ao protótipo (16/10/2026) — `GET /offers`
+
+Todas aditivas; ausentes, a tela some com a linha/seção correspondente (nada é inventado):
+
+- `sort=ending` (acaba primeiro) além dos já listados.
+- Cada item: `endsAt` (ISO, fim da oferta; quando cai hoje a foto ganha "Acaba hoje") e `offerSlug` (para compartilhar `/o/{slug}`; sem ele o link é o do produto).
+- Cada cupom: `distanceKm` (número ou `null`) e `categoryId` (CAT12), usados no cartão do cupom.
+- `lowestPrices[]` (padrão `[]`): "Menores preços" perto de você. Item: `{ id, item (nome do produto), priceCents, unit?, profile { id, slug, name }, distanceKm | null, saving { cents, others } | null, updatedAt, href? }`. `saving` = quanto sai mais barato que as outras `others` lojas do raio; `updatedAt` é obrigatório porque preço antigo precisa ser mostrado como tal.
 
 ## Campos opcionais de confiança (auditoria, 14/10/2026)
 

@@ -6,6 +6,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 > **Auditoria de 14/10/2026 (PR consolidado):** nenhuma seção some mais por falta de dado; carregando, erro e vazio são telas distintas; sem rótulos "em breve"; mapa com painel estruturado (aviso de integração pendente); sinais de confiança implementados (campos opcionais pendentes no back-end). Roteiros de teste em `docs/testes/`.
 
+> **Fidelidade ao protótipo (16/10/2026, PR consolidado):** Home, Explorar (busca em dois campos, Grade/Grade + mapa/Mapa, cards), Ofertas, Comparar (`/comparar` e `/comparar/quadro`), Favoritos, Entrada (9 telas + `/visitante`), Conta, Ajuda, Institucional, Estados, Stories, Ao vivo, Evento e Radar conferidos tela a tela contra o protótipo (roteiros em `docs/testes/*-fidelidade.md`). Visitante: Conversas, Notificações, Favoritos e Conta abrem o pop-up "Entre para…". Tudo **Implementado**, nada **Validado** (sem a API real). Mapa segue Bloqueado.
+
 > **Situação do back-end (14/10/2026):** o repositório do back-end já tem código (NestJS, cerca de 220 rotas sob `/api/v1`), mas só 11 de 69 grupos de rotas do front coincidem em método e caminho; veja `docs/RECONCILIACAO-API.md`. Nada foi testado contra ele, então **nada pode ser "Validado"** ainda.
 
 ## Base (estrutura global)
@@ -33,7 +35,7 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Perfil da loja (fotos, produtos, ofertas, avaliações, sobre) | Implementado (idem; **não** validado com a API real) | `GET /profiles/{slug}` e sub-rotas |
 | Perfil do prestador e pedido de orçamento | Implementado (idem) | `GET /profiles/{slug}`, `POST /quotes` |
 | Contato: chat, WhatsApp, rota | Implementado (idem) | dados do perfil + `POST /conversations`, `POST /tracking` |
-| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Voltar do navegador no cadastro volta uma etapa (etapa na URL). Retomada da ação pendente após o login: funciona em quase todas as ações (exceção em `docs/PENDENCIAS.md`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
+| Entrada: boas-vindas, entrar, cadastro em 4 etapas (CPF, código por SMS, local, interesses), recuperar senha, visitante (faixa, convite para entrar, áreas que pedem conta) | Implementado (conferido com tipos, lint, 21 testes, build e navegador contra servidor de teste isolado; **não** validado com a API real). Contrato em `docs/contratos/auth.md`. Voltar do navegador no cadastro volta uma etapa (etapa na URL). No menu (lateral e celular), Conversas, Notificações, Favoritos, Minha Conta e Configurações abrem o pop-up "Entre para…" para visitante; Comparações, Explorar e Ofertas ficam livres. Retomada da ação pendente após o login: funciona em quase todas as ações (exceção em `docs/PENDENCIAS.md`) | `/auth/*`, `PUT /me/location`, `POST /me/addresses`, `GET /geo/*`, `PUT /me/interests`, provedor de SMS |
 
 ## Fase 2 — Confiar
 

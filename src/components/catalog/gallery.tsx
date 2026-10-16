@@ -6,102 +6,135 @@ import { useState } from "react";
 import { cn } from "@/components/ui/cn";
 import type { Product } from "@/lib/api/catalog";
 
-/** Galeria: mídia grande, setas em ciclo, contador "n / total" e miniaturas. A 1ª pode ser vídeo. */
+/**
+ * Galeria (Documento de entrega › Produto): quadro grande de 600 px, setas em ciclo, contador "n / total" e
+ * miniaturas de 96 px com a selecionada em âmbar. A 1ª pode ser vídeo: mostra a capa com o botão de tocar e,
+ * ao clicar, o player de verdade.
+ */
 export function Gallery({ media, title }: { media: Product["media"]; title: string }) {
   const [i, setI] = useState(0);
+  const [playing, setPlaying] = useState<string | null>(null);
   if (media.length === 0)
     return (
-      <div className="flex aspect-square items-center justify-center rounded-2xl bg-surface-2 text-sm text-text-subtle">
+      <div className="flex aspect-square w-full items-center justify-center rounded-2xl bg-surface-3 text-sm text-text-subtle">
         Sem foto
       </div>
     );
   const cur = media[i];
-  const go = (d: number) => setI((n) => (n + d + media.length) % media.length);
+  const go = (d: number) => {
+    setPlaying(null);
+    setI((n) => (n + d + media.length) % media.length);
+  };
+  const isVideo = cur.type === "video";
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface-2">
-        {cur.type === "video" ? (
+    <div className="flex min-w-0 flex-col gap-3">
+      <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-surface-3">
+        {isVideo && playing === cur.id ? (
           <video
             key={cur.id}
             src={cur.url}
             poster={cur.posterUrl ?? undefined}
             controls
+            autoPlay
             playsInline
-            preload="metadata"
             aria-label={`Vídeo: ${title}`}
-            className="size-full object-contain"
+            className="size-full bg-black object-contain"
           />
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element -- imagens vêm de vários domínios das lojas
-          <img
-            src={cur.url}
-            alt={`${title} — foto ${i + 1} de ${media.length}`}
-            className="size-full object-contain"
-          />
+          <>
+            {(isVideo ? cur.posterUrl : cur.url) ? (
+              // eslint-disable-next-line @next/next/no-img-element -- imagens vêm de vários domínios das lojas
+              <img
+                src={(isVideo ? cur.posterUrl : cur.url) ?? undefined}
+                alt={`Foto ${i + 1} de ${media.length} do ${title}${isVideo ? " (vídeo)" : ""}`}
+                className="size-full object-cover"
+              />
+            ) : (
+              <span className="block size-full bg-navy" aria-hidden />
+            )}
+            {isVideo && (
+              <button
+                type="button"
+                onClick={() => setPlaying(cur.id)}
+                aria-label="Reproduzir vídeo"
+                className="absolute top-1/2 left-1/2 flex size-[72px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-navy/55 text-white hover:bg-navy/70"
+              >
+                <Play className="size-8 fill-white" aria-hidden />
+              </button>
+            )}
+          </>
         )}
-        <span className="absolute top-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
-          Produto
-        </span>
-        {cur.type === "video" && cur.viewsText && (
-          <span className="absolute bottom-3 left-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
-            Vídeo · {cur.viewsText}
+        {isVideo && cur.viewsText && playing !== cur.id && (
+          <span
+            aria-label={`Vídeo · ${cur.viewsText} visualizações`}
+            className="absolute top-4 left-4 flex h-7 items-center gap-1.5 rounded-full bg-black/30 px-3 text-[13px] font-semibold text-white"
+          >
+            <Play className="size-3 fill-white" aria-hidden />
+            {cur.viewsText}
           </span>
         )}
+        <span className="pointer-events-none absolute top-4 right-4 flex h-7 items-center rounded-full bg-white px-3 text-[13px] font-bold text-navy">
+          Produto
+        </span>
         {media.length > 1 && (
           <>
             <button
               type="button"
               onClick={() => go(-1)}
-              aria-label="Mídia anterior"
-              className="absolute top-1/2 left-2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label="Imagem anterior"
+              className="absolute top-1/2 left-3 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-navy shadow-raised hover:bg-navy-50"
             >
-              <ChevronLeft className="size-6" aria-hidden />
+              <ChevronLeft className="size-5" aria-hidden />
             </button>
             <button
               type="button"
               onClick={() => go(1)}
-              aria-label="Próxima mídia"
-              className="absolute top-1/2 right-2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70"
+              aria-label="Próxima imagem"
+              className="absolute top-1/2 right-3 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-white text-navy shadow-raised hover:bg-navy-50"
             >
-              <ChevronRight className="size-6" aria-hidden />
+              <ChevronRight className="size-5" aria-hidden />
             </button>
-            <span className="absolute right-3 bottom-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
+            <span className="pointer-events-none absolute right-4 bottom-4 rounded-full bg-black/50 px-2.5 py-1 text-xs font-semibold text-white">
               {i + 1} / {media.length}
             </span>
           </>
         )}
       </div>
       {media.length > 1 && (
-        <ul className="flex gap-2 overflow-x-auto pb-1">
+        <div role="tablist" aria-label="Galeria" className="flex gap-3 overflow-x-auto pb-1">
           {media.map((m, n) => (
-            <li key={m.id} className="shrink-0">
-              <button
-                type="button"
-                onClick={() => setI(n)}
-                aria-label={`Ver mídia ${n + 1} de ${media.length}`}
-                aria-current={n === i}
-                className={cn(
-                  "relative size-16 overflow-hidden rounded-lg border-2 bg-surface-2",
-                  n === i ? "border-primary" : "border-transparent",
-                )}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- miniatura */}
+            <button
+              key={m.id}
+              type="button"
+              role="tab"
+              aria-selected={n === i}
+              onClick={() => {
+                setPlaying(null);
+                setI(n);
+              }}
+              aria-label={`Ver mídia ${n + 1} de ${media.length}`}
+              className={cn(
+                "relative size-24 shrink-0 overflow-hidden rounded-lg border-2 bg-surface-3 transition-colors",
+                n === i ? "border-accent" : "border-transparent",
+              )}
+            >
+              {(m.type === "video" ? m.posterUrl : m.url) && (
+                // eslint-disable-next-line @next/next/no-img-element -- miniatura
                 <img
-                  src={m.type === "video" ? (m.posterUrl ?? m.url) : m.url}
+                  src={(m.type === "video" ? m.posterUrl : m.url) ?? undefined}
                   alt=""
                   className="size-full object-cover"
                 />
-                {m.type === "video" && (
-                  <Play
-                    className="absolute inset-0 m-auto size-5 fill-white text-white drop-shadow"
-                    aria-hidden
-                  />
-                )}
-              </button>
-            </li>
+              )}
+              {m.type === "video" && (
+                <span className="absolute inset-0 flex items-center justify-center bg-black/25">
+                  <Play className="size-5 fill-white text-white" aria-hidden />
+                </span>
+              )}
+            </button>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

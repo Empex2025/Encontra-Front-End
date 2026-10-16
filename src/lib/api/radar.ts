@@ -63,8 +63,20 @@ export const pricesSchema = z.object({
       period: z.string().nullable().optional(),
       direction: z.enum(["up", "down", "flat"]),
       href: z.string().nullable().optional(),
+      /** Preços recentes (do mais antigo ao mais novo) para o minigráfico; sem série, o gráfico não aparece. */
+      series: z.array(z.number().nonnegative()).min(2).nullable().optional(),
     }),
   ),
+  /** Faixa de destaque do bloco (ex.: "A gasolina caiu 3,2% perto de você esta semana"). Só se vier do servidor. */
+  headline: z
+    .object({
+      title: z.string(),
+      detail: z.string().nullable().optional(),
+      direction: z.enum(["up", "down"]),
+      href: z.string().nullable().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 export type Prices = z.infer<typeof pricesSchema>;
 

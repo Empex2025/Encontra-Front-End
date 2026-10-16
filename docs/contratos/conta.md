@@ -10,8 +10,14 @@ Proposta do front para combinar com o back-end. Tudo exige sessão (cookie), sal
 
 ```json
 {
-  "id": "…", "name": "Maria Souza", "email": "maria@…", "phone": "(82) 99999-8888", "phoneVerified": true,
-  "cpfMasked": "***.456.789-**", "createdAt": "2026-03-02T…", "avatarUrl": null,
+  "id": "…",
+  "name": "Maria Souza",
+  "email": "maria@…",
+  "phone": "(82) 99999-8888",
+  "phoneVerified": true,
+  "cpfMasked": "***.456.789-**",
+  "createdAt": "2026-03-02T…",
+  "avatarUrl": null,
   "reviewNameStyle": "first_initial",
   "privacy": { "showNeighborhood": true, "keepSearchHistory": true, "suggestByInterests": true },
   "settings": { "whatsappOpen": "app", "autoplay": true, "sounds": true },
@@ -44,7 +50,14 @@ Proposta do front para combinar com o back-end. Tudo exige sessão (cookie), sal
 
 ```json
 {
-  "categories": { "alerts": true, "offers": true, "stores": true, "chat": true, "nearby": false, "security": true },
+  "categories": {
+    "alerts": true,
+    "offers": true,
+    "stores": true,
+    "chat": true,
+    "nearby": false,
+    "security": true
+  },
   "channels": { "site": true, "whatsapp": true, "email": false },
   "quietHours": false
 }
@@ -80,23 +93,28 @@ Tudo em `PATCH /me` (`settings`). O front também guarda `whatsappOpen` no naveg
 }
 ```
 
-  Os textos (inclusive horários) são do servidor — o front não escreve conteúdo de ajuda.
+Campos **opcionais** novos (a tela some o elemento quando faltam): `items[].link { label, href }` (atalho sob a resposta) e `support { chatProfileId, email, whatsapp }` (destinos reais dos cartões "Outros canais"; sem eles o cartão mostra só o horário, sem ação).
+
+Os textos (inclusive horários) são do servidor — o front não escreve conteúdo de ajuda.
+
 - `POST /help/faq/{id}/feedback { helpful: true }` → 204 (um voto por pessoa/sessão; repetir não soma). `{ helpful:false, comment }` → `{ protocol }`.
-- `POST /help/contact { subject, message, replyEmail, imageKey? }` → `{ protocol: "EN-12345" }`. `subject` é um dos 5 assuntos da tela; `message` 10–1000; `imageKey` vem de `POST /uploads/presign` com `purpose:"help"` (**novo valor**, além de `chat` e `review`).
+- `POST /help/contact { subject, message, replyEmail, imageKey? }` → `{ protocol: "EN-12345" }`. `subject` é um dos 5 assuntos da tela ("Minha conta e acesso", "Problema com uma loja ou prestador", "Preço ou oferta errada", "Algo não funciona no app", "Sugestão ou elogio"); `message` 10–1000; `imageKey` vem de `POST /uploads/presign` com `purpose:"help"` (**novo valor**, além de `chat` e `review`).
 
 ## Institucional (aberto a visitantes)
 
-- `GET /legal/{doc}` com `doc` ∈ `sobre | termos | privacidade | cookies | avaliacoes` → `{ doc, title, version, updatedAt, sections: [{ heading, body }] }` (`body` em texto simples, parágrafos separados por linha em branco). **404** se não existir. `denunciar` é a tela `/denunciar`.
+- `GET /legal/{doc}` com `doc` ∈ `sobre | termos | privacidade | cookies | avaliacoes` → `{ doc, title, version, updatedAt, summary?, sections: [{ heading, body }] }` (`summary` opcional: "Em resumo" dos Termos; `body` em texto simples, parágrafos separados por linha em branco). **404** se não existir. `denunciar` é a tela `/denunciar`.
 - O texto jurídico precisa de revisão jurídica antes de publicar (pendência externa).
 - `GET /legal` (índice `{ items: [{ doc, title }] }`) está previsto mas o front usa a lista fixa acima.
 
 ## Denunciar (aberto a visitantes; com sessão, vincula à conta)
 
 - `GET /reports/target?type=loja|produto|prestador|avaliacao&id={slug|id}` → `{ name }` (para preencher o nome). Pode falhar sem problema: a pessoa digita.
-- `POST /reports { type: "loja"|"produto"|"avaliacao"|"story"|"prestador"|"outro", targetId: string|null, targetName: string|null, reason, description }` → `{ protocol: "DN-12345" }`. `reason` ∈ Golpe ou fraude · Preço ou oferta enganosa · Produto proibido · Conteúdo ofensivo · Informação falsa · Outro. `description` 10–1000. O denunciado **nunca** vê quem denunciou. Prazo de análise: 48 h.
+- `POST /reports { type: "loja"|"produto"|"avaliacao"|"story"|"prestador"|"outro", targetId: string|null, targetName: string|null, reason, description }` → `{ protocol: "DN-12345" }`. `reason` ∈ Golpe ou fraude · Preço ou oferta enganosa · Produto proibido · Conteúdo ofensivo · Informação falsa · Outro. `description` 10–1000. Opcional: `attachmentKey` (chave de uma imagem JPG/PNG de até 5 MB enviada antes por `POST /uploads/presign` com `purpose: "help"`; é o "Anexar print" do protótipo). O denunciado **nunca** vê quem denunciou. Prazo de análise: 48 h.
 
 ## Sistema
 
 - `GET /status` (aberto) → `{ state: "ok"|"maintenance", until?: string|null, message?: string|null }`. Usado para detectar a volta da conexão e o fim da manutenção (consulta a cada 10 s só enquanto a faixa/tela está visível).
 - Em manutenção o servidor responde **503** com `{ code: "MAINTENANCE" }` nas demais rotas; o front mostra "Voltamos em instantes".
 - `POST /status/notify { email? }` → 204 ("Me avise quando voltar"; usa o e-mail da sessão se houver).
+
+- `GET /status` aceita `until` (texto, ex. "23h30"): vira "Previsão de volta" na tela de manutenção; sem ele, a linha some.

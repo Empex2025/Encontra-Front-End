@@ -43,3 +43,8 @@ export function removeFromHistory(term: string): string[] {
   write(next);
   return next;
 }
+
+export function clearHistory(): string[] {
+  write([]);
+  return [];
+}
