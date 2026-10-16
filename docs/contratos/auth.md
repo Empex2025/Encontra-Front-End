@@ -67,3 +67,11 @@ Raio inicial 50 km (escala única 1, 3, 5, 10, 20, 50).
 ## Ações pendentes do visitante
 
 O convite de login (título e texto por ação) é do front. Ao entrar ou criar conta, o front volta à tela de origem e a própria tela repete a chamada da ação (favoritar, seguir, conversar, avaliar, alerta, cupom, orçamento, quero em promoção…). Nenhuma rota nova para isso; as rotas protegidas respondem 401 sem sessão.
+
+## Retorno após entrar (`?voltar=`)
+
+`/entrar`, `/entrar/recuperar`, `/cadastro` e `/boas-vindas` aceitam `?voltar=<caminho interno>` (validado por `safeReturnTo`; qualquer valor externo cai em `/`). O parâmetro é repassado entre as telas; no fim do cadastro, "Começar" leva ao destino. Só o front usa; nenhuma rota nova.
+
+## Proposta: login com Google e Apple (sem rota hoje)
+
+O protótipo mostra os botões "Google" e "Apple" em Entrar e no convite do visitante. A decisão de produto 7 exclui o login social da versão 1 e o back-end não tem a rota; por isso o front mostra os botões desabilitados, com o aviso "Entrar com Google ou Apple ainda não está disponível.". Quando o produto aprovar, será preciso definir a rota e o fluxo (ex.: `POST /auth/social`); não está especificado aqui.

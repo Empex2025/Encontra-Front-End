@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { PasswordField, TextField } from "@/components/ui/text-field";
 import { authApi, type OtpChallenge } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -18,7 +17,17 @@ import {
 } from "@/lib/domain/validation";
 import { routes } from "@/lib/routes";
 
-import { AuthCard, FormError, PrimaryButton } from "./auth-card";
+import {
+  ActionRow,
+  AuthBackdrop,
+  AuthPanel,
+  FormError,
+  linkCls,
+  outlineBtnCls,
+  PrimaryButton,
+  StepHeader,
+} from "./auth-card";
+import { AuthCheckbox, AuthPasswordField, AuthTextField, FieldError } from "./auth-fields";
 
 export type DadosForm = { name: string; cpf: string; email: string; phone: string; password: string };
 
@@ -100,111 +109,108 @@ export function RegisterDados({
   };
 
   const err = (k: keyof DadosForm) => serverFields[k] ?? (tried ? errors[k] : undefined);
+  const passwordOk = checks.length && checks.lettersAndNumbers;
+  const passwordHint =
+    checks.length && !checks.lettersAndNumbers ? "Use letras e números" : "Mínimo de 8 caracteres";
 
   return (
-    <AuthCard
-      title="Crie sua conta"
-      subtitle="Preencha seus dados. Leva menos de 1 minuto."
-      step={{ current: 1, total: 4, label: "Seus dados" }}
-    >
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
-        <TextField
-          label="Nome completo"
-          value={f.name}
-          onChange={(e) => set("name", e.target.value.slice(0, 60))}
-          autoComplete="name"
-          error={err("name")}
+    <AuthBackdrop>
+      <AuthPanel width={800} labelledBy="dados-title">
+        <StepHeader
+          id="dados-title"
+          title="Crie sua conta"
+          subtitle="Preencha seus dados. Leva menos de 1 minuto."
+          current={1}
         />
-        <TextField
-          label="CPF"
-          value={f.cpf}
-          onChange={(e) => set("cpf", maskCpf(e.target.value))}
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder="000.000.000-00"
-          hint="Usamos o CPF para identificar você com segurança e, no futuro, para pagamentos e notas fiscais. Ele não aparece para as lojas."
-          error={err("cpf")}
-        />
-        <TextField
-          label="E-mail"
-          type="email"
-          value={f.email}
-          onChange={(e) => set("email", e.target.value.slice(0, 80))}
-          autoComplete="email"
-          error={err("email")}
-        />
-        <TextField
-          label="Telefone de contato"
-          value={f.phone}
-          onChange={(e) => set("phone", maskPhone(e.target.value))}
-          inputMode="tel"
-          autoComplete="tel-national"
-          placeholder="(00) 0 0000-0000"
-          hint="Vamos confirmar por SMS."
-          error={err("phone")}
-        />
-        <PasswordField
-          label="Senha"
-          value={f.password}
-          onChange={(e) => set("password", e.target.value.slice(0, 64))}
-          autoComplete="new-password"
-          hint="Mínimo de 8 caracteres, com letras e números."
-          hintTone={checks.length && checks.lettersAndNumbers ? "ok" : tried ? "bad" : "neutral"}
-          error={serverFields.password}
-        />
-
-        <div className="flex flex-col gap-1">
-          <label className="flex items-start gap-3 text-sm text-text-2">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              aria-invalid={tried && !accepted}
-              className="mt-0.5 size-5 shrink-0 accent-[var(--primary)]"
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            <AuthTextField
+              label="Nome completo"
+              value={f.name}
+              onChange={(e) => set("name", e.target.value.slice(0, 60))}
+              placeholder="Digite seu nome…"
+              autoComplete="name"
+              error={err("name")}
             />
-            <span>
-              Li e aceito os{" "}
-              <Link
-                href="/institucional/termos"
-                target="_blank"
-                className="font-semibold text-link underline"
-              >
-                Termos de uso
-              </Link>{" "}
-              e a{" "}
-              <Link
-                href="/institucional/privacidade"
-                target="_blank"
-                className="font-semibold text-link underline"
-              >
-                Política de privacidade
-              </Link>
-              .
-            </span>
-          </label>
-          {tried && !accepted && (
-            <p role="alert" className="text-sm text-danger-text">
-              Para criar a conta, aceite os termos.
-            </p>
-          )}
-        </div>
+            <AuthTextField
+              label="Informe seu CPF"
+              note="(Você poderá alterar seus dados de cadastro depois)."
+              value={f.cpf}
+              onChange={(e) => set("cpf", maskCpf(e.target.value))}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="000.000.000-00"
+              error={err("cpf")}
+            />
+            <AuthTextField
+              label="E-mail"
+              type="email"
+              value={f.email}
+              onChange={(e) => set("email", e.target.value.slice(0, 80).trim())}
+              placeholder="nome@provedor.com"
+              autoComplete="email"
+              error={err("email")}
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <AuthTextField
+                label="Telefone de contato"
+                note="(vamos confirmar por SMS)"
+                value={f.phone}
+                onChange={(e) => set("phone", maskPhone(e.target.value))}
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="(00) 0 0000-0000"
+                error={err("phone")}
+              />
+              <AuthPasswordField
+                label="Senha"
+                value={f.password}
+                onChange={(e) => set("password", e.target.value.slice(0, 64))}
+                placeholder="Senha"
+                autoComplete="new-password"
+                hint={passwordHint}
+                hintTone={passwordOk ? "ok" : tried ? "bad" : "neutral"}
+                error={serverFields.password}
+              />
+            </div>
 
-        {serverError && <FormError>{serverError}</FormError>}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-start gap-2 text-xs leading-[18px] text-text-muted">
+                <AuthCheckbox
+                  checked={accepted}
+                  onChange={setAccepted}
+                  invalid={tried && !accepted}
+                  aria-label="Aceito os Termos de uso e a Política de privacidade"
+                />
+                <span>
+                  Li e aceito os{" "}
+                  <Link href="/institucional/termos" target="_blank" className={linkCls}>
+                    Termos de uso
+                  </Link>{" "}
+                  e a{" "}
+                  <Link href="/institucional/privacidade" target="_blank" className={linkCls}>
+                    Política de privacidade
+                  </Link>
+                  .
+                </span>
+              </div>
+              {tried && !accepted && <FieldError>Para criar a conta, aceite os termos.</FieldError>}
+            </div>
+          </div>
 
-        <div className="flex gap-3">
-          <Link
-            href={routes.entrar}
-            className="flex h-12 items-center rounded-lg border border-border-strong px-5 text-base font-semibold text-text-2 hover:bg-surface-2"
-          >
-            Cancelar
-          </Link>
-          <div className="flex-1 [&>button]:w-full">
+          {serverError && <FormError>{serverError}</FormError>}
+
+          <ActionRow>
+            <Link href={routes.entrar} className={outlineBtnCls}>
+              Cancelar
+            </Link>
             <PrimaryButton looksDisabled={!valid} loading={busy}>
               {busy ? "Criando…" : "Próximo"}
             </PrimaryButton>
-          </div>
-        </div>
-      </form>
-    </AuthCard>
+          </ActionRow>
+        </form>
+      </AuthPanel>
+    </AuthBackdrop>
   );
 }

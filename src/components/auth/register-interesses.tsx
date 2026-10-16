@@ -8,7 +8,16 @@ import { authApi } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { CATEGORIES } from "@/lib/domain/categories";
 
-import { AuthCard, FormError, PrimaryButton, SecondaryButton } from "./auth-card";
+import {
+  ActionRow,
+  AuthBackdrop,
+  AuthPanel,
+  FormError,
+  PrimaryButton,
+  SecondaryButton,
+  StepHeader,
+} from "./auth-card";
+import { FieldError } from "./auth-fields";
 
 export const MIN_INTERESTS = 3;
 
@@ -50,77 +59,85 @@ export function RegisterInteresses({
   };
 
   return (
-    <AuthCard
-      title="Seus interesses"
-      subtitle="Escolha pelo menos 3 para vermos o que mostrar primeiro."
-      step={{ current: 4, total: 4, label: "Interesses" }}
-      wide
-    >
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {CATEGORIES.map((c) => {
-            const on = picked.includes(c.id);
-            const Icon = c.icon;
-            return (
-              <li key={c.id}>
+    <AuthBackdrop footer="Você pode mudar seus interesses depois, no seu perfil.">
+      <AuthPanel width={800} labelledBy="interesses-title">
+        <StepHeader
+          id="interesses-title"
+          title="Seus interesses"
+          subtitle="Escolha pelo menos 3 para personalizar o que aparece para você."
+          current={4}
+        />
+        <form onSubmit={submit} noValidate className="flex flex-col gap-6">
+          <div
+            role="group"
+            aria-label="Interesses"
+            className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4"
+          >
+            {CATEGORIES.map((c) => {
+              const on = picked.includes(c.id);
+              const Icon = c.icon;
+              return (
                 <button
+                  key={c.id}
                   type="button"
                   aria-pressed={on}
                   onClick={() => toggle(c.id)}
                   className={cn(
-                    "relative flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 text-center text-sm font-semibold",
+                    "relative flex h-[104px] flex-col items-center justify-center gap-2 rounded-2xl border text-sm font-semibold text-text transition-all hover:-translate-y-px",
                     on
-                      ? "border-primary bg-selected text-text-strong"
-                      : "border-border bg-surface text-text-2 hover:border-navy-300",
+                      ? "border-primary bg-selected ring-1 ring-primary"
+                      : "border-border bg-surface hover:border-navy-300",
                   )}
                 >
-                  <Icon className="size-6" style={{ color: c.colorVar }} aria-hidden />
-                  {c.name}
+                  <span
+                    className={cn(
+                      "flex size-11 items-center justify-center rounded-full",
+                      on ? "bg-primary text-on-primary" : "bg-surface-2",
+                    )}
+                    style={on ? undefined : { color: c.colorVar }}
+                  >
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  <span className="px-1 text-center leading-[18px]">{c.name}</span>
                   {on && (
-                    <span className="absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-primary text-on-primary">
-                      <Check className="size-3.5" aria-hidden />
+                    <span className="anim-pop absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-amber text-navy">
+                      <Check className="size-3.5" strokeWidth={3} aria-hidden />
                     </span>
                   )}
                 </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="flex flex-col gap-1.5" role="status">
-          <div className="flex items-center justify-between text-sm">
-            <span className={cn("font-semibold", enough ? "text-success-text" : "text-text-muted")}>
-              {interestsCounter(picked.length)}
-            </span>
-            <span className="text-text-subtle">{picked.length} de 12</span>
+              );
+            })}
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-surface-3" aria-hidden>
-            <div
-              className={cn(
-                "h-full rounded-full transition-[width]",
-                enough ? "bg-success-text" : "bg-accent",
-              )}
-              style={{ width: `${Math.min(100, (picked.length / MIN_INTERESTS) * 100)}%` }}
-            />
+
+          <div className="flex flex-col gap-2" role="status">
+            <div className="flex items-center justify-between text-xs leading-4">
+              <span className={cn("font-semibold", enough ? "text-success-text" : "text-text-muted")}>
+                {interestsCounter(picked.length)}
+              </span>
+              <span className="text-text-subtle">{picked.length} de 12</span>
+            </div>
+            <div className="h-1 overflow-hidden rounded-full bg-surface-3" aria-hidden>
+              <span
+                className={cn(
+                  "block h-full rounded-full transition-[width] duration-200",
+                  enough ? "bg-success" : "bg-amber",
+                )}
+                style={{ width: `${Math.min(100, Math.round((picked.length / MIN_INTERESTS) * 100))}%` }}
+              />
+            </div>
+            {tried && !enough && <FieldError>Escolha pelo menos 3 interesses para continuar.</FieldError>}
           </div>
-        </div>
 
-        {tried && !enough && (
-          <p role="alert" className="text-sm text-danger-text">
-            Escolha pelo menos 3 interesses para continuar.
-          </p>
-        )}
-        {serverError && <FormError>{serverError}</FormError>}
+          {serverError && <FormError>{serverError}</FormError>}
 
-        <div className="flex gap-3">
-          <SecondaryButton onClick={onBack}>Voltar</SecondaryButton>
-          <div className="flex-1 [&>button]:w-full">
+          <ActionRow>
+            <SecondaryButton onClick={onBack}>Voltar</SecondaryButton>
             <PrimaryButton looksDisabled={!enough} loading={busy}>
               {busy ? "Salvando…" : "Concluir"}
             </PrimaryButton>
-          </div>
-        </div>
-      </form>
-    </AuthCard>
+          </ActionRow>
+        </form>
+      </AuthPanel>
+    </AuthBackdrop>
   );
 }

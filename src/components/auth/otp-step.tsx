@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2, CircleAlert, Clock3 } from "lucide-react";
 import { useState } from "react";
 
 import { ApiError } from "@/lib/api/client";
@@ -7,7 +8,8 @@ import type { OtpChallenge } from "@/lib/api/auth";
 import { useCountdown } from "@/hooks/use-countdown";
 import { formatClock, OTP_LENGTH } from "@/lib/domain/validation";
 
-import { FormError, PrimaryButton, SecondaryButton } from "./auth-card";
+import { ActionRow, linkCls, PrimaryButton, SecondaryButton } from "./auth-card";
+import { FieldError } from "./auth-fields";
 import { OtpBoxes } from "./otp-boxes";
 
 type Notice = { kind: "error" | "ok" | "info"; text: string } | null;
@@ -17,6 +19,10 @@ type Notice = { kind: "error" | "ok" | "info"; text: string } | null;
  * Os limites (5 erros, bloqueio de 15 min, reenvio após 60 s) são do servidor; aqui só se mostra.
  */
 export function OtpStep({
+  title,
+  intro,
+  gap,
+  resendLabel = "Não recebeu o código?",
   initial,
   okLabel,
   verify,
@@ -27,6 +33,12 @@ export function OtpStep({
   submitLabel = "Verificar",
   extra,
 }: {
+  /** Título da tela (cadastro e recuperação); sem ele, só o texto de apoio (ex.: dentro de uma janela). */
+  title?: string;
+  /** Texto abaixo do título; recebe o desafio atual porque o canal pode mudar (SMS ↔ e-mail). */
+  intro?: (challenge: OtpChallenge) => React.ReactNode;
+  gap?: 10 | 12;
+  resendLabel?: string;
   initial: OtpChallenge;
   okLabel: string;
   /** Confere o código; lança ApiError quando está errado. */
@@ -119,70 +131,132 @@ export function OtpStep({
         e.preventDefault();
         void submit();
       }}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
+      aria-labelledby={title ? "otp-title" : undefined}
     >
-      <p className="text-base text-text-muted">
-        Enviamos um código por {challenge.channel === "sms" ? "SMS" : "e-mail"} para{" "}
-        <strong className="text-text-strong">{challenge.destinationMasked}</strong>.
-      </p>
-
-      <OtpBoxes
-        value={code}
-        onChange={(v) => {
-          setCode(v);
-          setNotice((n) => (n?.kind === "error" ? null : n));
-        }}
-        onEnter={() => void submit()}
-        disabled={locked || verified}
-        tone={verified ? "ok" : notice?.kind === "error" ? "error" : "idle"}
-        label="Código de 6 dígitos"
-      />
-
-      <p className="text-sm text-text-muted" aria-live="off">
-        {expired ? "O código expirou." : `O código vale por 5 minutos · expira em ${formatClock(expiresIn)}`}
-      </p>
-
-      <div role="status" aria-live="polite" className="min-h-6">
-        {notice?.kind === "error" && <FormError>{notice.text}</FormError>}
-        {notice?.kind === "ok" && <p className="text-sm font-bold text-success-text">{notice.text}</p>}
-        {notice?.kind === "info" && <p className="text-sm text-text-muted">{notice.text}</p>}
-        {expired && !notice && !verified && (
-          <p className="text-sm font-semibold text-danger-text">
-            Código expirado. Peça um novo código para continuar.
-          </p>
+      <div className="flex flex-col items-center gap-2 text-center">
+        {title && (
+          <h1 id="otp-title" className="text-2xl leading-8 font-bold text-text-strong">
+            {title}
+          </h1>
         )}
+        <p className="text-sm leading-5 text-text-muted">
+          {intro ? (
+            intro(challenge)
+          ) : (
+            <>
+              Enviamos um código por {challenge.channel === "sms" ? "SMS" : "e-mail"} para{" "}
+              <b className="whitespace-nowrap text-text">{challenge.destinationMasked}</b>.
+            </>
+          )}
+        </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
-        <span>Não recebeu o código?</span>
-        <button
-          type="button"
-          onClick={() => void doResend()}
-          disabled={resendIn > 0 || locked || busy}
-          className="h-10 font-semibold text-link hover:underline disabled:text-text-subtle disabled:no-underline"
-        >
-          {resendIn > 0 ? `Reenviar em ${formatClock(resendIn)}` : "Reenviar código"}
-        </button>
-        {extra && (
-          <button
-            type="button"
-            onClick={() => void doResend(extra.channel)}
-            disabled={resendIn > 0 || locked || busy}
-            className="h-10 font-semibold text-link hover:underline disabled:text-text-subtle disabled:no-underline"
+      <div className="flex flex-col items-center gap-2">
+        <OtpBoxes
+          value={code}
+          onChange={(v) => {
+            setCode(v);
+            setNotice((n) => (n?.kind === "error" ? null : n));
+          }}
+          onEnter={() => void submit()}
+          disabled={locked || expired || verified}
+          tone={verified ? "ok" : notice?.kind === "error" || locked ? "error" : "idle"}
+          label="Código de 6 dígitos"
+          gap={gap}
+          autoFocus
+        />
+
+        {!locked && !expired && !verified && (
+          <span
+            role="timer"
+            aria-live="off"
+            className="flex items-center gap-1 text-xs leading-4 text-text-muted"
           >
-            {extra.label}
-          </button>
+            <Clock3 className="size-3.5 shrink-0" aria-hidden />O código vale por 5 minutos · expira em{" "}
+            <b className="font-bold text-text tabular-nums">{formatClock(expiresIn)}</b>
+          </span>
         )}
-      </div>
-
-      <div className="flex gap-3">
-        <SecondaryButton onClick={onBack}>{backLabel}</SecondaryButton>
-        <div className="flex-1 [&>button]:w-full">
-          <PrimaryButton disabled={!canVerify} loading={busy}>
-            {busy ? "Verificando…" : submitLabel}
-          </PrimaryButton>
+        <div role="status" aria-live="polite" className="flex flex-col items-center gap-2">
+          {notice?.kind === "error" && !locked && !expired && <FieldError>{notice.text}</FieldError>}
+          {expired && !locked && !verified && (
+            <Banner>
+              <b>Código expirado.</b> Peça um novo código para continuar.
+            </Banner>
+          )}
+          {locked && (
+            <Banner>
+              <b>Muitas tentativas.</b> Tente de novo em 15 minutos.
+            </Banner>
+          )}
+          {notice?.kind === "ok" && (
+            <span className="flex items-center gap-1 text-xs leading-4 font-semibold text-success-text">
+              <CheckCircle2 className="size-3.5" aria-hidden />
+              {notice.text}
+            </span>
+          )}
+          {notice?.kind === "info" && !locked && (
+            <span className="anim-rise flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-1 text-xs leading-4 font-semibold text-success-text">
+              <CheckCircle2 className="size-3.5" aria-hidden />
+              {notice.text}
+            </span>
+          )}
         </div>
       </div>
+
+      {!locked && !verified && (
+        <div className="-my-2 flex flex-wrap items-baseline justify-center gap-x-1 text-xs leading-4 text-text-muted">
+          <span className="font-semibold">{resendLabel}</span>
+          {resendIn > 0 ? (
+            <span aria-live="off" className="font-bold text-text-subtle tabular-nums">
+              Reenviar em {formatClock(resendIn)}
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void doResend()}
+              disabled={busy}
+              className={`${linkCls} inline-flex min-h-6 items-center text-xs`}
+            >
+              Reenviar código
+            </button>
+          )}
+          {extra && (
+            <>
+              <span aria-hidden className="text-text-subtle/60">
+                ·
+              </span>
+              <button
+                type="button"
+                onClick={() => void doResend(extra.channel)}
+                disabled={resendIn > 0 || busy}
+                className={`${linkCls} inline-flex min-h-6 items-center text-xs disabled:text-text-subtle disabled:no-underline`}
+              >
+                {extra.label}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      <ActionRow>
+        <SecondaryButton onClick={onBack}>{backLabel}</SecondaryButton>
+        <PrimaryButton looksDisabled={!canVerify && !busy} loading={busy}>
+          {busy ? "Verificando…" : submitLabel}
+        </PrimaryButton>
+      </ActionRow>
     </form>
+  );
+}
+
+function Banner({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      role="alert"
+      className="flex items-center gap-2 rounded-lg border border-danger/40 bg-danger-soft px-3 py-2 text-xs leading-4 text-danger-text"
+    >
+      <CircleAlert className="size-4 shrink-0 text-danger" aria-hidden />
+      <span>{children}</span>
+    </div>
   );
 }

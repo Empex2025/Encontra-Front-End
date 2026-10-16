@@ -169,6 +169,9 @@
   --color-amber: #f4af1b;
   --color-amber-400: #f7bb35;
   --color-amber-50: #fef5e2;
+  /* Fundo das telas de entrada (foto do protótipo indisponível: cinza do protótipo + véu) */
+  --color-charcoal: #343a40;
+  --color-charcoal-900: #212529;
 
   --shadow-card: 0px 1px 1.5px rgba(0, 0, 0, 0.1);
   --shadow-raised: 0px 4px 6px rgba(0, 0, 0, 0.12);
@@ -264,4 +267,40 @@ body {
     rgba(0, 8, 35, 0) 42%,
     rgba(0, 8, 35, 0.92) 100%
   );
+}
+
+/* Entrada: cartão que sobe suave e confete do "Tudo pronto" (protótipo: rise / pop). */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.anim-rise {
+  animation: rise 0.3s ease-out both;
+}
+.anim-pop {
+  animation: pop 0.45s ease-out both;
+}
+
+/* Campos das telas de entrada: o foco é a borda azul + anel de 3 px (protótipo), sem o contorno global. */
+.auth-field:focus-visible {
+  outline: none;
 }
