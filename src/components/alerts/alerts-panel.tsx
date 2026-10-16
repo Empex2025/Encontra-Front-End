@@ -7,8 +7,9 @@ import { useState } from "react";
 
 import { type Access, LockedBody } from "@/components/auth/session-gate";
 import { cn } from "@/components/ui/cn";
+import { EmptyCard } from "@/components/ui/empty-card";
 import { ErrorState } from "@/components/ui/error-state";
-import { EmptyState, ListSkeleton, SearchField } from "@/components/ui/list-states";
+import { ListSkeleton, SearchField } from "@/components/ui/list-states";
 import { useToast } from "@/components/ui/toast";
 import { actions } from "@/lib/api/actions";
 import { type AlertRow, me } from "@/lib/api/me";
@@ -23,8 +24,17 @@ const daysLeft = (iso: string) => Math.ceil((new Date(iso).getTime() - Date.now(
 
 type Filter = "all" | "active" | "paused";
 
-/** Lista e gestão de alertas (Favoritos › Alertas e Notificações › Gerenciar alertas). */
-export function AlertsPanel({ access = "member" }: { access?: Access }) {
+/**
+ * Lista e gestão de alertas (Favoritos › Alertas e Notificações › Gerenciar alertas).
+ * `variant` só troca o texto do aviso do topo, como no protótipo.
+ */
+export function AlertsPanel({
+  access = "member",
+  variant = "favoritos",
+}: {
+  access?: Access;
+  variant?: "favoritos" | "notificacoes";
+}) {
   const qc = useQueryClient();
   const toast = useToast();
   const locked = access !== "member";
@@ -62,27 +72,44 @@ export function AlertsPanel({ access = "member" }: { access?: Access }) {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-lg font-bold text-text-strong">Meus alertas</h2>
-        <p className="text-sm text-text-muted">
-          Seus alertas inteligentes. Você recebe um aviso quando o produto voltar ao estoque, baixar de preço,
-          entrar em promoção ou quando outra loja perto cadastrar. Crie um alerta pelo botão “Avise-me” na
-          página do produto.{" "}
-          <Link href={routes.notificacoes} className="font-semibold text-link hover:underline">
+    <section
+      aria-label={variant === "favoritos" ? "Alertas" : "Gerenciar alertas"}
+      className="flex flex-col gap-3"
+    >
+      {variant === "favoritos" ? (
+        <div className="flex items-center gap-3 rounded-xl border border-accent-border bg-accent-soft px-4 py-3.5 text-sm leading-5 text-text-2">
+          <Bell className="size-[22px] shrink-0 text-accent-text" aria-hidden />
+          <span className="flex-1">
+            Os alertas avisam quando o preço baixa, um item volta ao estoque, entra em promoção ou uma loja
+            nova passa a vender. Crie pelo botão <b>Avise-me</b> na página do produto ou numa busca sem
+            resultado.
+          </span>
+          <Link
+            href={routes.notificacoes}
+            className="text-[13px] font-bold whitespace-nowrap text-link hover:underline"
+          >
             Ver avisos recebidos ›
           </Link>
-        </p>
-      </div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        </div>
+      ) : (
+        <div className="flex items-start gap-3 rounded-2xl border border-accent-border bg-accent-soft px-5 py-4 text-sm leading-5 text-text-2">
+          <Bell className="size-[22px] shrink-0 text-accent-text" aria-hidden />
+          <span>
+            <b>Seus alertas inteligentes.</b> Você recebe um aviso quando o produto <b>voltar ao estoque</b>,{" "}
+            <b>baixar de preço</b>, <b>entrar em promoção</b> ou quando <b>outra loja perto cadastrar</b>.
+            Crie um alerta pelo botão <b>“Avise-me”</b> na página do produto.
+          </span>
+        </div>
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <SearchField
           value={term}
           onChange={setTerm}
           disabled={locked}
           label="Buscar nos alertas"
-          className="sm:w-72"
+          className="sm:w-64"
         />
-        <ul className="flex flex-wrap gap-2" aria-label="Mostrar alertas">
+        <ul className="flex flex-wrap gap-1.5" aria-label="Mostrar alertas">
           {FILTERS.map((f) => (
             <li key={f.id}>
               <button
@@ -91,10 +118,10 @@ export function AlertsPanel({ access = "member" }: { access?: Access }) {
                 disabled={locked}
                 onClick={() => setFilter(f.id)}
                 className={cn(
-                  "h-10 rounded-full border px-4 text-sm font-semibold disabled:opacity-60",
+                  "h-[34px] rounded-full border px-3 text-[13px] font-semibold disabled:opacity-60",
                   filter === f.id
                     ? "border-primary bg-primary text-on-primary"
-                    : "border-border bg-surface text-text hover:bg-surface-2",
+                    : "border-border bg-surface text-text-2 hover:border-navy-300",
                 )}
               >
                 {f.label} ({q.data ? f.n : "—"})
@@ -118,15 +145,15 @@ export function AlertsPanel({ access = "member" }: { access?: Access }) {
           onRetry={() => q.refetch()}
         />
       ) : all.length === 0 ? (
-        <EmptyState
+        <EmptyCard
           icon={<Bell className="size-8 text-text-subtle" aria-hidden />}
-          title="Você ainda não tem alertas."
-          hint="Abra um produto e toque em “Avise-me” para ser avisado quando o preço baixar."
+          title={variant === "favoritos" ? "Nenhum alerta ativo." : "Você não tem alertas."}
+          hint="Abra um produto e use “Avise-me” para ser avisado quando o preço baixar ou ele voltar."
           href={routes.explorar}
           cta="Buscar um produto para acompanhar"
         />
       ) : items.length === 0 ? (
-        <EmptyState title="Nenhum alerta encontrado" hint="Troque o filtro ou a busca." />
+        <EmptyCard title="Nenhum alerta encontrado" hint="Troque o filtro ou a busca." />
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((a) => {
@@ -135,98 +162,105 @@ export function AlertsPanel({ access = "member" }: { access?: Access }) {
             return (
               <li
                 key={a.id}
-                className={cn("flex gap-3 rounded-2xl border border-border p-4", !a.active && "opacity-60")}
+                className={cn(
+                  "flex flex-col gap-3 rounded-2xl bg-surface px-5 py-4 shadow-card sm:flex-row sm:items-center sm:gap-4",
+                  !a.active && "opacity-60",
+                )}
               >
-                <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-surface-2">
-                  {a.product.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={a.product.imageUrl} alt="" className="size-full object-cover" />
-                  )}
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={produtoHref(a.product.slug)}
-                      className="truncate font-bold text-text-strong hover:underline"
-                    >
-                      {a.product.title}
-                    </Link>
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-xs font-bold",
-                        a.active ? "bg-success-bg text-success-text" : "bg-surface-2 text-text-muted",
-                      )}
-                    >
-                      {a.active ? "Ativo" : "Pausado"}
-                    </span>
+                <div className="flex min-w-0 flex-1 items-center gap-4">
+                  <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-surface-3">
+                    {a.product.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={a.product.imageUrl}
+                        alt=""
+                        className="absolute inset-0 size-full object-cover"
+                      />
+                    )}
                   </div>
-                  <p className="text-sm text-text-muted">
-                    {[
-                      a.profile?.name,
-                      a.city,
-                      a.size ? `tamanho ${a.size}` : null,
-                      `${a.radiusKm} km`,
-                      `avisar por ${a.channels.map((c) => ({ site: "site", whatsapp: "WhatsApp", email: "e-mail" })[c]).join(", ")}`,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  <ul className="flex flex-wrap gap-1.5" aria-label="Condições">
-                    {a.conditions.map((c) => (
-                      <li
-                        key={c}
-                        className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-text-2"
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={produtoHref(a.product.slug)}
+                        className="truncate text-[15px] leading-[22px] font-bold text-text hover:underline"
                       >
-                        {c === "price_drop" && a.belowCents
-                          ? `Preço abaixo de ${formatMoney(a.belowCents)}`
-                          : CONDITION_LABEL[c].label}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-xs text-text-subtle">
-                    {Number.isNaN(left)
-                      ? "Validade não informada"
-                      : left > 0
-                        ? `Vence em ${left} ${left === 1 ? "dia" : "dias"}`
-                        : "Venceu"}
-                  </p>
-                  {a.active && a.lastTrigger && (
-                    <p className="text-xs font-semibold text-success-text">
-                      Disparou{ago ? ` ${ago}` : ""}: {a.lastTrigger.text}
+                        {a.product.title}
+                      </Link>
+                      <span
+                        className={cn(
+                          "inline-flex h-5 items-center rounded px-2 text-[11px] font-bold",
+                          a.active ? "bg-success-soft text-success-text" : "bg-surface-2 text-text-subtle",
+                        )}
+                      >
+                        {a.active ? "Ativo" : "Pausado"}
+                      </span>
+                    </div>
+                    <p className="text-[13px] leading-[18px] text-text-muted">
+                      {[
+                        a.profile?.name,
+                        a.city,
+                        a.size ? `Tamanho ${a.size}` : null,
+                        `até ${a.radiusKm} km`,
+                        `avisar por ${a.channels.map((c) => ({ site: "site", whatsapp: "WhatsApp", email: "e-mail" })[c]).join(", ")}`,
+                        Number.isNaN(left)
+                          ? "validade não informada"
+                          : left > 0
+                            ? `vence em ${left} ${left === 1 ? "dia" : "dias"}`
+                            : "venceu",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
-                  )}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      disabled={toggle.isPending}
-                      onClick={() => toggle.mutate(a)}
-                      className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold hover:bg-surface-2"
-                    >
-                      {a.active ? (
-                        <Pause className="size-4" aria-hidden />
-                      ) : (
-                        <Play className="size-4" aria-hidden />
-                      )}
-                      {a.active ? "Pausar" : "Ativar"}
-                      <span className="sr-only"> alerta de {a.product.title}</span>
-                    </button>
-                    <button
-                      type="button"
-                      disabled={del.isPending}
-                      onClick={() => del.mutate(a)}
-                      aria-label={`Excluir alerta de ${a.product.title}`}
-                      className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border-strong px-3 text-sm font-semibold text-danger-text hover:bg-surface-2"
-                    >
-                      <Trash2 className="size-4" aria-hidden />
-                      Excluir
-                    </button>
+                    <ul className="flex flex-wrap gap-1.5" aria-label="Condições">
+                      {a.conditions.map((c) => (
+                        <li
+                          key={c}
+                          className="inline-flex h-6 items-center rounded-full bg-surface-2 px-2.5 text-xs font-semibold text-text-2"
+                        >
+                          {c === "price_drop" && a.belowCents
+                            ? `Preço abaixo de ${formatMoney(a.belowCents)}`
+                            : CONDITION_LABEL[c].label}
+                        </li>
+                      ))}
+                    </ul>
+                    {a.active && a.lastTrigger && (
+                      <p className="self-start rounded-md bg-success-soft px-2 py-1 text-xs font-bold text-success-text">
+                        ✓ Disparou{ago ? ` ${ago}` : ""}: {a.lastTrigger.text}
+                      </p>
+                    )}
                   </div>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    disabled={toggle.isPending}
+                    onClick={() => toggle.mutate(a)}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-xs font-bold text-text-strong hover:bg-surface-2"
+                  >
+                    {a.active ? (
+                      <Pause className="size-3.5" aria-hidden />
+                    ) : (
+                      <Play className="size-3.5" aria-hidden />
+                    )}
+                    {a.active ? "Pausar" : "Ativar"}
+                    <span className="sr-only"> alerta de {a.product.title}</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={del.isPending}
+                    onClick={() => del.mutate(a)}
+                    aria-label={`Excluir alerta de ${a.product.title}`}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-danger/40 bg-surface px-3 text-xs font-bold text-danger-text hover:bg-danger-soft"
+                  >
+                    <Trash2 className="size-3.5" aria-hidden />
+                    Excluir
+                  </button>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
-    </div>
+    </section>
   );
 }
