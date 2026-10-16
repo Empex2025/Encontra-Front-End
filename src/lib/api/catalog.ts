@@ -281,16 +281,49 @@ export const catalog = {
     }),
 };
 
-/** Ofertas & Promoções (contrato: docs/contratos/decidir.md › GET /offers). */
+/**
+ * Ofertas & Promoções (contrato: docs/contratos/decidir.md › GET /offers).
+ * Campos novos (opcionais, revisão de fidelidade 16/10/2026): `endsAt`/`offerSlug` em cada item e `lowestPrices`.
+ */
+export const offerItemSchema = searchItemSchema.extend({
+  /** Fim da oferta (ISO). Com ele o card mostra "Acaba hoje" quando termina no mesmo dia. */
+  endsAt: z.string().nullable().optional(),
+  /** Endereço público da oferta (`/o/{offerSlug}`), usado no compartilhamento. */
+  offerSlug: z.string().nullable().optional(),
+});
+export type OfferItem = z.infer<typeof offerItemSchema>;
+
+export const lowestPriceSchema = z.object({
+  id: z.string(),
+  /** O que está sendo comparado ("Gasolina comum"). */
+  item: z.string(),
+  priceCents: z.number().int().nonnegative(),
+  /** "por litro", "o copo", "a partir de". */
+  unit: z.string().nullable().optional(),
+  profile: z.object({ id: z.string(), slug: z.string(), name: z.string() }),
+  distanceKm: z.number().nonnegative().nullable(),
+  /** Quanto é mais barato que as outras lojas do raio; só com pelo menos 1 loja para comparar. */
+  saving: z.object({ cents: z.number().int().positive(), others: z.number().int().positive() }).nullable(),
+  /** Quando a loja informou o preço (ISO). */
+  updatedAt: z.string(),
+  href: z.string().nullable().optional(),
+});
+export type LowestPrice = z.infer<typeof lowestPriceSchema>;
+
 export const offersPageSchema = searchResponseSchema.extend({
+  items: z.array(offerItemSchema),
   coupons: z.array(
     couponSchema.extend({
       profile: profileSummarySchema.pick({ id: true, slug: true, name: true, avatarUrl: true }),
+      /** Distância da loja (km), se o servidor calculou. */
+      distanceKm: z.number().nonnegative().nullable().optional(),
+      categoryId: categoryId.nullable().optional(),
     }),
   ),
+  lowestPrices: z.array(lowestPriceSchema).default([]),
 });
 export type OffersPage = z.infer<typeof offersPageSchema>;
-export const OFFER_SORTS = ["relevance", "distance", "price", "discount"] as const;
+export const OFFER_SORTS = ["discount", "distance", "price", "ending", "relevance"] as const;
 export type OfferSort = (typeof OFFER_SORTS)[number];
 export const OFFERS_PAGE_SIZE = 12;
 

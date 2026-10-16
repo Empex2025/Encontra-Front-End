@@ -15,6 +15,10 @@ const entrySchema = z.object({
   ref: z.string(),
   group: z.object({ id: z.string(), label: z.string() }),
   origin: z.string(),
+  title: z.string().optional(),
+  imageUrl: z.string().nullable().optional(),
+  priceCents: z.number().nullable().optional(),
+  categoryId: z.string().nullable().optional(),
 });
 
 const listeners = new Set<() => void>();

@@ -36,3 +36,52 @@ export function routeUrl(o: {
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.address)}`
     : null;
 }
+
+const TZ = "America/Maceio";
+const dayKey = new Intl.DateTimeFormat("en-CA", {
+  timeZone: TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const hourMin = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: TZ,
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+const weekday = new Intl.DateTimeFormat("pt-BR", { timeZone: TZ, weekday: "long" });
+const dayMonth = new Intl.DateTimeFormat("pt-BR", { timeZone: TZ, day: "2-digit", month: "2-digit" });
+
+/** A oferta termina no mesmo dia (fuso de Maceió) de `now`, e ainda não terminou. Data inválida: false. */
+export function endsToday(endsAt: string | null | undefined, now: number): boolean {
+  if (!endsAt) return false;
+  const t = new Date(endsAt).getTime();
+  if (Number.isNaN(t) || t < now) return false;
+  return dayKey.format(t) === dayKey.format(now);
+}
+
+/** "23h59" ou "22h" quando os minutos são zero. */
+function hourText(t: number): string {
+  const [h, m] = hourMin.format(t).split(":");
+  return m === "00" ? `${Number(h)}h` : `${Number(h)}h${m}`;
+}
+
+/**
+ * Validade curta do cupom: "Hoje até 23h59", "Até quarta" (próximos 6 dias) ou "Até 24/10".
+ * Data inválida: null (a tela não mostra validade em vez de inventar).
+ */
+export function couponUntilText(validUntil: string, now: number): string | null {
+  const t = new Date(validUntil).getTime();
+  if (Number.isNaN(t)) return null;
+  if (dayKey.format(t) === dayKey.format(now)) return `Hoje até ${hourText(t)}`;
+  const days = (t - now) / 86_400_000;
+  if (days > 0 && days < 6) return `Até ${weekday.format(t).replace("-feira", "")}`;
+  return `Até ${dayMonth.format(t)}`;
+}
+
+/** Cupom ainda não guardado mostra só o começo do código ("ESP•••••"); guardado mostra inteiro. */
+export function maskCode(code: string, revealed: boolean): string {
+  if (revealed || code.length <= 3) return code;
+  return `${code.slice(0, 3)}${"•".repeat(Math.min(5, code.length - 3))}`;
+}

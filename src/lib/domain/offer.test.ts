@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { countdownText, msLeft, offerEnded, routeUrl } from "./offer";
+import { countdownText, couponUntilText, endsToday, maskCode, msLeft, offerEnded, routeUrl } from "./offer";
 
 describe("offer", () => {
   it("contagem regressiva", () => {
@@ -23,5 +23,29 @@ describe("offer", () => {
     expect(routeUrl({ lat: -9.6, lng: -35.7, address: "Rua A" })).toContain("destination=-9.6,-35.7");
     expect(routeUrl({ lat: null, lng: null, address: "Rua A, 10" })).toContain("query=Rua%20A%2C%2010");
     expect(routeUrl({ lat: null, lng: null, address: null })).toBeNull();
+  });
+});
+
+describe("ofertas: validade e cupom", () => {
+  // 2026-10-14 15:00 em Maceió (UTC-3) = 18:00Z
+  const now = Date.parse("2026-10-14T18:00:00Z");
+  it("endsToday: só quando termina hoje e ainda não terminou", () => {
+    expect(endsToday("2026-10-14T23:30:00Z", now)).toBe(true);
+    expect(endsToday("2026-10-15T05:00:00Z", now)).toBe(false);
+    expect(endsToday("2026-10-14T17:00:00Z", now)).toBe(false);
+    expect(endsToday(null, now)).toBe(false);
+    expect(endsToday("lixo", now)).toBe(false);
+  });
+  it("couponUntilText: hoje, dia da semana ou data", () => {
+    expect(couponUntilText("2026-10-15T02:59:00Z", now)).toBe("Hoje até 23h59");
+    expect(couponUntilText("2026-10-14T23:00:00Z", now)).toBe("Hoje até 20h");
+    expect(couponUntilText("2026-10-16T20:00:00Z", now)).toBe("Até sexta");
+    expect(couponUntilText("2026-10-30T20:00:00Z", now)).toBe("Até 30/10");
+    expect(couponUntilText("lixo", now)).toBeNull();
+  });
+  it("maskCode esconde o fim do código até guardar", () => {
+    expect(maskCode("ESPORTE10", false)).toBe("ESP•••••");
+    expect(maskCode("ESPORTE10", true)).toBe("ESPORTE10");
+    expect(maskCode("AB", false)).toBe("AB");
   });
 });

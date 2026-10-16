@@ -808,7 +808,10 @@ function useCompare(p: Product): { button: React.ReactNode; note: React.ReactNod
           <span>
             ✓ Na sua comparação de {group.label}: <b>{list.length} de 3</b>
           </span>
-          <Link href={routes.comparar} className="font-bold text-text-strong hover:underline">
+          <Link
+            href={list.length >= 2 ? routes.compararQuadro : routes.comparar}
+            className="font-bold text-text-strong hover:underline"
+          >
             {list.length >= 2 ? "Comparar opções" : "Buscar mais opções para comparar"} →
           </Link>
         </p>

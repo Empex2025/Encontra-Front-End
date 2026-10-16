@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { api } from "./client";
+import { searchItemSchema, searchResponseSchema } from "./search";
 
 /** Contrato: docs/contratos/comparar.md */
 
@@ -39,6 +40,8 @@ export const comparedItemSchema = z.object({
     })
     .nullable(),
   cells: z.record(cellSchema),
+  /** Cartão completo do item (mesmo formato de `GET /search`) para o quadro mostrar foto, preço, nota e loja. */
+  card: searchItemSchema.nullable().optional(),
 });
 export type ComparedItem = z.infer<typeof comparedItemSchema>;
 
@@ -56,6 +59,54 @@ export function fetchComparison(refs: readonly string[], point: { lat: number | 
       items: refs.join(","),
       lat: point.lat ?? undefined,
       lng: point.lng ?? undefined,
+    },
+  });
+}
+
+/* ---------- Pesquisa da tela Comparar (docs/contratos/comparar.md › Pesquisa para comparar) ---------- */
+
+export const COMPARE_SORTS = ["relevance", "distance", "price", "price_desc", "rating", "sold"] as const;
+export type CompareSort = (typeof COMPARE_SORTS)[number];
+
+const compareSearchSchema = searchResponseSchema.extend({
+  /** Termos parecidos com a busca ("tênis casual"), para a fileira "Relacionados à sua busca". */
+  related: z.array(z.string()).default([]),
+});
+export type CompareSearchResponse = z.infer<typeof compareSearchSchema>;
+
+export type CompareSearchQuery = {
+  q: string;
+  sort: CompareSort;
+  radiusKm: number;
+  lat: number | null;
+  lng: number | null;
+  where: string;
+  /** Produtos: só com desconto / só lojas abertas. Serviços: só em domicílio / só verificados. */
+  hasDiscount: boolean;
+  openNow: boolean;
+  homeService: boolean;
+  verifiedOnly: boolean;
+};
+
+export const COMPARE_PAGE_SIZE = 12;
+
+export function fetchCompareSearch(query: CompareSearchQuery, page: number) {
+  const hasPoint = query.lat !== null && query.lng !== null;
+  return api("/search", compareSearchSchema, {
+    query: {
+      q: query.q,
+      comparable: 1,
+      sort: query.sort,
+      lat: hasPoint ? query.lat : undefined,
+      lng: hasPoint ? query.lng : undefined,
+      where: hasPoint ? undefined : query.where,
+      radiusKm: query.radiusKm,
+      hasDiscount: query.hasDiscount ? 1 : undefined,
+      openNow: query.openNow ? 1 : undefined,
+      serviceMode: query.homeService ? "home" : undefined,
+      verified: query.verifiedOnly ? 1 : undefined,
+      page,
+      limit: COMPARE_PAGE_SIZE,
     },
   });
 }

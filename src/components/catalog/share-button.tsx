@@ -49,13 +49,15 @@ export function ShareButton({
   const toast = useToast();
   useDismiss(wrap, open && variant !== "button", () => setOpen(false));
   const url = typeof window === "undefined" ? path : `${window.location.origin}${path}`;
-  const article = noun === "loja" || noun === "prestador" ? "da" : "do";
+  const article = noun === "loja" || noun === "prestador" || noun === "oferta" ? "da" : "do";
   const reportLabel =
     noun === "produto"
       ? "Denunciar este anúncio"
       : noun === "loja"
         ? "Denunciar esta loja"
-        : "Denunciar este perfil";
+        : noun === "oferta"
+          ? "Denunciar esta oferta"
+          : "Denunciar este perfil";
 
   const copy = async () => {
     try {

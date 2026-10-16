@@ -18,5 +18,11 @@ export function defaultComparisonName(titles: readonly string[], groupLabel: str
 export function savedToEntries(saved: SavedComparison): CompareEntry[] {
   return saved.items
     .slice(0, MAX_COMPARE)
-    .map((it) => ({ ref: it.ref, group: saved.group, origin: "conta" }));
+    .map((it) => ({
+      ref: it.ref,
+      group: saved.group,
+      origin: "conta",
+      title: it.title,
+      imageUrl: it.imageUrl,
+    }));
 }
