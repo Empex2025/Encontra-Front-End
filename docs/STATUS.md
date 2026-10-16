@@ -6,6 +6,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 > **Auditoria de 14/10/2026 (PR consolidado):** nenhuma seção some mais por falta de dado; carregando, erro e vazio são telas distintas; sem rótulos "em breve"; mapa com painel estruturado (aviso de integração pendente); sinais de confiança implementados (campos opcionais pendentes no back-end). Roteiros de teste em `docs/testes/`.
 
+> **Fidelidade ao protótipo (16/10/2026, PR consolidado):** Home, Explorar (busca em dois campos, Grade/Grade + mapa/Mapa, cards), Ofertas, Comparar (`/comparar` e `/comparar/quadro`), Favoritos, Entrada (9 telas + `/visitante`), Conta, Ajuda, Institucional, Estados, Stories, Ao vivo, Evento e Radar conferidos tela a tela contra o protótipo (roteiros em `docs/testes/*-fidelidade.md`). Visitante: Conversas, Notificações, Favoritos e Conta abrem o pop-up "Entre para…". Tudo **Implementado**, nada **Validado** (sem a API real). Mapa segue Bloqueado.
+
 > **Situação do back-end (14/10/2026):** o repositório do back-end já tem código (NestJS, cerca de 220 rotas sob `/api/v1`), mas só 11 de 69 grupos de rotas do front coincidem em método e caminho; veja `docs/RECONCILIACAO-API.md`. Nada foi testado contra ele, então **nada pode ser "Validado"** ainda.
 
 ## Base (estrutura global)

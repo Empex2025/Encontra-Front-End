@@ -306,6 +306,7 @@ body {
 /* Campos das telas de entrada: o foco é a borda azul + anel de 3 px (protótipo), sem o contorno global. */
 .auth-field:focus-visible {
   outline: none;
+}
 
 /* Pulso âmbar (protótipo): atalho "Perto agora" e sino do Meu Radar. Respeita "reduzir movimento" (regra acima). */
 @keyframes ring-pulse {
