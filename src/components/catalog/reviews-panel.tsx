@@ -29,6 +29,8 @@ export function ReviewsPanel({
   reviewHref,
   reviewLabel,
   reportKind = true,
+  layout = "stack",
+  note,
 }: {
   target: "products" | "profiles";
   slug: string;
@@ -37,6 +39,10 @@ export function ReviewsPanel({
   reviewLabel: string;
   /** Mostra "Denunciar" em cada avaliação (padrão: sim). */
   reportKind?: boolean;
+  /** `split`: resumo (nota e barras) à esquerda e lista à direita em telas largas. */
+  layout?: "stack" | "split";
+  /** Texto fixo sob o resumo. */
+  note?: string;
 }) {
   const router = useRouter();
   const requireAuth = useRequireAuth();
@@ -61,8 +67,8 @@ export function ReviewsPanel({
   const remaining = Math.max(0, last.total - items.length);
   const maxCount = Math.max(1, ...[5, 4, 3, 2, 1].map((n) => summary.distribution[String(n)] ?? 0));
 
-  return (
-    <div className="flex flex-col gap-5">
+  const summaryBlock = (
+    <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="flex flex-col items-start gap-1">
           <p className="text-4xl font-bold text-text-strong">
@@ -115,7 +121,12 @@ export function ReviewsPanel({
       >
         {reviewLabel}
       </button>
+      {note && <p className="text-xs text-text-muted">{note}</p>}
+    </>
+  );
 
+  const listBlock = (
+    <>
       <div className="flex flex-wrap items-center gap-2">
         {first.filters.length === 0 && (
           <Chip label="Todas" count={summary.total} size="sm" selected onClick={() => setFilter("all")} />
@@ -172,6 +183,18 @@ export function ReviewsPanel({
           {q.isFetchingNextPage ? "Carregando…" : `Ver mais avaliações (${remaining} restantes)`}
         </button>
       )}
+    </>
+  );
+
+  return layout === "split" ? (
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
+      <div className="flex flex-col gap-5 lg:w-[360px] lg:shrink-0">{summaryBlock}</div>
+      <div className="flex min-w-0 flex-1 flex-col gap-5">{listBlock}</div>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-5">
+      {summaryBlock}
+      {listBlock}
     </div>
   );
 }

@@ -1,17 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MapPin, Navigation, Tag } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/catalog/avatar";
 import { ContactButtons } from "@/components/catalog/contact-buttons";
 import { CouponCard } from "@/components/catalog/coupon-card";
-import { EmptyNote, PageError, Section } from "@/components/catalog/section-state";
+import { PageError } from "@/components/catalog/section-state";
 import { StatusLine } from "@/components/catalog/status-line";
 import { TrustSignals } from "@/components/catalog/trust-signals";
-import { ResultCard } from "@/components/search/result-card";
+import { CreateAccountNote, ItemGrid, PublicMain, ShareAside } from "@/components/public/public-shell";
 import { ApiError } from "@/lib/api/client";
 import { offerApi, type OfferPage } from "@/lib/api/offer";
 import { countdownText, msLeft, offerEnded, routeUrl } from "@/lib/domain/offer";
@@ -27,22 +27,29 @@ export function OfferView({ slug }: { slug: string }) {
   });
   if (q.isPending)
     return (
-      <div
-        aria-busy="true"
-        aria-label="Carregando"
-        className="mx-auto h-96 max-w-3xl animate-pulse rounded-2xl bg-surface-2"
-      />
+      <PublicMain>
+        <div
+          aria-busy="true"
+          aria-label="Carregando"
+          className="h-96 animate-pulse rounded-2xl bg-surface-2"
+        />
+      </PublicMain>
     );
   if (q.isError) {
-    if (q.error instanceof ApiError && q.error.status === 404) return <Gone />;
     return (
-      <PageError
-        what="a oferta"
-        error={q.error}
-        onRetry={() => q.refetch()}
-        backHref={routes.ofertas}
-        backLabel="Ver ofertas perto de você"
-      />
+      <PublicMain>
+        {q.error instanceof ApiError && q.error.status === 404 ? (
+          <Gone />
+        ) : (
+          <PageError
+            what="a oferta"
+            error={q.error}
+            onRetry={() => q.refetch()}
+            backHref={routes.ofertas}
+            backLabel="Ver ofertas perto de você"
+          />
+        )}
+      </PublicMain>
     );
   }
   return <OfferContent offer={q.data} />;
@@ -51,18 +58,31 @@ export function OfferView({ slug }: { slug: string }) {
 /** "Este link não está mais disponível" (item inexistente). */
 function Gone() {
   return (
-    <section className="mx-auto flex max-w-lg flex-col items-center gap-3 py-16 text-center">
-      <h1 className="text-2xl font-bold text-text-strong">Este link não está mais disponível</h1>
-      <p className="text-text-muted">A oferta pode ter sido removida ou o endereço está incorreto.</p>
+    <section className="flex flex-col items-center gap-3.5 rounded-2xl bg-surface px-8 py-14 text-center shadow-sm">
+      <h1 className="text-[28px] leading-9 font-extrabold text-text-strong">
+        Este link não está mais disponível
+      </h1>
+      <p className="text-[15px] leading-[22px] text-text-2">
+        O item pode ter sido removido pela loja ou o endereço está incorreto.
+      </p>
       <Link
         href={routes.ofertas}
-        className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-on-primary hover:bg-primary-hover"
+        className="inline-flex h-12 items-center rounded-lg bg-primary px-6 text-[15px] font-bold text-on-primary hover:bg-primary-hover"
       >
         Ver ofertas perto de você
       </Link>
     </section>
   );
 }
+
+const untilFmt = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "short",
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "America/Maceio",
+});
 
 function OfferContent({ offer: o }: { offer: OfferPage }) {
   // relógio em estado: atualiza a cada segundo só enquanto há prazo e a oferta está de pé
@@ -83,217 +103,182 @@ function OfferContent({ offer: o }: { offer: OfferPage }) {
     o.product?.oldPriceCents && o.product.oldPriceCents > o.product.priceCents
       ? Math.round((1 - o.product.priceCents / o.product.oldPriceCents) * 100)
       : 0;
+  const endsDate = o.endsAt ? new Date(o.endsAt) : null;
+  const validUntil = endsDate && !Number.isNaN(endsDate.getTime()) ? untilFmt.format(endsDate) : null;
+  const where = [
+    o.location.neighborhood,
+    o.location.distanceKm !== null ? formatKm(o.location.distanceKm) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <article className="mx-auto flex w-full max-w-3xl flex-col gap-5">
-      {ended && (
-        <div role="status" className="rounded-2xl border border-border-strong bg-surface-2 p-4">
-          <h2 className="text-lg font-bold text-text-strong">Oferta encerrada</h2>
-          <p className="text-sm text-text-muted">
-            Esta oferta terminou. Veja o que a loja tem agora ou outras ofertas perto de você.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href={profileHref}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary hover:bg-primary-hover"
-            >
-              Ver {o.profile.name}
-            </Link>
-            <Link
-              href={routes.ofertas}
-              className="rounded-lg border border-border-strong px-4 py-2 text-sm font-bold text-text-strong hover:bg-selected"
-            >
-              Outras ofertas perto de você
-            </Link>
+    <PublicMain
+      aside={
+        <ShareAside
+          title={o.title}
+          description={o.description}
+          imageUrl={o.imageUrl}
+          path={`/o/${encodeURIComponent(o.slug)}`}
+        />
+      }
+    >
+      <article className="flex flex-col gap-8">
+        {ended && (
+          <div role="status" className="rounded-2xl border border-border-strong bg-surface-2 p-4">
+            <h2 className="text-lg font-bold text-text-strong">Oferta encerrada</h2>
+            <p className="text-sm text-text-muted">
+              Esta oferta terminou. Veja o que a loja tem agora ou outras ofertas perto de você.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href={profileHref}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-on-primary hover:bg-primary-hover"
+              >
+                Ver {o.profile.name}
+              </Link>
+              <Link
+                href={routes.ofertas}
+                className="rounded-lg border border-border-strong px-4 py-2 text-sm font-bold text-text-strong hover:bg-selected"
+              >
+                Outras ofertas perto de você
+              </Link>
+            </div>
           </div>
-        </div>
-      )}
-
-      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-surface-2">
-        {o.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={o.imageUrl}
-            alt=""
-            className={ended ? "size-full object-cover grayscale" : "size-full object-cover"}
-          />
         )}
-        {pct > 0 && !ended && (
-          <span className="absolute top-3 left-3 rounded-full bg-danger px-3 py-1 text-sm font-bold text-white">
-            -{pct}%
-          </span>
-        )}
-      </div>
 
-      <header className="flex flex-col gap-2">
-        <Link
-          href={profileHref}
-          className="flex items-center gap-2 text-sm font-semibold text-text-muted hover:underline"
-        >
-          <Avatar name={o.profile.name} url={o.profile.avatarUrl} size={28} />
-          {o.profile.name}
-        </Link>
-        <h1 className="text-2xl font-bold text-text-strong">{o.title}</h1>
-        {o.description && <p className="text-text">{o.description}</p>}
-        {o.product && (
-          <p className="flex flex-wrap items-baseline gap-2">
-            <Tag className="size-4 self-center text-text-muted" aria-hidden />
-            <Link href={produtoHref(o.product.slug)} className="font-semibold text-link hover:underline">
-              {o.product.title}
-            </Link>
-            <span className="text-xl font-bold text-text-strong">{formatMoney(o.product.priceCents)}</span>
-            {o.product.oldPriceCents && o.product.oldPriceCents > o.product.priceCents && (
-              <span className="text-sm text-text-muted line-through">
-                {formatMoney(o.product.oldPriceCents)}
+        <section className="grid gap-6 rounded-2xl bg-surface p-4 shadow-sm sm:p-6 md:grid-cols-[minmax(0,440px)_minmax(0,1fr)] md:gap-8">
+          <div className="relative h-72 overflow-hidden rounded-xl bg-surface-3 sm:h-[400px]">
+            {o.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={o.imageUrl}
+                alt={o.title}
+                className={ended ? "size-full object-cover grayscale" : "size-full object-cover"}
+              />
+            )}
+            {!ended && (
+              <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1.5 text-xs font-extrabold text-on-accent">
+                {pct > 0 ? `Oferta do dia · -${pct}%` : "Oferta do dia"}
               </span>
             )}
-          </p>
-        )}
-        {!ended && left !== null && (
-          <p className="flex items-center gap-2 font-semibold text-danger-text">
-            <Clock className="size-4" aria-hidden />
-            <span>
-              Termina em <span className="tabular-nums">{countdownText(left)}</span>
-            </span>
-          </p>
-        )}
-        {!ended && !o.endsAt && (
-          <p className="flex items-center gap-2 text-sm text-text-muted">
-            <Clock className="size-4" aria-hidden />
-            Prazo da oferta não informado. Confirme com a loja.
-          </p>
-        )}
-        <StatusLine status={o.profile.status} />
-      </header>
+          </div>
 
-      {!ended && o.coupon && <CouponCard coupon={o.coupon} productTitle={o.product?.title} />}
+          <div className="flex min-w-0 flex-col gap-4">
+            <Link href={profileHref} className="flex items-center gap-2.5 hover:opacity-90">
+              <Avatar name={o.profile.name} url={o.profile.avatarUrl} size={40} shape="circle" tone="navy" />
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="text-[15px] font-bold text-text">{o.profile.name}</span>
+                {where && (
+                  <span className="flex items-center gap-1.5 text-xs text-text-2">
+                    <MapPin className="size-3.5" aria-hidden />
+                    {where}
+                  </span>
+                )}
+              </span>
+            </Link>
+            <h1 className="text-[28px] leading-9 font-extrabold text-text-strong">{o.title}</h1>
+            {o.description && <p className="text-sm leading-[22px] text-text-2">{o.description}</p>}
+            {o.product && (
+              <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <span className="text-[32px] leading-10 font-extrabold text-text-strong">
+                  {formatMoney(o.product.priceCents)}
+                </span>
+                {o.product.oldPriceCents && o.product.oldPriceCents > o.product.priceCents && (
+                  <span className="text-base text-text-muted line-through">
+                    {formatMoney(o.product.oldPriceCents)}
+                  </span>
+                )}
+                <Link
+                  href={produtoHref(o.product.slug)}
+                  className="text-sm font-semibold text-link hover:underline"
+                >
+                  {o.product.title}
+                </Link>
+              </p>
+            )}
 
-      <TrustSignals
-        id="confianca-oferta"
-        description="O que a loja informou sobre esta oferta."
-        signals={[
-          verificationSignal(o.profile.verification),
-          {
-            label: "Situação da oferta",
-            value: ended ? "Encerrada" : "Ativa segundo a loja",
-            tone: "neutral",
-            hint: ended ? undefined : "Confirme preço e disponibilidade com a loja antes de ir.",
-          },
-          textSignal("Preço do produto", o.product ? formatMoney(o.product.priceCents) : null),
-          {
-            ...textSignal("Horário da loja", o.profile.status?.text),
-            tone: o.profile.status ? "neutral" : "unknown",
-          },
-        ]}
-      />
+            {!ended && left !== null && (
+              <div className="flex items-center gap-3.5 rounded-xl bg-danger-soft px-4 py-3.5">
+                <Clock className="size-6 shrink-0 text-danger-text" aria-hidden />
+                <span className="flex flex-1 flex-col gap-0.5">
+                  <span className="text-xs font-semibold text-danger-text">Termina em</span>
+                  <span className="text-[26px] leading-8 font-extrabold text-danger-text tabular-nums">
+                    {countdownText(left)}
+                  </span>
+                </span>
+                {validUntil && <span className="text-[13px] text-text-2">Válido até {validUntil}</span>}
+              </div>
+            )}
+            {!ended && !o.endsAt && (
+              <p className="flex items-center gap-2 text-sm text-text-muted">
+                <Clock className="size-4" aria-hidden />
+                Prazo da oferta não informado. Confirme com a loja.
+              </p>
+            )}
+            <StatusLine status={o.profile.status} />
 
-      {!ended && (
-        <ContactButtons
-          profile={o.profile}
-          whatsappText={`Olá! Vi a oferta "${o.title}" no EncontraÊ.`}
-          chatLabel={`Conversar com ${o.profile.name}`}
-          target={{ targetType: o.profile.kind === "store" ? "STORE" : "PROVIDER", targetId: o.profile.id }}
+            {!ended && (
+              <div className="flex flex-col gap-2.5">
+                {o.coupon && <CouponCard coupon={o.coupon} productTitle={o.product?.title} variant="cta" />}
+                <ContactButtons
+                  look="public"
+                  routeHref={route}
+                  profile={o.profile}
+                  whatsappText={`Olá! Vi a oferta "${o.title}" no EncontraÊ.`}
+                  chatLabel={`Conversar com ${o.profile.name}`}
+                  target={{
+                    targetType: o.profile.kind === "store" ? "STORE" : "PROVIDER",
+                    targetId: o.profile.id,
+                  }}
+                />
+                {!route && (
+                  <p className="text-xs text-text-muted">
+                    Sem endereço ou localização informados, não dá para traçar a rota.
+                  </p>
+                )}
+              </div>
+            )}
+            {!ended && (
+              <CreateAccountNote>
+                Crie sua conta grátis para salvar, comparar preços com outras lojas e ser avisado quando
+                baixar
+              </CreateAccountNote>
+            )}
+          </div>
+        </section>
+
+        <TrustSignals
+          id="confianca-oferta"
+          description="O que a loja informou sobre esta oferta."
+          signals={[
+            verificationSignal(o.profile.verification),
+            {
+              label: "Situação da oferta",
+              value: ended ? "Encerrada" : "Ativa segundo a loja",
+              tone: "neutral",
+              hint: ended ? undefined : "Confirme preço e disponibilidade com a loja antes de ir.",
+            },
+            textSignal("Preço do produto", o.product ? formatMoney(o.product.priceCents) : null),
+            {
+              ...textSignal("Horário da loja", o.profile.status?.text),
+              tone: o.profile.status ? "neutral" : "unknown",
+            },
+          ]}
         />
-      )}
 
-      <section aria-labelledby="onde-t" className="rounded-2xl border border-border bg-surface p-4">
-        <h2 id="onde-t" className="mb-2 text-lg font-bold text-text-strong">
-          Onde fica
-        </h2>
-        <p className="flex items-start gap-2 text-text">
-          <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>
-            {o.location.address ?? o.location.neighborhood ?? "Endereço não informado"}
-            <span className="block text-sm text-text-muted">
-              {o.location.distanceKm !== null
-                ? `${formatKm(o.location.distanceKm)} de você`
-                : "Distância indisponível"}
-            </span>
-          </span>
-        </p>
-        {route ? (
-          <a
-            href={route}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 inline-flex min-h-11 items-center gap-2 font-semibold text-link hover:underline"
+        <ItemGrid title="Mais desta loja" aside={o.profile.name} items={o.more.slice(0, 3)} />
+        <ItemGrid title="Parecidos perto" aside="Perto de você" items={o.similar.slice(0, 3)} />
+
+        <p className="text-right text-[13px] font-semibold">
+          <Link
+            href={`/denunciar?tipo=${o.profile.kind === "store" ? "loja" : "prestador"}&id=${encodeURIComponent(o.profile.slug)}`}
+            className="text-danger-text hover:underline"
           >
-            <Navigation className="size-4" aria-hidden /> Como chegar
-          </a>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled
-              aria-describedby="rota-oferta-off"
-              className="mt-2 inline-flex min-h-11 items-center gap-2 font-semibold text-text-subtle disabled:cursor-not-allowed"
-            >
-              <Navigation className="size-4" aria-hidden /> Como chegar
-            </button>
-            <p id="rota-oferta-off" className="text-xs text-text-muted">
-              Sem endereço ou localização informados, não dá para traçar a rota.
-            </p>
-          </>
-        )}
-      </section>
-
-      <Related
-        id="mais"
-        title="Mais desta loja"
-        description="Outros produtos e ofertas de quem publicou esta."
-        items={o.more.slice(0, 3)}
-      />
-      <Related
-        id="parecidos"
-        title="Parecidos perto"
-        description="Opções semelhantes na região, para comparar."
-        items={o.similar.slice(0, 3)}
-      />
-
-      <footer className="flex flex-wrap gap-4 border-t border-border pt-4 text-sm">
-        <Link href="/institucional/termos" className="text-link hover:underline">
-          Termos de uso
-        </Link>
-        <Link href="/institucional/privacidade" className="text-link hover:underline">
-          Privacidade
-        </Link>
-        <Link
-          href={`/denunciar?tipo=${o.profile.kind === "store" ? "loja" : "prestador"}&id=${encodeURIComponent(o.profile.slug)}`}
-          className="text-link hover:underline"
-        >
-          Denunciar
-        </Link>
-      </footer>
-    </article>
-  );
-}
-
-function Related({
-  id,
-  title,
-  description,
-  items,
-}: {
-  id: string;
-  title: string;
-  description: string;
-  items: OfferPage["more"];
-}) {
-  return (
-    <Section id={id} title={title} description={description} level={3}>
-      {items.length === 0 ? (
-        <EmptyNote title="Nada para mostrar aqui por enquanto.">
-          Quando houver outras ofertas ou produtos relacionados, eles aparecem nesta seção.
-        </EmptyNote>
-      ) : (
-        <ul className="grid gap-3 sm:grid-cols-3">
-          {items.map((it) => (
-            <li key={`${it.type}-${it.id}`}>
-              <ResultCard item={it} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
+            Denunciar
+          </Link>
+        </p>
+      </article>
+    </PublicMain>
   );
 }
