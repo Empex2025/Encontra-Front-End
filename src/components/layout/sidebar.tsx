@@ -10,6 +10,9 @@ import { CountBadge } from "@/components/ui/count-badge";
 import { useUnreadCount } from "@/hooks/use-session";
 import { useTheme } from "@/hooks/use-theme";
 
+import { NAV_GUARDS } from "@/lib/domain/auth-actions";
+
+import { GuardedLink } from "./guarded-link";
 import { activeIdFor, NAV, NAV_BOTTOM, type NavItem } from "./nav-items";
 
 /** Preferência "menu fixado aberto" (neste navegador). O padrão do protótipo é recolhido, abrindo ao passar o mouse. */
@@ -63,7 +66,8 @@ export function Sidebar() {
     const n = countOf(item);
     return (
       <li key={item.id}>
-        <Link
+        <GuardedLink
+          guard={NAV_GUARDS[item.id]}
           href={item.href}
           aria-current={on ? "page" : undefined}
           title={open ? undefined : item.label}
@@ -93,7 +97,7 @@ export function Sidebar() {
               className={cn("size-4 shrink-0 transition-transform", on && "rotate-180")}
             />
           )}
-        </Link>
+        </GuardedLink>
         {open && on && item.subs && (
           <ul className="flex flex-col gap-0.5 py-0.5 pb-1.5 pl-[46px]">
             {item.subs.map((s) => (

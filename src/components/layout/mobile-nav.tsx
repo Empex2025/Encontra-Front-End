@@ -1,7 +1,6 @@
 "use client";
 
 import { Ellipsis } from "lucide-react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useId, useRef, useState } from "react";
 
@@ -10,6 +9,9 @@ import { CountBadge } from "@/components/ui/count-badge";
 import { useDismiss } from "@/components/ui/use-dismiss";
 import { useUnreadCount } from "@/hooks/use-session";
 
+import { NAV_GUARDS } from "@/lib/domain/auth-actions";
+
+import { GuardedLink } from "./guarded-link";
 import { activeIdFor, NAV, NAV_BOTTOM, NAV_MOBILE } from "./nav-items";
 
 const SHORT: Record<string, string> = { ofertas: "Ofertas", favoritos: "Favoritos" };
@@ -48,7 +50,8 @@ export function MobileNav() {
               const n = item.badge === "notifications" ? (unread.data?.notifications ?? 0) : 0;
               return (
                 <li key={item.id}>
-                  <Link
+                  <GuardedLink
+                    guard={NAV_GUARDS[item.id]}
                     href={item.href}
                     onClick={close}
                     aria-current={item.id === active ? "page" : undefined}
@@ -62,7 +65,7 @@ export function MobileNav() {
                     <Icon className="size-5 shrink-0" aria-hidden />
                     <span className="truncate">{item.label}</span>
                     <CountBadge count={n} label="não lidas" className="ml-auto" />
-                  </Link>
+                  </GuardedLink>
                 </li>
               );
             })}
@@ -75,7 +78,8 @@ export function MobileNav() {
             const n = item.badge === "conversations" ? (unread.data?.conversations ?? 0) : 0;
             return (
               <li key={item.id}>
-                <Link
+                <GuardedLink
+                  guard={NAV_GUARDS[item.id]}
                   href={item.href}
                   aria-current={on ? "page" : undefined}
                   className={cn(
@@ -91,7 +95,7 @@ export function MobileNav() {
                     label="não lidas"
                     className="absolute top-2 left-1/2 ml-1 h-4 min-w-4 text-[10px]"
                   />
-                </Link>
+                </GuardedLink>
               </li>
             );
           })}

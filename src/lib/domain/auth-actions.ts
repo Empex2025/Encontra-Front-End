@@ -67,7 +67,32 @@ export const AUTH_ACTIONS = {
     title: "Entre para criar o lembrete",
     text: "Você recebe o aviso na hora certa.",
   },
+  openChats: {
+    title: "Entre para ver suas conversas",
+    text: "Suas conversas com lojas e prestadores ficam salvas na sua conta. O WhatsApp continua liberado.",
+  },
+  openNotifications: {
+    title: "Entre para ver suas notificações",
+    text: "Avisos de preço, ofertas e respostas das lojas chegam aqui.",
+  },
+  openFavorites: {
+    title: "Entre para ver seus favoritos",
+    text: "Guarde produtos, lojas e listas e acompanhe tudo num lugar só.",
+  },
+  openAccount: {
+    title: "Entre para acessar sua conta",
+    text: "Com uma conta grátis você salva, segue e conversa com as lojas.",
+  },
 } as const;
+
+/** Itens do menu que pedem conta → convite que abre ao clicar (Comparações e as demais ficam livres). */
+export const NAV_GUARDS: Record<string, AuthActionType> = {
+  conversas: "openChats",
+  notificacoes: "openNotifications",
+  favoritos: "openFavorites",
+  conta: "openAccount",
+  config: "openAccount",
+};
 
 export type AuthActionType = keyof typeof AUTH_ACTIONS;
 

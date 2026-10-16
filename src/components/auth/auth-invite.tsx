@@ -11,7 +11,7 @@ import { routes } from "@/lib/routes";
 
 type Ctx = {
   /** true se já há sessão. Para visitante, abre o convite e devolve false. */
-  requireAuth: (action: AuthActionType, targetId?: string) => boolean;
+  requireAuth: (action: AuthActionType, targetId?: string, returnTo?: string) => boolean;
 };
 const AuthInviteContext = createContext<Ctx | null>(null);
 
@@ -26,15 +26,17 @@ export function AuthInviteProvider({ children }: { children: React.ReactNode }) 
   const { me } = useSession();
   const pathname = usePathname();
   const [action, setAction] = useState<AuthActionType | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const returnTo = () =>
     typeof window === "undefined" ? pathname : `${window.location.pathname}${window.location.search}`;
 
   const requireAuth = useCallback(
-    (type: AuthActionType, targetId?: string) => {
+    (type: AuthActionType, targetId?: string, to?: string) => {
       if (me) return true;
-      savePendingAction({ type, targetId, returnTo: returnTo() });
+      savePendingAction({ type, targetId, returnTo: to ?? returnTo() });
+      setTarget(to ?? null);
       setAction(type);
       return false;
     },
@@ -50,7 +52,7 @@ export function AuthInviteProvider({ children }: { children: React.ReactNode }) 
     return () => document.removeEventListener("keydown", onKey);
   }, [action]);
 
-  const back = encodeURIComponent(action ? returnTo() : "/");
+  const back = encodeURIComponent(action ? (target ?? returnTo()) : "/");
   const info = action ? AUTH_ACTIONS[action] : null;
 
   return (
