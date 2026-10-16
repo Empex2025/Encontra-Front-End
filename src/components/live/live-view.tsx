@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
+  ChevronLeft,
   BadgeCheck,
   Bell,
   Clock,
@@ -30,7 +30,7 @@ import { useUserLocation } from "@/hooks/use-user-location";
 import { actions } from "@/lib/api/actions";
 import { ApiError } from "@/lib/api/client";
 import { discover, type Live, type LiveMessage } from "@/lib/api/discover";
-import { formatCount, formatMoney } from "@/lib/format";
+import { formatCount, formatKm, formatMoney } from "@/lib/format";
 import {
   formatElapsed,
   HEART_MS,
@@ -76,9 +76,9 @@ export function LiveView({ id }: { id: string }) {
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6">
       <Link
         href={routes.home}
-        className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-link hover:underline"
+        className="inline-flex min-h-11 items-center gap-1 self-start text-sm font-semibold text-link hover:underline lg:min-h-[30px]"
       >
-        <ArrowLeft className="size-4" aria-hidden /> Voltar ao início
+        <ChevronLeft className="size-4" aria-hidden /> Voltar ao início
       </Link>
       {q.isPending ? (
         <div
@@ -838,6 +838,7 @@ function OtherLives({ id }: { id: string }) {
                 <span className="truncate text-[13px] font-bold text-text-subtle">
                   {l.profileName}
                   {l.place ? ` · ${l.place}` : ""}
+                  {l.distanceKm != null ? ` · ${formatKm(l.distanceKm)}` : ""}
                 </span>
                 <span className="line-clamp-2 text-[15px] leading-[22px] font-bold text-text">{l.title}</span>
                 <span className="mt-auto inline-flex items-center gap-1.5 text-[13px] font-bold text-link">

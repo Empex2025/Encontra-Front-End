@@ -265,3 +265,16 @@ body {
     rgba(0, 8, 35, 0.92) 100%
   );
 }
+
+/* Pulso âmbar (protótipo): atalho "Perto agora" e sino do Meu Radar. Respeita "reduzir movimento" (regra acima). */
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 175, 27, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(244, 175, 27, 0);
+  }
+}
+.ring-pulse {
+  animation: ring-pulse 1.8s ease-out infinite;
+}

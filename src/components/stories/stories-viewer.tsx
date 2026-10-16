@@ -937,9 +937,6 @@ function TagCard({
             >
               Pedir orçamento
             </button>
-            <Link href={profileHref} className={cn(ghost, "max-sm:flex-1")}>
-              Ver perfil
-            </Link>
           </>
         )}
         {tag.kind === "place" && (

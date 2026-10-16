@@ -20,10 +20,7 @@ function Heading() {
       <h2 id="home-stories" className="text-xl leading-7 font-bold text-text-strong">
         Stories
       </h2>
-      <Link
-        href={storiesHref({})}
-        className="py-1 text-sm leading-5 font-bold text-accent-text hover:underline"
-      >
+      <Link href={storiesHref({})} className="text-sm leading-5 font-bold text-accent-hover hover:underline">
         Ver todos
       </Link>
     </div>
@@ -33,6 +30,7 @@ function Heading() {
 /** Texto pequeno sob o nome: quem você segue mostra "há 2 h"; os demais, a distância. */
 function metaOf(g: StoryGroup) {
   if (g.highlight) return "Destaque";
+  if (g.seen) return "visto";
   const last = g.stories.reduce((m, s) => (s.publishedAt > m ? s.publishedAt : m), g.stories[0].publishedAt);
   const ago = formatTimeAgo(last);
   if (g.following) return ago;
@@ -103,14 +101,14 @@ export function HomeStories() {
   return (
     <section aria-labelledby="home-stories" className={cardCls}>
       <Heading />
-      <ul className="-mx-0.5 flex items-start gap-4 overflow-x-auto px-0.5 pt-2 pb-2">
+      <ul className="-mx-0.5 -my-1.5 flex items-start gap-4 overflow-x-auto px-0.5 pt-1.5 pb-5">
         <li className="w-[120px] shrink-0">
           <Link
             href={routes.explorar}
             aria-label="Ver o que está acontecendo perto de você"
             className="flex flex-col items-center gap-1.5 text-center transition-transform hover:-translate-y-0.5"
           >
-            <span className="flex size-28 items-center justify-center rounded-[40px] bg-primary">
+            <span className="ring-pulse flex size-28 items-center justify-center rounded-[40px] bg-primary">
               <MapPin className="size-[38px] text-amber" aria-hidden />
             </span>
             <span className="mt-1.5 text-[13px] leading-[18px] font-bold text-text-strong">Perto agora</span>
@@ -126,7 +124,7 @@ export function HomeStories() {
               ? "border-border-strong"
               : g.following
                 ? "border-accent"
-                : "border-primary";
+                : "border-link";
           return (
             <li key={g.profile.id} className="w-[120px] shrink-0">
               <Link
@@ -154,18 +152,23 @@ export function HomeStories() {
                     )}
                   </span>
                   {live && (
-                    <span className="absolute -bottom-2.5 left-1/2 inline-flex h-5 -translate-x-1/2 items-center rounded-full border-2 border-surface bg-danger px-2 text-[10px] font-extrabold tracking-[0.4px] whitespace-nowrap text-white">
+                    <span className="absolute -bottom-[7px] left-1/2 inline-flex h-6 -translate-x-1/2 items-center rounded-full border-2 border-surface bg-danger px-2 text-[10px] font-extrabold whitespace-nowrap text-white">
                       AO VIVO
                     </span>
                   )}
-                  {g.stories.length > 1 && (
-                    <span className="absolute -top-1.5 -right-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-surface bg-link px-1.5 text-[11px] font-extrabold text-white">
+                  {g.stories.length > 1 && !g.seen && !live && (
+                    <span className="absolute -top-[3px] -right-[3px] flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-surface bg-link px-[5px] text-[11px] font-extrabold text-white">
                       {g.stories.length}
                       <span className="sr-only"> stories</span>
                     </span>
                   )}
                 </span>
-                <span className="mt-1.5 max-w-[120px] truncate text-[13px] leading-[18px] font-bold text-text">
+                <span
+                  className={cn(
+                    "mt-1.5 max-w-[120px] truncate text-[13px] leading-[18px] text-text",
+                    g.seen ? "font-medium" : "font-bold",
+                  )}
+                >
                   {g.following && (
                     <span
                       title="Você segue"
