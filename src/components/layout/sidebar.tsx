@@ -12,27 +12,32 @@ import { useTheme } from "@/hooks/use-theme";
 
 import { activeIdFor, NAV, NAV_BOTTOM, type NavItem } from "./nav-items";
 
-const COLLAPSE_KEY = "encontrae_menu_recolhido";
+const PIN_KEY = "encontrae_menu_fixo";
 
 export function Sidebar() {
   const pathname = usePathname();
   const active = activeIdFor(pathname);
   const unread = useUnreadCount();
   const { theme, toggle } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
+  // Como no protótipo: faixa de ícones (72 px) que abre por cima do conteúdo ao passar o mouse ou focar,
+  // e que a pessoa pode fixar aberta.
+  const [pinned, setPinned] = useState(false);
+  const [hover, setHover] = useState(false);
+  const open = hover || pinned;
+  const collapsed = !open;
 
   useEffect(() => {
     try {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- preferência só existe no navegador
-      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+      setPinned(window.localStorage.getItem(PIN_KEY) === "1");
     } catch {}
   }, []);
 
-  const toggleCollapse = () => {
-    const next = !collapsed;
-    setCollapsed(next);
+  const togglePin = () => {
+    const next = !pinned;
+    setPinned(next);
     try {
-      window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      window.localStorage.setItem(PIN_KEY, next ? "1" : "0");
     } catch {}
   };
 
@@ -95,9 +100,15 @@ export function Sidebar() {
   return (
     <aside
       aria-label="Menu lateral"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setHover(false);
+      }}
       className={cn(
-        "sticky top-16 hidden h-[calc(100dvh-64px)] shrink-0 flex-col border-r border-border bg-surface py-4 transition-[width] duration-200 lg:top-[84px] lg:flex lg:h-[calc(100dvh-84px)]",
-        collapsed ? "w-[76px] px-3" : "w-64 px-4",
+        "fixed top-[84px] bottom-0 left-0 z-20 hidden flex-col overflow-hidden border-r border-border bg-surface px-3 py-4 transition-[width,box-shadow] duration-200 lg:flex",
+        open ? "w-[280px] shadow-pop" : "w-[72px]",
       )}
     >
       <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto">
@@ -141,16 +152,17 @@ export function Sidebar() {
         </button>
         <button
           type="button"
-          onClick={toggleCollapse}
-          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+          onClick={togglePin}
+          aria-label={pinned ? "Recolher menu" : "Fixar menu aberto"}
+          aria-pressed={pinned}
           className="flex h-11 items-center gap-3 rounded-lg px-3.5 text-sm font-medium text-text-subtle hover:bg-surface-2"
         >
-          {collapsed ? (
-            <ChevronsRight className="size-5" aria-hidden />
-          ) : (
+          {pinned ? (
             <ChevronsLeft className="size-5" aria-hidden />
+          ) : (
+            <ChevronsRight className="size-5" aria-hidden />
           )}
-          {!collapsed && <span>Recolher menu</span>}
+          {!collapsed && <span>{pinned ? "Recolher menu" : "Fixar menu aberto"}</span>}
         </button>
       </div>
     </aside>

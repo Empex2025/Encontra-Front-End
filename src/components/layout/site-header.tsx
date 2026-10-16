@@ -1,10 +1,9 @@
 "use client";
 
-import { LogIn, Search, User } from "lucide-react";
+import { Search, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useSession } from "@/hooks/use-session";
 import { routes } from "@/lib/routes";
 
 import { HeaderSearch } from "./header-search";
@@ -16,7 +15,6 @@ const OWN_SEARCH: ReadonlySet<string> = new Set([routes.home, routes.explorar]);
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { me, isLoading } = useSession();
   const showSearch = !OWN_SEARCH.has(pathname);
 
   return (
@@ -44,25 +42,14 @@ export function SiteHeader() {
               <Search className="size-5" aria-hidden />
             </Link>
           )}
-          {!isLoading &&
-            (me ? (
-              <Link
-                href={routes.conta}
-                className="flex h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-white hover:bg-white/10 sm:px-3"
-              >
-                <User className="size-5" aria-hidden />
-                <span className="hidden sm:inline">Minha Conta</span>
-                <span className="sr-only sm:hidden">Minha Conta</span>
-              </Link>
-            ) : (
-              <Link
-                href={routes.entrar}
-                className="flex h-11 items-center gap-2 rounded-lg bg-accent px-4 text-sm font-bold text-on-accent hover:bg-accent-hover"
-              >
-                <LogIn className="size-4" aria-hidden />
-                Entrar
-              </Link>
-            ))}
+          <Link
+            href={routes.conta}
+            className="flex h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-white hover:bg-white/10 sm:px-3"
+          >
+            <User className="size-5" aria-hidden />
+            <span className="hidden sm:inline">Minha Conta</span>
+            <span className="sr-only sm:hidden">Minha Conta</span>
+          </Link>
         </div>
       </div>
     </header>

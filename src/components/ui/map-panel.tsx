@@ -1,4 +1,5 @@
 import { Map as MapIcon, Minus, Plus } from "lucide-react";
+import Link from "next/link";
 
 import { cn } from "./cn";
 
@@ -21,7 +22,15 @@ export function MapPanel({
   total,
   withCoords,
   className,
+  title = "Mapa dos resultados",
+  chip,
+  href,
 }: {
+  title?: string;
+  /** Selo ao lado do título (ex.: "Todos · 25 locais perto de você"); só com dado real. */
+  chip?: string;
+  /** Link "Abrir mapa completo ›" no canto do cabeçalho. */
+  href?: string;
   /** Resultados carregados na tela; `null` quando ainda não há dados (carregando, erro ou sem local). */
   total: number | null;
   /** Quantos desses resultados trazem latitude e longitude. */
@@ -33,7 +42,17 @@ export function MapPanel({
       className={cn("flex flex-col overflow-hidden rounded-2xl border border-border bg-surface", className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5">
-        <p className="text-sm font-bold text-text-strong">Mapa dos resultados</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-base font-bold text-text-strong">{title}</p>
+          <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent-text">
+            {chip ?? "Todos · sem dados"}
+          </span>
+        </div>
+        {href && (
+          <Link href={href} className="ml-auto text-sm font-bold text-link hover:underline">
+            Abrir mapa completo ›
+          </Link>
+        )}
         <div className="flex gap-1.5" role="group" aria-label="Zoom do mapa">
           <button
             type="button"
