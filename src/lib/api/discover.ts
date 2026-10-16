@@ -28,6 +28,8 @@ export const storySchema = z.object({
   mediaUrl: z.string(),
   mediaType: z.enum(["image", "video"]),
   caption: nstr,
+  /** Linha de apoio abaixo do título (protótipo). Opcional: o back-end ainda não envia. */
+  subtitle: nstr.optional(),
   publishedAt: z.string(),
   views: count,
   likes: count,
@@ -51,6 +53,8 @@ export const storyGroupSchema = z.object({
   following: z.boolean(),
   /** Todos os stories do grupo já vistos por esta conta (o servidor guarda). */
   seen: z.boolean().optional(),
+  /** Perfil ao vivo agora: a Home mostra "AO VIVO" no círculo. */
+  live: z.object({ id: z.string() }).nullable().optional(),
   /** Destaque do perfil: no lugar do tipo aparece "Destaque" e no lugar do km, o nome. */
   highlight: z.object({ id: z.string(), name: z.string() }).nullable(),
   stories: z.array(storySchema).min(1),
@@ -173,6 +177,10 @@ const nearbyHappeningsSchema = z.object({
       distanceKm: z.number().nonnegative().nullable(),
       free: z.boolean(),
       coverUrl: nstr,
+      /** Opcionais (protótipo): organizador, preço e quantos vão. O back-end ainda não envia. */
+      organizerName: nstr.optional(),
+      priceCents: count.nullable().optional(),
+      going: count.nullable().optional(),
     }),
   ),
 });

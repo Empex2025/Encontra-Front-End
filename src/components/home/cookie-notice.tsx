@@ -20,40 +20,37 @@ export function CookieNotice() {
   return (
     <section
       aria-labelledby="cookies-title"
-      className="fixed inset-x-3 bottom-20 z-50 mx-auto flex max-w-xl flex-col gap-3 rounded-2xl border border-border bg-surface p-4 text-text shadow-pop lg:bottom-4 lg:left-auto lg:ml-auto lg:max-w-sm"
+      className="fixed inset-x-3 bottom-20 z-50 mx-auto flex max-w-[400px] flex-col gap-3 rounded-2xl border border-border bg-surface px-5 py-[18px] text-text shadow-pop lg:inset-x-auto lg:top-24 lg:right-6 lg:bottom-auto lg:mx-0 lg:w-[400px]"
     >
-      <div className="flex items-start gap-3">
-        <Cookie className="mt-0.5 size-5 shrink-0 text-accent-text" aria-hidden />
-        <div className="flex flex-col gap-1">
-          <h2 id="cookies-title" className="text-base font-bold text-text-strong">
-            Sua privacidade
-          </h2>
-          <p className="text-sm text-text-muted">
-            Usamos o necessário para o site funcionar e, se você deixar, medimos como ele é usado para
-            melhorar a busca. Nunca vendemos seus dados pessoais.
-          </p>
-        </div>
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text">
+          <Cookie className="size-4" aria-hidden />
+        </span>
+        <h2 id="cookies-title" className="text-[15px] leading-5 font-bold text-text-strong">
+          Sua privacidade
+        </h2>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <p className="text-[13px] leading-[19px] text-text-muted">
+        Usamos cookies para o site funcionar, lembrar suas preferências e entender o que pode melhorar. Você
+        escolhe.
+      </p>
+      <div className="flex gap-2">
         <button
           type="button"
           onClick={() => saveCookieChoice("all")}
-          className="h-11 flex-1 rounded-lg bg-primary px-4 text-sm font-bold text-on-primary hover:bg-primary-hover"
+          className="h-[38px] flex-1 rounded-lg bg-primary px-3 text-[13px] font-bold text-on-primary hover:bg-primary-hover"
         >
           Aceitar todos
         </button>
         <button
           type="button"
           onClick={() => saveCookieChoice("necessary")}
-          className="h-11 flex-1 rounded-lg border border-border-strong px-4 text-sm font-semibold text-text-2 hover:bg-surface-2"
+          className="h-[38px] flex-1 rounded-lg border border-primary bg-surface px-3 text-[13px] font-bold text-text-strong hover:bg-surface-2"
         >
           Só os necessários
         </button>
       </div>
-      <Link
-        href={`${routes.institucional}/cookies`}
-        className="text-sm font-semibold text-link hover:underline"
-      >
+      <Link href={`${routes.institucional}/cookies`} className="text-xs font-bold text-link hover:underline">
         Personalizar ou ler a política de cookies ›
       </Link>
     </section>

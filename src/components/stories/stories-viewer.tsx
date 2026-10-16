@@ -1,14 +1,27 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Bookmark, Heart, Pause, Play, Send, X } from "lucide-react";
+import {
+  BadgeCheck,
+  Bookmark,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Pause,
+  Play,
+  Send,
+  Share2,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRequireAuth } from "@/components/auth/auth-invite";
 import { ShareButton } from "@/components/catalog/share-button";
-import { useToast } from "@/components/ui/toast";
+import { Logo } from "@/components/layout/logo";
+import { cn } from "@/components/ui/cn";
 import { useResumeAction } from "@/hooks/use-resume-action";
 import { useUserLocation } from "@/hooks/use-user-location";
 import { actions } from "@/lib/api/actions";
@@ -16,6 +29,7 @@ import { discover, type Story, type StoryGroup } from "@/lib/api/discover";
 import { readPendingAction } from "@/lib/domain/auth-actions";
 import {
   findStoryPos,
+  initials,
   nextPos,
   type Pos,
   prevPos,
@@ -40,10 +54,10 @@ import {
 const TICK_MS = 100;
 const TAG_LABEL = { product: "Produto", service: "Serviço", offer: "Oferta", place: "No mapa" } as const;
 const TAG_TONE = {
-  product: "bg-navy-600 text-white",
-  service: "bg-navy-500 text-white",
-  offer: "bg-amber text-black",
-  place: "bg-success text-white",
+  product: "text-link",
+  service: "text-kind-service",
+  offer: "text-accent-text",
+  place: "text-success-text",
 } as const;
 
 type Local = { liked?: boolean; likes?: number; saved?: boolean };
@@ -67,22 +81,28 @@ export function StoriesViewer() {
       }),
     staleTime: 0,
   });
+  const sub = storiesSubtitle(location.label, 0, []);
 
-  return (
-    <div className="fixed inset-0 z-[60] overflow-hidden bg-black text-white">
-      {q.isPending ? (
+  if (q.isPending) {
+    return (
+      <Shell sub={sub} closeHref={routes.home}>
         <div
           role="status"
           aria-busy="true"
           aria-label="Carregando stories"
           className="flex h-full flex-col items-center justify-center gap-4 px-4"
         >
-          <div className="h-[60%] max-h-[560px] w-full max-w-[420px] animate-pulse rounded-2xl bg-white/10" />
+          <div className="h-[60%] max-h-[560px] w-full max-w-[420px] animate-pulse rounded-[18px] bg-white/10" />
           <p className="text-white/80">Carregando stories…</p>
         </div>
-      ) : q.isError ? (
+      </Shell>
+    );
+  }
+  if (q.isError) {
+    return (
+      <Shell sub={sub} closeHref={routes.home}>
         <Centered>
-          <p role="alert" className="text-lg font-bold">
+          <p role="alert" className="text-xl font-bold">
             Não foi possível carregar os stories
           </p>
           <p className="max-w-sm text-white/70">
@@ -91,15 +111,19 @@ export function StoriesViewer() {
           <button
             type="button"
             onClick={() => q.refetch()}
-            className="h-11 rounded-lg bg-white px-5 font-bold text-black"
+            className="h-11 rounded-lg bg-accent px-5 font-bold text-on-accent hover:bg-accent-hover"
           >
             Tentar de novo
           </button>
-          <CloseLink perfil={null} />
         </Centered>
-      ) : q.data.groups.length === 0 ? (
+      </Shell>
+    );
+  }
+  if (q.data.groups.length === 0) {
+    return (
+      <Shell sub={sub} closeHref={routes.home}>
         <Centered>
-          <p className="text-lg font-bold">
+          <p className="text-xl font-bold">
             {perfil || destaque ? "Este perfil não tem stories ativos agora" : "Nenhum story por perto agora"}
           </p>
           <p className="max-w-sm text-white/70">
@@ -109,26 +133,101 @@ export function StoriesViewer() {
           </p>
           <Link
             href={routes.explorar}
-            className="inline-flex h-11 items-center rounded-lg bg-white px-5 font-bold text-black"
+            className="inline-flex h-11 items-center rounded-lg bg-accent px-5 font-bold text-on-accent hover:bg-accent-hover"
           >
             Ver o que está perto de mim
           </Link>
-          <CloseLink perfil={null} />
         </Centered>
-      ) : (
-        <Player
-          groups={q.data.groups}
-          interests={q.data.interests}
-          place={location.label}
-          fromProfile={
-            perfil
-              ? q.data.groups[0].profile.kind === "provider"
-                ? prestadorHref(perfil)
-                : lojaHref(perfil)
-              : null
-          }
-          single={!!perfil}
-        />
+      </Shell>
+    );
+  }
+  return (
+    <Player
+      groups={q.data.groups}
+      interests={q.data.interests}
+      place={location.label}
+      fromProfile={
+        perfil
+          ? q.data.groups[0].profile.kind === "provider"
+            ? prestadorHref(perfil)
+            : lojaHref(perfil)
+          : null
+      }
+      single={!!perfil}
+    />
+  );
+}
+
+/** Tela cheia escura: cabeçalho com marca, subtítulo e "Fechar"; o fundo é o story atual desfocado. */
+function Shell({
+  sub,
+  bg,
+  closeHref,
+  onClose,
+  closeLabel = "Fechar",
+  note,
+  children,
+}: {
+  note?: string;
+  sub: string;
+  bg?: string | null;
+  closeHref?: string;
+  onClose?: () => void;
+  closeLabel?: string;
+  children: React.ReactNode;
+}) {
+  const pill =
+    "inline-flex h-10 shrink-0 items-center gap-2 rounded-full bg-white/12 px-4 text-sm font-semibold text-white hover:bg-white/20";
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Stories"
+      className="fixed inset-0 z-[60] flex flex-col overflow-hidden bg-stage text-white"
+    >
+      {bg && (
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={bg}
+            alt=""
+            className="absolute -top-[60px] -left-[60px] h-[calc(100%+120px)] w-[calc(100%+120px)] max-w-none transform-gpu object-cover opacity-25 blur-[40px] will-change-transform"
+          />
+        </div>
+      )}
+      <header className="relative z-20 flex h-14 shrink-0 items-center justify-between gap-3 px-4 lg:h-[72px] lg:px-10">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 sm:hidden">
+            <Logo compact />
+          </span>
+          <span className="hidden shrink-0 sm:block">
+            <Logo />
+          </span>
+          <span className="truncate text-sm font-semibold text-navy-50 sm:ml-2 sm:border-l sm:border-white/25 sm:pl-3">
+            {sub}
+          </span>
+        </div>
+        {onClose ? (
+          <button type="button" onClick={onClose} className={pill}>
+            <X className="size-4" aria-hidden />
+            {closeLabel}
+          </button>
+        ) : (
+          <Link href={closeHref ?? routes.home} className={pill}>
+            <X className="size-4" aria-hidden />
+            {closeLabel}
+          </Link>
+        )}
+      </header>
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">{children}</div>
+      {note && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-[84px] left-1/2 z-50 max-w-[calc(100%-2rem)] -translate-x-1/2 animate-[popin_0.2s_ease-out_both] rounded-lg bg-surface px-5 py-3 text-sm leading-5 font-semibold text-text-strong shadow-[0_8px_12px_rgba(0,0,0,0.3)]"
+        >
+          {note}
+        </div>
       )}
     </div>
   );
@@ -137,14 +236,6 @@ export function StoriesViewer() {
 function Centered({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">{children}</div>
-  );
-}
-
-function CloseLink({ perfil }: { perfil: string | null }) {
-  return (
-    <Link href={perfil ?? routes.home} className="text-sm font-semibold text-white/80 underline">
-      Fechar
-    </Link>
   );
 }
 
@@ -184,7 +275,15 @@ function Player({
   single: boolean;
 }) {
   const router = useRouter();
-  const toast = useToast();
+  // Aviso curto no alto da tela (como no protótipo), no lugar do aviso global de baixo, que cobriria a resposta.
+  const [note, setNote] = useState("");
+  const noteTimer = useRef(0);
+  const toast = useCallback((message: string) => {
+    setNote(message);
+    window.clearTimeout(noteTimer.current);
+    noteTimer.current = window.setTimeout(() => setNote(""), 2600);
+  }, []);
+  useEffect(() => () => window.clearTimeout(noteTimer.current), []);
   const requireAuth = useRequireAuth();
   const sizes = groups.map((g) => g.stories.length);
   const [pos, setPos] = useState<Pos>(() => startPos(groups));
@@ -201,6 +300,7 @@ function Player({
   const [mediaFailed, setMediaFailed] = useState<Record<string, boolean>>({});
   const elapsed = useRef(0);
   const viewed = useRef(new Set<string>());
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const group = groups[pos.g];
   const story = group.stories[pos.s];
@@ -238,6 +338,14 @@ function Player({
     return () => window.clearInterval(id);
   }, [stopped, advance]);
 
+  // Vídeo acompanha a pausa do story.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (stopped) v.pause();
+    else void v.play().catch(() => {});
+  }, [stopped, story.id]);
+
   // Contagem de visualização: uma vez por story nesta sessão.
   useEffect(() => {
     if (ended || viewed.current.has(story.id)) return;
@@ -247,6 +355,8 @@ function Player({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // janela aberta (compartilhar, entrar na conta): as teclas são dela, não do story
+      if (document.querySelector("dialog[open]")) return;
       if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA")
         return;
       if (e.key === "ArrowRight") advance();
@@ -269,7 +379,7 @@ function Player({
     onSuccess: (r) => patch(story.id, { likes: r.likes }),
     onError: (e, on) => {
       patch(story.id, { liked: !on, likes });
-      toast(e instanceof Error ? e.message : "Não foi possível curtir.", "info");
+      toast(e instanceof Error ? e.message : "Não foi possível curtir.");
     },
   });
   const save = useMutation({
@@ -281,7 +391,7 @@ function Player({
       ),
     onError: (e, on) => {
       patch(story.id, { saved: !on });
-      toast(e instanceof Error ? e.message : "Não foi possível salvar.", "info");
+      toast(e instanceof Error ? e.message : "Não foi possível salvar.");
     },
   });
   const follow = useMutation({
@@ -295,7 +405,7 @@ function Player({
       ),
     onError: (e, on) => {
       setFollowed((f) => ({ ...f, [group.profile.id]: !on }));
-      toast(e instanceof Error ? e.message : "Não foi possível atualizar.", "info");
+      toast(e instanceof Error ? e.message : "Não foi possível atualizar.");
     },
   });
   const chat = useMutation({
@@ -307,7 +417,7 @@ function Player({
         origin: { kind: "story", id: story.id },
       }),
     onSuccess: (c) => router.push(conversaHref(c.id)),
-    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível abrir a conversa.", "info"),
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível abrir a conversa."),
   });
   const sendReply = useMutation({
     mutationFn: (text: string) =>
@@ -321,12 +431,12 @@ function Player({
       setReplied((r) => ({ ...r, [story.id]: c.id }));
       setReply("");
     },
-    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível enviar.", "info"),
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível enviar."),
   });
   const coupon = useMutation({
     mutationFn: (id: string) => actions.claimCoupon(id),
     onSuccess: () => toast("Cupom guardado em Meus cupons."),
-    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível pegar o cupom.", "info"),
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível pegar o cupom."),
   });
 
   // Depois do login: conclui o que a pessoa tentou neste story.
@@ -350,76 +460,133 @@ function Player({
   const prev = pos.g > 0 ? groups[pos.g - 1] : null;
   const next = pos.g + 1 < groups.length ? groups[pos.g + 1] : null;
   const replyDone = replied[story.id];
+  const atStart = pos.g === 0 && pos.s === 0;
+  const sub = single ? group.profile.name : storiesSubtitle(place, laps, interests);
+  const bg = story.mediaType === "image" ? story.mediaUrl : null;
 
   if (ended) {
     return (
-      <Centered>
-        <h1 className="text-2xl font-bold">Você viu todos os stories de hoje</h1>
-        <p className="max-w-sm text-white/70">
-          Siga lojas e prestadores para ver primeiro as novidades deles.
-        </p>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            type="button"
-            className="h-12 rounded-lg bg-white px-6 font-bold text-black"
-            onClick={() => {
-              setEnded(false);
-              setLaps((l) => l + 1);
-              go({ g: 0, s: 0 });
-            }}
-          >
-            Ver de novo
-          </button>
-          <Link
-            href={routes.explorar}
-            className="inline-flex h-12 items-center rounded-lg border border-white/60 px-6 font-bold"
-          >
-            Ver o que está perto de mim
-          </Link>
-        </div>
-        <CloseLink perfil={null} />
-      </Centered>
+      <Shell sub={sub} closeHref={routes.home}>
+        <Centered>
+          <span className="flex size-16 items-center justify-center rounded-full bg-white/12" aria-hidden>
+            <CheckCheck className="size-8" />
+          </span>
+          <h1 className="text-2xl font-bold">Você viu todos os stories de hoje</h1>
+          <p className="max-w-md text-white/75">
+            Siga lojas e prestadores para ver primeiro as novidades deles. Novos stories aparecem ao longo do
+            dia.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              className="h-12 rounded-lg bg-white/12 px-6 font-bold hover:bg-white/20"
+              onClick={() => {
+                setEnded(false);
+                setLaps((l) => l + 1);
+                go({ g: 0, s: 0 });
+              }}
+            >
+              Ver de novo
+            </button>
+            <Link
+              href={routes.explorar}
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-accent px-6 font-bold text-on-accent hover:bg-accent-hover"
+            >
+              Ver o que está perto de mim
+            </Link>
+          </div>
+        </Centered>
+      </Shell>
     );
   }
 
   const ago = formatTimeAgo(story.publishedAt);
+  const rail =
+    "flex flex-col items-center gap-1 text-xs font-semibold text-white transition-transform hover:scale-[1.06]";
+  const railDot =
+    "flex size-11 items-center justify-center rounded-full bg-white/12 lg:size-[52px] max-lg:bg-black/35";
 
   return (
-    <div
-      className="relative flex h-full flex-col"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+    <Shell
+      sub={sub}
+      bg={bg}
+      note={note}
+      onClose={close}
+      closeLabel={fromProfile ? "Voltar ao perfil" : "Fechar"}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={story.mediaUrl}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 size-full scale-110 object-cover opacity-40 blur-2xl"
-      />
-      <header className="relative z-10 flex items-center justify-between gap-3 px-4 py-3">
-        <p className="min-w-0 truncate text-sm font-semibold">
-          {single ? group.profile.name : storiesSubtitle(place, laps, interests)}
-        </p>
+      <h1 className="sr-only">
+        {group.highlight
+          ? `${group.profile.name} · destaque ${group.highlight.name}`
+          : `Stories de ${group.profile.name}`}
+      </h1>
+      <div className="relative flex min-h-0 flex-1 items-center justify-center gap-7 py-1">
+        <NeighborCard g={prev} onClick={() => go({ g: pos.g - 1, s: 0 })} dir="prev" />
         <button
           type="button"
-          onClick={close}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-white/15 px-3 text-sm font-bold hover:bg-white/25"
+          aria-label="Story anterior"
+          disabled={atStart}
+          onClick={() => go(prevPos(sizes, pos))}
+          className="hidden size-12 shrink-0 items-center justify-center rounded-full bg-white/12 hover:bg-white/20 disabled:opacity-35 lg:flex"
         >
-          <X className="size-4" aria-hidden />
-          {fromProfile ? "Voltar ao perfil" : "Fechar"}
+          <ChevronLeft className="size-[22px]" aria-hidden />
         </button>
-      </header>
 
-      <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center gap-4 px-2 pb-3 sm:px-6">
-        <NeighborButton g={prev} dir="prev" onClick={() => go({ g: pos.g - 1, s: 0 })} />
         <article
           aria-label={`Story de ${group.profile.name}`}
-          className="relative flex h-full max-h-[760px] w-full max-w-[420px] flex-col overflow-hidden rounded-2xl bg-black"
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          className="relative h-full w-full max-w-[480px] overflow-hidden bg-black shadow-[0_20px_40px_rgba(0,0,0,0.45)] lg:aspect-[9/16] lg:h-full lg:max-h-[768px] lg:w-auto lg:rounded-[18px]"
         >
-          <div className="absolute inset-x-0 top-0 z-20 flex gap-1 p-2" aria-hidden>
+          {mediaFailed[story.id] ? (
+            <p
+              role="alert"
+              className="absolute inset-0 flex items-center justify-center bg-navy-900 px-6 text-center text-white/80"
+            >
+              Não foi possível carregar esta mídia.
+            </p>
+          ) : story.mediaType === "video" ? (
+            <video
+              ref={videoRef}
+              key={story.id}
+              src={story.mediaUrl}
+              autoPlay
+              muted
+              playsInline
+              loop
+              className="absolute inset-0 size-full object-cover"
+              onError={() => setMediaFailed((m) => ({ ...m, [story.id]: true }))}
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={story.id}
+              src={story.mediaUrl}
+              alt={story.caption ?? ""}
+              className="absolute inset-0 size-full animate-[fadein_0.25s_ease-out_both] object-cover"
+              onError={() => setMediaFailed((m) => ({ ...m, [story.id]: true }))}
+            />
+          )}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0)_22%,rgba(0,0,0,0)_48%,rgba(0,10,40,0.85)_100%)]"
+          />
+          {/* zonas de toque: esquerda volta, direita avança */}
+          <button
+            type="button"
+            aria-label="Voltar"
+            className="absolute top-[70px] bottom-[260px] left-0 z-[2] w-[35%] cursor-w-resize"
+            onClick={() => go(prevPos(sizes, pos))}
+          />
+          <button
+            type="button"
+            aria-label="Avançar"
+            className="absolute top-[70px] right-0 bottom-[260px] z-[2] w-[65%] cursor-e-resize"
+            onClick={advance}
+          />
+
+          <div className="absolute inset-x-3 top-2.5 z-[3] flex gap-1" aria-hidden>
             {group.stories.map((s, i) => (
-              <span key={s.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/30">
+              <span key={s.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35">
                 <span
                   className="block h-full bg-white"
                   style={{ width: i < pos.s ? "100%" : i === pos.s ? `${progress}%` : "0%" }}
@@ -428,24 +595,24 @@ function Player({
             ))}
           </div>
 
-          <div className="absolute inset-x-0 top-4 z-20 flex items-center gap-2 px-3 pt-2">
-            <Link href={profileHref} className="flex min-w-0 flex-1 items-center gap-2">
-              <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/20 text-sm font-bold">
+          <div className="absolute inset-x-3 top-[22px] z-[3] flex items-center gap-2.5">
+            <Link href={profileHref} className="flex min-w-0 flex-1 items-center gap-2.5">
+              <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-amber bg-navy-700 text-[13px] font-extrabold">
                 {group.profile.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={group.profile.avatarUrl} alt="" className="size-full object-cover" />
                 ) : (
-                  group.profile.name[0]
+                  initials(group.profile.name)
                 )}
               </span>
-              <span className="min-w-0">
-                <span className="flex items-center gap-1 truncate text-sm font-bold">
-                  {group.profile.name}
+              <span className="flex min-w-0 flex-col">
+                <span className="flex items-center gap-1 text-sm font-bold [text-shadow:0_1px_2px_rgba(0,0,0,.4)]">
+                  <span className="truncate">{group.profile.name}</span>
                   {group.profile.verified && (
-                    <BadgeCheck className="size-4 shrink-0 text-amber" aria-label="Identidade verificada" />
+                    <BadgeCheck className="size-3.5 shrink-0" aria-label="Identidade verificada" role="img" />
                   )}
                 </span>
-                <span className="block truncate text-xs text-white/80">
+                <span className="truncate text-xs text-navy-50">
                   {storyMeta(
                     {
                       typeLabel: group.profile.typeLabel,
@@ -460,8 +627,12 @@ function Player({
             <button
               type="button"
               disabled={follow.isPending}
+              aria-pressed={following}
               onClick={() => requireAuth("follow", group.profile.id) && follow.mutate(!following)}
-              className="h-8 rounded-full border border-white/70 px-3 text-xs font-bold"
+              className={cn(
+                "h-[30px] shrink-0 rounded-full border-[1.5px] border-white px-3 text-xs font-bold",
+                following ? "bg-white/15 text-white" : "bg-white text-navy",
+              )}
             >
               {following ? "Seguindo" : "Seguir"}
             </button>
@@ -469,58 +640,27 @@ function Player({
               type="button"
               aria-label={paused ? "Continuar" : "Pausar"}
               onClick={() => setPaused((p) => !p)}
-              className="flex size-9 items-center justify-center rounded-full bg-white/15"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-black/25"
             >
-              {paused ? <Play className="size-4" aria-hidden /> : <Pause className="size-4" aria-hidden />}
+              {paused ? (
+                <Play className="size-3.5" aria-hidden />
+              ) : (
+                <Pause className="size-3.5" aria-hidden />
+              )}
             </button>
           </div>
 
-          <div className="relative min-h-0 flex-1 bg-neutral-900">
-            {mediaFailed[story.id] ? (
-              <p
-                role="alert"
-                className="flex h-full items-center justify-center px-6 text-center text-white/80"
-              >
-                Não foi possível carregar esta mídia.
-              </p>
-            ) : story.mediaType === "video" ? (
-              <video
-                key={story.id}
-                src={story.mediaUrl}
-                autoPlay
-                muted
-                playsInline
-                loop
-                className="size-full object-cover"
-                onError={() => setMediaFailed((m) => ({ ...m, [story.id]: true }))}
-              />
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={story.id}
-                src={story.mediaUrl}
-                alt={story.caption ?? ""}
-                className="size-full object-cover"
-                onError={() => setMediaFailed((m) => ({ ...m, [story.id]: true }))}
-              />
-            )}
-            {/* zonas de toque: esquerda volta, direita avança */}
-            <button
-              type="button"
-              aria-label="Story anterior"
-              className="absolute inset-y-24 left-0 w-1/3"
-              onClick={() => go(prevPos(sizes, pos))}
-            />
-            <button
-              type="button"
-              aria-label="Próximo story"
-              className="absolute inset-y-24 right-0 w-1/3"
-              onClick={advance}
-            />
-          </div>
-
-          <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col gap-3 bg-gradient-to-t from-black via-black/70 to-transparent p-3 pt-16">
-            {story.caption && <p className="text-sm">{story.caption}</p>}
+          <div className="absolute inset-x-4 bottom-4 z-[3] flex flex-col gap-3">
+            <div className="flex flex-col gap-1 max-lg:pr-14">
+              {story.caption && (
+                <p className="line-clamp-3 text-[26px] leading-8 font-extrabold [text-shadow:0_2px_6px_rgba(0,0,0,.45)]">
+                  {story.caption}
+                </p>
+              )}
+              {story.subtitle && (
+                <p className="line-clamp-3 text-sm leading-5 text-navy-50">{story.subtitle}</p>
+              )}
+            </div>
             {story.tag && (
               <TagCard
                 story={story}
@@ -532,9 +672,12 @@ function Player({
             )}
 
             {replyDone ? (
-              <p role="status" className="text-sm font-semibold">
-                Mensagem enviada para {group.profile.name} ✓ ·{" "}
-                <Link href={conversaHref(replyDone)} className="underline">
+              <p
+                role="status"
+                className="flex animate-[popin_0.2s_ease-out_both] items-center gap-2.5 rounded-full bg-[rgba(25,135,84,0.92)] px-3.5 py-2.5 text-[13px]"
+              >
+                <span className="flex-1">Mensagem enviada para {group.profile.name} ✓</span>
+                <Link href={conversaHref(replyDone)} className="font-extrabold underline">
                   Abrir conversa
                 </Link>
               </p>
@@ -562,56 +705,127 @@ function Player({
                   onFocus={() => setTyping(true)}
                   onBlur={() => setTyping(false)}
                   placeholder={`Responder a ${group.profile.name}…`}
-                  className="h-11 min-w-0 flex-1 rounded-full border border-white/50 bg-black/40 px-4 text-sm text-white placeholder:text-white/60"
+                  className="h-11 min-w-0 flex-1 rounded-full border-[1.5px] border-white/60 bg-black/25 px-4 text-sm text-white outline-none placeholder:text-white/75 focus-visible:border-amber"
                 />
                 <button
                   type="submit"
                   aria-label="Enviar resposta"
                   disabled={!validReply(reply) || sendReply.isPending}
-                  className="flex size-11 items-center justify-center rounded-full bg-white text-black disabled:opacity-40"
+                  className={cn(
+                    "flex size-11 shrink-0 items-center justify-center rounded-full text-navy",
+                    validReply(reply) ? "bg-amber" : "bg-white/60",
+                  )}
                 >
-                  <Send className="size-5" aria-hidden />
+                  <Send className="size-[18px]" aria-hidden />
                 </button>
               </form>
             )}
+          </div>
 
-            <div className="flex items-center gap-2 text-sm">
-              <button
-                type="button"
-                aria-pressed={liked}
-                onClick={() => requireAuth("like", story.id) && like.mutate(!liked)}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white/15 px-3 font-semibold"
-              >
-                <Heart className={`size-4 ${liked ? "fill-red-500 text-red-500" : ""}`} aria-hidden />
-                {formatCount(likes)}
-              </button>
-              <ShareButton
-                path={storiesHref({ perfil: group.profile.slug })}
-                title={`Stories de ${group.profile.name}`}
-                noun="story"
-                report={denunciarHref("story", story.id)}
-                label="Enviar"
-              />
-              <button
-                type="button"
-                aria-pressed={saved}
-                onClick={() => requireAuth("favorite", story.id) && save.mutate(!saved)}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white/15 px-3 font-semibold"
-              >
-                <Bookmark className={`size-4 ${saved ? "fill-white" : ""}`} aria-hidden />
-                {saved ? "Salvo" : "Salvar"}
-              </button>
-              <span className="ml-auto text-white/80">{formatCount(story.views)} views</span>
-            </div>
+          {/* celular: curtir, enviar e salvar ficam sobre o story, à direita */}
+          <div className="absolute right-3 bottom-[17.5rem] z-[4] flex flex-col gap-4 lg:hidden">
+            <Rail
+              liked={liked}
+              likes={likes}
+              saved={saved}
+              onLike={() => requireAuth("like", story.id) && like.mutate(!liked)}
+              onSave={() => requireAuth("favorite", story.id) && save.mutate(!saved)}
+              share={{
+                path: storiesHref({ perfil: group.profile.slug }),
+                name: group.profile.name,
+                id: story.id,
+              }}
+              rail={rail}
+              dot={railDot}
+            />
           </div>
         </article>
-        <NeighborButton g={next} dir="next" onClick={() => go({ g: pos.g + 1, s: 0 })} />
+
+        <div className="hidden flex-col gap-[18px] lg:flex">
+          <Rail
+            liked={liked}
+            likes={likes}
+            saved={saved}
+            onLike={() => requireAuth("like", story.id) && like.mutate(!liked)}
+            onSave={() => requireAuth("favorite", story.id) && save.mutate(!saved)}
+            share={{
+              path: storiesHref({ perfil: group.profile.slug }),
+              name: group.profile.name,
+              id: story.id,
+            }}
+            rail={rail}
+            dot={railDot}
+          />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Próximo story"
+          onClick={advance}
+          className="hidden size-12 shrink-0 items-center justify-center rounded-full bg-white/12 hover:bg-white/20 lg:flex"
+        >
+          <ChevronRight className="size-[22px]" aria-hidden />
+        </button>
+        <NeighborCard g={next} onClick={() => go({ g: pos.g + 1, s: 0 })} dir="next" />
       </div>
-    </div>
+    </Shell>
   );
 }
 
-function NeighborButton({
+/** Curtir, enviar (compartilhar) e salvar: colunas de ícones ao lado do story. */
+function Rail({
+  liked,
+  likes,
+  saved,
+  onLike,
+  onSave,
+  share,
+  rail,
+  dot,
+}: {
+  liked: boolean;
+  likes: number;
+  saved: boolean;
+  onLike: () => void;
+  onSave: () => void;
+  share: { path: string; name: string; id: string };
+  rail: string;
+  dot: string;
+}) {
+  return (
+    <>
+      <button type="button" aria-label="Curtir" aria-pressed={liked} onClick={onLike} className={rail}>
+        <span className={dot}>
+          <Heart className={cn("size-6", liked && "fill-danger text-danger")} aria-hidden />
+        </span>
+        <span>{formatCount(likes)}</span>
+      </button>
+      <ShareButton
+        path={share.path}
+        title={`Stories de ${share.name}`}
+        noun="story"
+        report={denunciarHref("story", share.id)}
+        trigger={(open) => (
+          <button type="button" aria-label="Compartilhar" onClick={open} className={rail}>
+            <span className={dot}>
+              <Share2 className="size-[22px]" aria-hidden />
+            </span>
+            <span>Enviar</span>
+          </button>
+        )}
+      />
+      <button type="button" aria-label="Salvar" aria-pressed={saved} onClick={onSave} className={rail}>
+        <span className={dot}>
+          <Bookmark className={cn("size-[22px]", saved && "fill-white")} aria-hidden />
+        </span>
+        <span>{saved ? "Salvo" : "Salvar"}</span>
+      </button>
+    </>
+  );
+}
+
+/** Miniatura do perfil vizinho (anterior ou próximo), só em telas largas. */
+function NeighborCard({
   g,
   dir,
   onClick,
@@ -620,23 +834,36 @@ function NeighborButton({
   dir: "prev" | "next";
   onClick: () => void;
 }) {
-  if (!g) return <span className="hidden w-24 shrink-0 lg:block" aria-hidden />;
+  if (!g) return <span className="hidden w-[200px] shrink-0 xl:block" aria-hidden />;
+  const first = g.stories[0];
+  const ago = formatTimeAgo(first.publishedAt);
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={dir === "prev" ? `Story anterior: ${g.profile.name}` : `Próximo story: ${g.profile.name}`}
-      className="hidden w-24 shrink-0 flex-col items-center gap-2 opacity-70 hover:opacity-100 lg:flex"
+      aria-label={`Ver stories de ${g.profile.name}`}
+      data-dir={dir}
+      className="relative hidden h-[356px] w-[200px] shrink-0 overflow-hidden rounded-2xl bg-navy-700 opacity-55 transition hover:scale-[1.02] hover:opacity-90 xl:block"
     >
-      <span className="flex size-14 items-center justify-center overflow-hidden rounded-full bg-white/20 text-lg font-bold">
-        {g.profile.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={g.profile.avatarUrl} alt="" className="size-full object-cover" />
-        ) : (
-          g.profile.name[0]
-        )}
+      {first.mediaType === "image" && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={first.mediaUrl} alt="" className="absolute inset-0 size-full object-cover" />
+      )}
+      <span className="absolute inset-0 bg-stage/35" />
+      <span className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 flex-col items-center gap-2">
+        <span className="flex size-14 items-center justify-center overflow-hidden rounded-full border-[3px] border-amber bg-navy-700 text-base font-extrabold">
+          {g.profile.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={g.profile.avatarUrl} alt="" className="size-full object-cover" />
+          ) : (
+            initials(g.profile.name)
+          )}
+        </span>
+        <span className="px-2 text-sm font-bold [text-shadow:0_1px_3px_rgba(0,0,0,.5)]">
+          {g.profile.name}
+        </span>
+        {ago && <span className="text-xs text-navy-50">{ago}</span>}
       </span>
-      <span className="line-clamp-2 text-center text-xs font-semibold">{g.profile.name}</span>
     </button>
   );
 }
@@ -656,41 +883,46 @@ function TagCard({
 }) {
   const profileHref =
     group.profile.kind === "provider" ? prestadorHref(group.profile.slug) : lojaHref(group.profile.slug);
-  const btn = "flex h-10 flex-1 items-center justify-center rounded-lg px-3 text-sm font-bold";
-  const primary = `${btn} bg-white text-black`;
-  const ghost = `${btn} border border-white/70 text-white`;
+  const btn = "flex items-center justify-center rounded-lg px-2.5 text-center text-xs leading-[14px]";
+  const primary = `${btn} h-[38px] bg-accent font-extrabold text-on-accent hover:bg-accent-hover`;
+  const ghost = `${btn} h-8 border border-border font-bold text-text-strong hover:bg-surface-2`;
   const name = group.profile.name;
+  const thumb = tag.imageUrl ?? (story.mediaType === "image" ? story.mediaUrl : null);
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-black/60 p-3 backdrop-blur" data-story={story.id}>
-      <div className="flex items-center gap-3">
-        <span className="size-12 shrink-0 overflow-hidden rounded-lg bg-white/20">
-          {tag.imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={tag.imageUrl} alt="" className="size-full object-cover" />
-          )}
+    <div
+      className="flex animate-[popin_0.2s_ease-out_both] items-center gap-3 rounded-[14px] bg-surface p-2.5 text-text shadow-[0_6px_14px_rgba(0,0,0,0.25)] max-sm:flex-wrap"
+      data-story={story.id}
+    >
+      <span className="relative size-[52px] shrink-0 overflow-hidden rounded-[10px] bg-navy-700">
+        {thumb && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumb} alt="" className="absolute inset-0 size-full object-cover" />
+        )}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className={cn("text-[11px] font-bold tracking-[0.4px] uppercase", TAG_TONE[tag.kind])}>
+          {TAG_LABEL[tag.kind]}
         </span>
-        <div className="min-w-0 flex-1">
-          <span
-            className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-bold ${TAG_TONE[tag.kind]}`}
-          >
-            {TAG_LABEL[tag.kind]}
+        <span className="truncate text-[13px] leading-[18px] font-bold text-text">{tag.title}</span>
+        {tag.priceCents !== null && (
+          <span className="text-sm leading-5 font-extrabold text-text-strong">
+            {tag.kind === "service" ? "A partir de " : ""}
+            <span className="whitespace-nowrap">{formatMoney(tag.priceCents)}</span>
           </span>
-          <p className="truncate text-sm font-bold">{tag.title}</p>
-          {tag.priceCents !== null && <p className="text-sm text-white/80">{formatMoney(tag.priceCents)}</p>}
-        </div>
+        )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex w-40 shrink-0 flex-col gap-1.5 max-sm:w-full max-sm:flex-row">
         {tag.kind === "product" && (
           <>
             <button
               type="button"
-              className={primary}
+              className={cn(primary, "max-sm:flex-1")}
               onClick={() => chat(`Quero comprar ${tag.title}. Ainda tem?`)}
             >
               Quero comprar
             </button>
             {tag.productSlug && (
-              <Link href={produtoHref(tag.productSlug)} className={ghost}>
+              <Link href={produtoHref(tag.productSlug)} className={cn(ghost, "max-sm:flex-1")}>
                 Ver produto
               </Link>
             )}
@@ -700,12 +932,12 @@ function TagCard({
           <>
             <button
               type="button"
-              className={primary}
+              className={cn(primary, "max-sm:flex-1")}
               onClick={() => chat(`Olá, ${name}! Vi seu story e gostaria de um orçamento de ${tag.title}.`)}
             >
               Pedir orçamento
             </button>
-            <Link href={profileHref} className={ghost}>
+            <Link href={profileHref} className={cn(ghost, "max-sm:flex-1")}>
               Ver perfil
             </Link>
           </>
@@ -714,12 +946,12 @@ function TagCard({
           <>
             <button
               type="button"
-              className={primary}
+              className={cn(primary, "max-sm:flex-1")}
               onClick={() => chat(`Olá, ${name}! Vi seu story e gostaria de saber mais.`)}
             >
               Falar com a loja
             </button>
-            <Link href={profileHref} className={ghost}>
+            <Link href={profileHref} className={cn(ghost, "max-sm:flex-1")}>
               Ver loja
             </Link>
           </>
@@ -727,15 +959,19 @@ function TagCard({
         {tag.kind === "offer" && (
           <>
             {tag.couponId ? (
-              <button type="button" className={primary} onClick={() => claim(tag.couponId as string)}>
+              <button
+                type="button"
+                className={cn(primary, "max-sm:flex-1")}
+                onClick={() => claim(tag.couponId as string)}
+              >
                 Pegar cupom
               </button>
             ) : (
-              <Link href={routes.ofertas} className={primary}>
+              <Link href={routes.ofertas} className={cn(primary, "max-sm:flex-1")}>
                 Ver ofertas
               </Link>
             )}
-            <Link href={profileHref} className={ghost}>
+            <Link href={profileHref} className={cn(ghost, "max-sm:flex-1")}>
               Ver loja
             </Link>
           </>

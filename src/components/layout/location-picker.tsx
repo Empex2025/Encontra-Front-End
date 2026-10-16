@@ -85,7 +85,7 @@ export function LocationPicker() {
         onClick={() => (open ? close() : openPanel())}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex h-10 max-w-[44vw] min-w-0 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-white hover:bg-white/10 md:max-w-[16rem] lg:rounded-l-none lg:border-l lg:border-header-border lg:px-4"
+        className="flex h-10 max-w-[44vw] min-w-0 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-white hover:bg-white/10 md:max-w-[22rem] lg:rounded-l-none lg:border-l lg:border-header-border lg:px-4"
       >
         <MapPin className="size-4 shrink-0 text-amber-400" aria-hidden />
         <span className="sr-only">Localização: </span>

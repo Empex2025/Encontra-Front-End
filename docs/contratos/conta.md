@@ -93,7 +93,7 @@ Tudo em `PATCH /me` (`settings`). O front também guarda `whatsappOpen` no naveg
 ## Denunciar (aberto a visitantes; com sessão, vincula à conta)
 
 - `GET /reports/target?type=loja|produto|prestador|avaliacao&id={slug|id}` → `{ name }` (para preencher o nome). Pode falhar sem problema: a pessoa digita.
-- `POST /reports { type: "loja"|"produto"|"avaliacao"|"story"|"prestador"|"outro", targetId: string|null, targetName: string|null, reason, description }` → `{ protocol: "DN-12345" }`. `reason` ∈ Golpe ou fraude · Preço ou oferta enganosa · Produto proibido · Conteúdo ofensivo · Informação falsa · Outro. `description` 10–1000. O denunciado **nunca** vê quem denunciou. Prazo de análise: 48 h.
+- `POST /reports { type: "loja"|"produto"|"avaliacao"|"story"|"prestador"|"outro", targetId: string|null, targetName: string|null, reason, description }` → `{ protocol: "DN-12345" }`. `reason` ∈ Golpe ou fraude · Preço ou oferta enganosa · Produto proibido · Conteúdo ofensivo · Informação falsa · Outro. `description` 10–1000. Opcional: `attachmentKey` (chave de uma imagem JPG/PNG de até 5 MB enviada antes por `POST /uploads/presign` com `purpose: "help"`; é o "Anexar print" do protótipo). O denunciado **nunca** vê quem denunciou. Prazo de análise: 48 h.
 
 ## Sistema
 

@@ -17,12 +17,15 @@ export function FavoriteButton({
   id,
   initial,
   label,
+  variant = "default",
 }: {
   type: "product" | "profile";
   id: string;
   initial: boolean;
   /** Nome para leitor de tela (ex.: título do produto). */
   label: string;
+  /** `circle`: círculo de 44 px sem borda (tela do produto). */
+  variant?: "default" | "circle";
 }) {
   const requireAuth = useRequireAuth();
   const toast = useToast();
@@ -60,9 +63,17 @@ export function FavoriteButton({
         if (!requireAuth("favorite", id)) return;
         m.mutate(!on);
       }}
-      className="flex size-10 items-center justify-center rounded-full border border-border-strong text-text-2 hover:bg-surface-2 disabled:opacity-60"
+      className={cn(
+        "flex items-center justify-center rounded-full disabled:opacity-60",
+        variant === "circle"
+          ? "size-11 bg-bg text-text-strong hover:bg-selected"
+          : "size-10 border border-border-strong text-text-2 hover:bg-surface-2",
+      )}
     >
-      <Heart className={cn("size-5", on && "fill-danger text-danger")} aria-hidden />
+      <Heart
+        className={cn("size-5", on && (variant === "circle" ? "fill-accent" : "fill-danger text-danger"))}
+        aria-hidden
+      />
     </button>
   );
 }
