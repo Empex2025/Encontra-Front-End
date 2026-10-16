@@ -1,18 +1,29 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ChevronDown, Mail, MessageCircle, Search, ThumbsDown, ThumbsUp } from "lucide-react";
+import {
+  Mail,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  Star,
+  Tag,
+  UserRound,
+  HelpCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { btnOutline, btnPrimary } from "@/components/account/shared";
+import { btnPrimary } from "@/components/account/shared";
 import { cn } from "@/components/ui/cn";
 import { ErrorState } from "@/components/ui/error-state";
-import { Tabs } from "@/components/ui/tabs";
+import { WhatsAppIcon } from "@/components/ui/whatsapp-icon";
 import { useToast } from "@/components/ui/toast";
 import { type Faq as FaqData, help } from "@/lib/api/account";
+import { actions } from "@/lib/api/actions";
 import { filterFaq } from "@/lib/domain/account";
+import { whatsappUrl } from "@/lib/domain/whatsapp";
 import { routes } from "@/lib/routes";
 
 import { ContactForm } from "./contact-form";
@@ -20,7 +31,28 @@ import { ContactForm } from "./contact-form";
 const TABS = [
   { id: "faq", label: "Perguntas frequentes" },
   { id: "contato", label: "Fale conosco" },
-];
+] as const;
+
+/** Atalhos para os textos institucionais (fixos, são rotas do próprio app). */
+const INSTITUTIONAL = [
+  ["Como funciona", `${routes.institucional}/sobre`],
+  ["Termos de uso", `${routes.institucional}/termos`],
+  ["Privacidade", `${routes.institucional}/privacidade`],
+  ["Cookies", `${routes.institucional}/cookies`],
+  ["Regras de avaliação", `${routes.institucional}/avaliacoes`],
+  ["Denunciar", "/denunciar"],
+] as const;
+
+const CAT_ICONS: Record<string, typeof Tag> = {
+  conta: UserRound,
+  buscar: Search,
+  ofertas: Tag,
+  contato: MessageCircle,
+  avaliacoes: Star,
+  privacidade: ShieldCheck,
+};
+
+const safeHref = (h: string) => h.startsWith("/") && !h.startsWith("//");
 
 export function HelpView() {
   const router = useRouter();
@@ -28,19 +60,68 @@ export function HelpView() {
   const params = useSearchParams();
   const tab = params.get("aba") === "contato" ? "contato" : "faq";
   const q = useQuery({ queryKey: ["help", "faq"], queryFn: help.faq });
+  const [query, setQuery] = useState("");
   const setTab = (t: string) => router.replace(`${pathname}?aba=${t}`, { scroll: false });
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-text-strong sm:text-[32px] sm:leading-10">Central de Ajuda</h1>
-        <p className="text-text-muted">Respostas rápidas e, se precisar, fale com a gente.</p>
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-col gap-4 rounded-[20px] bg-navy p-5 sm:p-8">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[28px] leading-9 font-bold text-white sm:text-[32px] sm:leading-10">
+            Como podemos ajudar?
+          </h1>
+          <p className="text-base text-navy-200">
+            Respostas rápidas sobre a EncontraÊ. Se não resolver, fale com a gente.
+          </p>
+        </div>
+        <label className="flex h-14 max-w-[760px] items-center gap-3 rounded-full bg-white px-5">
+          <Search className="size-[22px] shrink-0 text-navy" aria-hidden />
+          <span className="sr-only">Buscar na ajuda</span>
+          <input
+            type="search"
+            value={query}
+            disabled={!q.data}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (tab !== "faq") setTab("faq");
+            }}
+            placeholder="Ex.: cupom, senha, localização, avaliação"
+            className="min-w-0 flex-1 border-0 bg-transparent text-base text-[#212529] outline-none placeholder:text-text-subtle disabled:opacity-60"
+          />
+        </label>
+        <nav aria-label="Textos da EncontraÊ" className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] font-semibold">
+          {INSTITUTIONAL.map(([label, href]) => (
+            <Link key={href} href={href} className="inline-flex min-h-8 items-center text-white/85 hover:text-white hover:underline">
+              {label} ›
+            </Link>
+          ))}
+        </nav>
+        <div role="tablist" aria-label="Ajuda" className="flex flex-wrap gap-2">
+          {TABS.map((t) => {
+            const on = t.id === tab;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "h-[38px] rounded-full border px-4 text-sm font-bold",
+                  on ? "border-white bg-white text-navy" : "border-white/40 text-white hover:border-white/70",
+                )}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
       </header>
-      <Tabs tabs={TABS} value={tab} onChange={setTab} label="Ajuda" />
+
       {tab === "contato" ? (
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
           <ContactForm />
-          <Channels channels={q.data?.channels} />
+          <Channels data={q.data} loading={q.isPending} error={q.isError} retry={() => void q.refetch()} />
         </div>
       ) : (
         <Faq
@@ -49,31 +130,115 @@ export function HelpView() {
           error={q.isError ? q.error : null}
           retry={() => void q.refetch()}
           goContact={() => setTab("contato")}
+          query={query}
         />
       )}
     </div>
   );
 }
 
-function Channels({ channels }: { channels?: { chat: string; email: string; whatsapp: string } }) {
+function Channels({
+  data,
+  loading,
+  error,
+  retry,
+}: {
+  data?: FaqData;
+  loading: boolean;
+  error: boolean;
+  retry: () => void;
+}) {
+  const router = useRouter();
+  const toast = useToast();
+  const ch = data?.channels;
+  const sup = data?.support;
+  const wa = whatsappUrl(sup?.whatsapp ?? null, "Olá! Preciso de ajuda na EncontraÊ.");
+  const chat = useMutation({
+    mutationFn: () => actions.startConversation({ profileId: sup?.chatProfileId ?? "" }),
+    onSuccess: (r) => router.push(`${routes.conversas}/${r.id}`),
+    onError: () => toast("Não foi possível abrir o chat agora. Tente de novo.", "info"),
+  });
+  const missing = loading ? "Carregando…" : error ? "Não foi possível carregar" : "Informação indisponível";
   const rows = [
-    { icon: MessageCircle, label: "Chat", text: channels?.chat },
-    { icon: Mail, label: "E-mail", text: channels?.email },
-    { icon: MessageCircle, label: "WhatsApp", text: channels?.whatsapp },
+    {
+      key: "chat",
+      title: "Chat com o suporte",
+      text: ch?.chat,
+      icon: <MessageCircle className="size-5" aria-hidden />,
+      tone: "bg-selected text-text-strong",
+      act: sup?.chatProfileId ? { onClick: () => chat.mutate() } : null,
+    },
+    {
+      key: "email",
+      title: "E-mail",
+      text: ch?.email,
+      icon: <Mail className="size-5" aria-hidden />,
+      tone: "bg-accent-soft text-accent-text",
+      act: sup?.email ? { href: `mailto:${sup.email}` } : null,
+    },
+    {
+      key: "wa",
+      title: "WhatsApp",
+      text: ch?.whatsapp,
+      icon: <WhatsAppIcon className="size-5" />,
+      tone: "bg-success-soft text-success-text",
+      act: wa ? { href: wa } : null,
+    },
   ];
-  const missing = "Informação indisponível no momento";
+  const card =
+    "flex items-center gap-3.5 rounded-[14px] border border-border bg-surface p-4 text-left";
   return (
-    <aside className="flex flex-col gap-3 self-start rounded-2xl border border-border bg-surface p-4">
-      <h2 className="text-lg font-bold text-text-strong">Outros canais</h2>
-      {rows.map((r) => (
-        <div key={r.label} className="flex items-start gap-3">
-          <r.icon className="mt-0.5 size-5 shrink-0 text-link" aria-hidden />
-          <div>
-            <p className="font-semibold text-text-strong">{r.label}</p>
-            <p className="text-sm text-text-muted">{r.text || missing}</p>
+    <aside className="flex flex-col gap-3">
+      <h2 className="text-base leading-6 font-bold text-text-strong">Outros canais</h2>
+      {rows.map((r) => {
+        const body = (
+          <>
+            <span
+              className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", r.tone)}
+            >
+              {r.icon}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-sm font-bold text-text">{r.title}</span>
+              <span className="text-xs text-text-subtle">
+                {[r.key === "email" ? sup?.email : null, r.text].filter(Boolean).join(" · ") || missing}
+              </span>
+            </span>
+          </>
+        );
+        if (r.act && "href" in r.act)
+          return (
+            <a key={r.key} href={r.act.href} className={cn(card, "hover:bg-surface-2")}>
+              {body}
+            </a>
+          );
+        if (r.act)
+          return (
+            <button
+              key={r.key}
+              type="button"
+              disabled={chat.isPending}
+              onClick={r.act.onClick}
+              className={cn(card, "hover:bg-surface-2 disabled:opacity-60")}
+            >
+              {body}
+            </button>
+          );
+        return (
+          <div key={r.key} className={card}>
+            {body}
           </div>
-        </div>
-      ))}
+        );
+      })}
+      {error && (
+        <button type="button" onClick={retry} className="self-start text-[13px] font-bold text-link hover:underline">
+          Tentar de novo
+        </button>
+      )}
+      <div className="rounded-[14px] bg-surface-2 px-4 py-3.5 text-[13px] leading-5 text-text-muted">
+        <b className="text-text">Problema com uma loja?</b> Primeiro tente resolver pelo chat com ela. Se não
+        der certo, conte aqui que a gente acompanha.
+      </div>
     </aside>
   );
 }
@@ -84,122 +249,152 @@ function Faq({
   error,
   retry,
   goContact,
+  query,
 }: {
   data?: FaqData;
   loading: boolean;
   error: Error | null;
   retry: () => void;
   goContact: () => void;
+  query: string;
 }) {
-  const [query, setQuery] = useState("");
   const [cat, setCat] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const items = useMemo(() => data?.items ?? [], [data]);
   const shown = useMemo(() => filterFaq(items, query, cat), [items, query, cat]);
-  const ready = !!data;
   const searching = query.trim().length > 0;
+  const catName = data?.categories.find((c) => c.id === cat)?.name;
+  const title = searching
+    ? `${shown.length} ${shown.length === 1 ? "resposta" : "respostas"} para “${query.trim()}”`
+    : (catName ?? "Perguntas frequentes");
 
   return (
-    <div className="flex flex-col gap-4">
-      <label className="relative block">
-        <span className="sr-only">Buscar na Central de Ajuda</span>
-        <Search
-          className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-text-subtle"
-          aria-hidden
-        />
-        <input
-          type="search"
-          disabled={!ready}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
+    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <nav aria-label="Categorias" className="flex flex-col gap-1 rounded-2xl bg-surface p-3 shadow-card">
+        <CatButton
+          label="Todas as dúvidas"
+          n={data ? items.length : null}
+          on={cat === null}
+          onClick={() => {
+            setCat(null);
             setOpen(null);
           }}
-          placeholder="Busque por uma dúvida"
-          className="h-12 w-full rounded-lg border border-border-strong bg-surface pr-3 pl-10 text-base text-text outline-none focus:border-primary focus:ring-2 focus:ring-focus/40 disabled:opacity-60"
+          icon={
+            <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M3 3h7v7H3z" />
+              <path d="M14 14h7v7h-7z" />
+            </svg>
+          }
         />
-      </label>
-
-      {!searching && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Categorias">
-          <button
-            type="button"
-            aria-pressed={cat === null}
-            onClick={() => setCat(null)}
-            className={chip(cat === null)}
-          >
-            Todas <span className="text-text-subtle">{ready ? items.length : "—"}</span>
-          </button>
-          {(data?.categories ?? []).map((c) => (
-            <button
+        {(data?.categories ?? []).map((c) => {
+          const Icon = CAT_ICONS[c.id] ?? HelpCircle;
+          return (
+            <CatButton
               key={c.id}
-              type="button"
-              aria-pressed={cat === c.id}
-              onClick={() => setCat(c.id)}
-              className={chip(cat === c.id)}
-            >
-              {c.name} <span className="text-text-subtle">{c.count}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {loading ? (
-        <p role="status" className="py-10 text-center text-text-muted">
-          Carregando as perguntas…
-        </p>
-      ) : error ? (
-        <ErrorState
-          error={error}
-          onRetry={retry}
-          title="Não foi possível carregar as perguntas frequentes"
-          description="As respostas vêm do nosso servidor e não chegaram agora. Enquanto isso, você pode falar com o suporte."
-        />
-      ) : shown.length === 0 ? (
-        <section className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-6 py-10 text-center">
-          <h2 className="text-lg font-bold text-text-strong">
-            {items.length === 0 ? "Nenhuma pergunta publicada ainda" : "Não encontramos essa dúvida"}
-          </h2>
-          <p className="text-text-muted">
-            {items.length === 0
-              ? "Ainda não há perguntas frequentes cadastradas. Fale com a gente se precisar de ajuda."
-              : "Tente outras palavras ou fale com a gente."}
-          </p>
-          <button type="button" className={btnPrimary} onClick={goContact}>
-            Falar com o suporte
-          </button>
-        </section>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {shown.map((item) => (
-            <FaqRow
-              key={item.id}
-              item={item}
-              open={open === item.id}
-              onToggle={() => setOpen(open === item.id ? null : item.id)}
-              goContact={goContact}
+              label={c.name}
+              n={c.count}
+              on={cat === c.id}
+              onClick={() => {
+                setCat(c.id);
+                setOpen(null);
+              }}
+              icon={<Icon className="size-[18px]" aria-hidden />}
             />
-          ))}
-        </ul>
-      )}
-      {!loading && (shown.length > 0 || !!error) && (
-        <p className="text-sm text-text-muted">
-          Não achou?{" "}
-          <button type="button" onClick={goContact} className="font-semibold text-link hover:underline">
-            Falar com o suporte
-          </button>
-        </p>
-      )}
+          );
+        })}
+        {!data && <p className="px-3 py-2 text-[13px] text-text-subtle">{loading ? "Carregando categorias…" : "Categorias indisponíveis."}</p>}
+      </nav>
+
+      <div className="flex min-w-0 flex-col gap-3">
+        <h2 className="text-xl leading-7 font-bold text-text-strong">{title}</h2>
+        {loading ? (
+          <p role="status" className="rounded-2xl bg-surface py-10 text-center text-text-muted shadow-card">
+            Carregando as perguntas…
+          </p>
+        ) : error ? (
+          <ErrorState
+            error={error}
+            onRetry={retry}
+            title="Não foi possível carregar as perguntas frequentes"
+            description="As respostas vêm do nosso servidor e não chegaram agora. Enquanto isso, você pode falar com o suporte."
+          />
+        ) : shown.length === 0 ? (
+          <div className="rounded-2xl bg-surface p-8 text-center shadow-card">
+            <p className="mb-3 text-[15px] text-text-muted">
+              {items.length === 0
+                ? "Ainda não há perguntas frequentes publicadas."
+                : searching
+                  ? `Não achamos nada sobre “${query.trim()}”.`
+                  : "Nenhuma pergunta nesta categoria."}
+            </p>
+            <button type="button" className={btnPrimary} onClick={goContact}>
+              Falar com o suporte
+            </button>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {shown.map((item) => (
+              <FaqRow
+                key={item.id}
+                item={item}
+                open={open === item.id}
+                onToggle={() => setOpen(open === item.id ? null : item.id)}
+                goContact={goContact}
+              />
+            ))}
+          </ul>
+        )}
+        {!loading && (
+          <div className="mt-2 flex flex-wrap items-center gap-4 rounded-2xl border border-accent-border bg-accent-soft px-5 py-[18px]">
+            <span className="min-w-0 flex-1 text-[15px] font-semibold text-accent-ink">
+              Não encontrou sua resposta?
+            </span>
+            <button type="button" className={btnPrimary} onClick={goContact}>
+              Fale conosco
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-const chip = (on: boolean) =>
-  cn(
-    "inline-flex min-h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold",
-    on
-      ? "border-primary bg-selected text-text-strong"
-      : "border-border-strong text-text-2 hover:bg-surface-2",
+
+function CatButton({
+  label,
+  n,
+  on,
+  onClick,
+  icon,
+}: {
+  label: string;
+  n: number | null;
+  on: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-left hover:bg-surface-2",
+        on && "bg-selected hover:bg-selected",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-[10px]",
+          on ? "bg-primary text-on-primary" : "bg-surface-2 text-link",
+        )}
+      >
+        {icon}
+      </span>
+      <span className={cn("flex-1 text-sm text-text", on ? "font-bold" : "font-medium")}>{label}</span>
+      <span className="text-xs text-text-subtle">{n ?? "—"}</span>
+    </button>
   );
+}
 
 function FaqRow({
   item,
@@ -207,7 +402,7 @@ function FaqRow({
   onToggle,
   goContact,
 }: {
-  item: { id: string; question: string; answer: string };
+  item: { id: string; question: string; answer: string; link?: { label: string; href: string } | null };
   open: boolean;
   onToggle: () => void;
   goContact: () => void;
@@ -217,62 +412,71 @@ function FaqRow({
   const [comment, setComment] = useState("");
   const yes = useMutation({
     mutationFn: () => help.helpful(item.id, true),
-    onSuccess: () => setVoted("yes"),
+    onSuccess: () => {
+      setVoted("yes");
+      toast("Obrigado pelo retorno!");
+    },
+    onError: () => toast("Não foi possível registrar agora. Tente de novo.", "info"),
   });
   const no = useMutation({
     mutationFn: () => help.unhelpful(item.id, comment.trim()),
     onSuccess: () => toast("Obrigado! Vamos melhorar essa resposta."),
   });
+  const pill = "h-[30px] rounded-full border px-3 text-xs font-semibold";
   return (
-    <li className="rounded-xl border border-border bg-surface">
+    <li className="overflow-hidden rounded-2xl bg-surface shadow-card">
       <h3>
         <button
           type="button"
           aria-expanded={open}
           aria-controls={`faq-${item.id}`}
           onClick={onToggle}
-          className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-left font-semibold text-text-strong"
+          className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-surface-2"
         >
-          {item.question}
-          <ChevronDown
-            className={cn("size-5 shrink-0 transition-transform", open && "rotate-180")}
+          <span className="flex-1 text-[15px] leading-[22px] font-semibold text-text">{item.question}</span>
+          <span
             aria-hidden
-          />
+            className={cn("text-lg text-link transition-transform", open && "rotate-180")}
+          >
+            ⌄
+          </span>
         </button>
       </h3>
       {open && (
-        <div id={`faq-${item.id}`} className="flex flex-col gap-3 border-t border-border px-4 py-4">
-          <p className="whitespace-pre-line text-text">{item.answer}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-text-strong">Esta resposta ajudou?</span>
-            {voted === "yes" ? (
-              <span role="status" className="text-sm font-semibold text-success-text">
-                Obrigado pelo retorno!
-              </span>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className={btnOutline}
-                  disabled={yes.isPending}
-                  onClick={() => !yes.isSuccess && yes.mutate()}
-                >
-                  <ThumbsUp className="mr-1.5 size-4" aria-hidden /> Sim
-                </button>
-                <button
-                  type="button"
-                  className={btnOutline}
-                  disabled={voted === "no"}
-                  onClick={() => setVoted("no")}
-                >
-                  <ThumbsDown className="mr-1.5 size-4" aria-hidden /> Não
-                </button>
-              </>
+        <div id={`faq-${item.id}`} className="flex flex-col gap-3 px-5 pb-[18px]">
+          <p className="text-sm leading-[22px] whitespace-pre-line text-text-muted">{item.answer}</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {item.link && safeHref(item.link.href) && (
+              <Link href={item.link.href} className="text-[13px] font-bold text-link hover:underline">
+                {item.link.label} ›
+              </Link>
             )}
+            <span className="ml-auto text-xs text-text-subtle">Esta resposta ajudou?</span>
+            <button
+              type="button"
+              disabled={yes.isPending}
+              onClick={() => voted !== "yes" && yes.mutate()}
+              className={cn(
+                pill,
+                voted === "yes"
+                  ? "border-success bg-success-soft text-success-text"
+                  : "border-border bg-surface text-text hover:bg-surface-2",
+              )}
+            >
+              Sim
+            </button>
+            <button
+              type="button"
+              disabled={voted === "no"}
+              onClick={() => setVoted("no")}
+              className={cn(pill, "border-border bg-surface text-text hover:bg-surface-2")}
+            >
+              Não
+            </button>
           </div>
           {voted === "no" && !no.isSuccess && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold text-text-strong" htmlFor={`c-${item.id}`}>
+              <label className="text-[13px] font-bold text-text" htmlFor={`c-${item.id}`}>
                 O que faltou?
               </label>
               <textarea
@@ -281,29 +485,28 @@ function FaqRow({
                 maxLength={500}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                className="rounded-lg border border-border-strong bg-surface p-3 text-text"
+                className="rounded-lg border border-border bg-surface p-3 text-sm text-text"
               />
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  className={btnPrimary}
-                  disabled={no.isPending}
-                  onClick={() => no.mutate()}
-                >
+                <button type="button" className={btnPrimary} disabled={no.isPending} onClick={() => no.mutate()}>
                   Enviar
                 </button>
-                <button type="button" className={btnOutline} onClick={goContact}>
+                <button
+                  type="button"
+                  className="inline-flex h-11 items-center rounded-lg border border-primary px-5 text-sm font-bold text-text-strong hover:bg-surface-2"
+                  onClick={goContact}
+                >
                   Falar com o suporte
                 </button>
               </div>
             </div>
           )}
           {no.isSuccess && (
-            <p role="status" className="text-sm text-text-muted">
+            <p role="status" className="text-[13px] text-text-muted">
               Recebemos seu retorno. Se ainda precisar,{" "}
-              <Link href={`${routes.ajuda}?aba=contato`} className="font-semibold text-link hover:underline">
+              <button type="button" onClick={goContact} className="font-bold text-link hover:underline">
                 fale com o suporte
-              </Link>
+              </button>
               .
             </p>
           )}

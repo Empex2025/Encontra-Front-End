@@ -113,6 +113,8 @@ export const faqItemSchema = z.object({
   categoryId: z.string(),
   question: z.string(),
   answer: z.string(),
+  /** Atalho opcional dentro da resposta (ex.: "Recuperar senha ›"). Só caminhos internos. */
+  link: z.object({ label: z.string(), href: z.string() }).nullable().optional(),
 });
 export type FaqItem = z.infer<typeof faqItemSchema>;
 const faqSchema = z.object({
@@ -123,16 +125,25 @@ const faqSchema = z.object({
     email: z.string(),
     whatsapp: z.string(),
   }),
+  /** Como abrir cada canal (opcional): sem isso o cartão do canal mostra só o horário. */
+  support: z
+    .object({
+      chatProfileId: nstr.optional(),
+      email: nstr.optional(),
+      whatsapp: nstr.optional(),
+    })
+    .nullable()
+    .optional(),
 });
 export type Faq = z.infer<typeof faqSchema>;
 const protocolSchema = z.object({ protocol: z.string() });
 
 export const CONTACT_SUBJECTS = [
-  "Problema com minha conta",
+  "Minha conta e acesso",
   "Problema com uma loja ou prestador",
-  "Dúvida sobre como funciona",
+  "Preço ou oferta errada",
+  "Algo não funciona no app",
   "Sugestão ou elogio",
-  "Outro assunto",
 ] as const;
 
 /* ---------- Institucional e denúncia ---------- */
@@ -142,6 +153,8 @@ export const legalDocSchema = z.object({
   title: z.string(),
   version: z.string(),
   updatedAt: z.string(),
+  /** Resumo em uma frase, mostrado em destaque no alto (Termos de uso: "Em resumo"). Opcional. */
+  summary: nstr.optional(),
   sections: z.array(z.object({ heading: z.string(), body: z.string() })),
 });
 export type LegalDoc = z.infer<typeof legalDocSchema>;

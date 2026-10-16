@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, Tag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -11,6 +11,7 @@ import { CouponCard } from "@/components/catalog/coupon-card";
 import { PageError } from "@/components/catalog/section-state";
 import { StatusLine } from "@/components/catalog/status-line";
 import { TrustSignals } from "@/components/catalog/trust-signals";
+import { SystemCard, sysBtnOutline, sysBtnPrimary } from "@/components/system/system-card";
 import { CreateAccountNote, ItemGrid, PublicMain, ShareAside } from "@/components/public/public-shell";
 import { ApiError } from "@/lib/api/client";
 import { offerApi, type OfferPage } from "@/lib/api/offer";
@@ -58,20 +59,21 @@ export function OfferView({ slug }: { slug: string }) {
 /** "Este link não está mais disponível" (item inexistente). */
 function Gone() {
   return (
-    <section className="flex flex-col items-center gap-3.5 rounded-2xl bg-surface px-8 py-14 text-center shadow-sm">
-      <h1 className="text-[28px] leading-9 font-extrabold text-text-strong">
-        Este link não está mais disponível
-      </h1>
-      <p className="text-[15px] leading-[22px] text-text-2">
-        O item pode ter sido removido pela loja ou o endereço está incorreto.
-      </p>
-      <Link
-        href={routes.ofertas}
-        className="inline-flex h-12 items-center rounded-lg bg-primary px-6 text-[15px] font-bold text-on-primary hover:bg-primary-hover"
-      >
-        Ver ofertas perto de você
-      </Link>
-    </section>
+    <SystemCard
+      tone="navy"
+      icon={<Tag className="size-10" aria-hidden />}
+      title="Este link não está mais disponível"
+      text="O item pode ter sido removido pela loja ou o endereço está incorreto. Veja ofertas que ainda estão valendo perto de você."
+    >
+      <div className="mt-2 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
+        <Link href={routes.ofertas} className={sysBtnPrimary}>
+          Ver ofertas perto de você
+        </Link>
+        <Link href={routes.home} className={sysBtnOutline}>
+          Voltar ao início
+        </Link>
+      </div>
+    </SystemCard>
   );
 }
 
