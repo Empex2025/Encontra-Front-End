@@ -28,6 +28,8 @@ export const storySchema = z.object({
   mediaUrl: z.string(),
   mediaType: z.enum(["image", "video"]),
   caption: nstr,
+  /** Linha de apoio abaixo do título (protótipo). Opcional: o back-end ainda não envia. */
+  subtitle: nstr.optional(),
   publishedAt: z.string(),
   views: count,
   likes: count,
@@ -175,6 +177,10 @@ const nearbyHappeningsSchema = z.object({
       distanceKm: z.number().nonnegative().nullable(),
       free: z.boolean(),
       coverUrl: nstr,
+      /** Opcionais (protótipo): organizador, preço e quantos vão. O back-end ainda não envia. */
+      organizerName: nstr.optional(),
+      priceCents: count.nullable().optional(),
+      going: count.nullable().optional(),
     }),
   ),
 });

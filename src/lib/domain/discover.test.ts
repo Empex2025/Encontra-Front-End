@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  eventChip,
   eventDayBadge,
   eventWhen,
+  eventWhenText,
+  initials,
   formatElapsed,
   mergeMessages,
   nextPos,
@@ -122,5 +125,26 @@ describe("achar story na fila", () => {
   });
   it("story que saiu da fila: null", () => {
     expect(findStoryPos(groups, "zzz")).toBeNull();
+  });
+});
+
+describe("iniciais, texto de data e selo do evento", () => {
+  const now = new Date(2026, 9, 15, 15, 0);
+  const at = (d: number, h: number, m = 0) => new Date(2026, 9, 15 + d, h, m).toISOString();
+  it("iniciais do perfil", () => {
+    expect(initials("Brilho Limpezas")).toBe("BL");
+    expect(initials("Hidro")).toBe("HI");
+    expect(initials("  ")).toBe("?");
+  });
+  it("texto de quando", () => {
+    expect(eventWhenText(at(0, 19), at(0, 23), now)).toBe("Hoje, 19h às 23h");
+    expect(eventWhenText(at(1, 19, 30), null, now)).toBe("Amanhã, 19h30");
+    expect(eventWhenText(at(3, 19), at(3, 22), now)).toBe("Domingo, 18/10, 19h às 22h");
+  });
+  it("selo: contagem regressiva nas próximas 24 h", () => {
+    expect(eventChip(at(0, 19), null, now).label).toBe("Começa em 4 h");
+    expect(eventChip(at(0, 15, 30), null, now).label).toBe("Começa em 30 min");
+    expect(eventChip(at(0, 14), at(0, 18), now).label).toBe("Acontecendo agora");
+    expect(eventChip(at(2, 19), null, now).label).toBe("Faltam 2 dias");
   });
 });
