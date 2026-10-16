@@ -1,8 +1,4 @@
-/** Telas de entrada (entrar, cadastro, recuperar senha): sem menu lateral. */
+/** Telas de entrada (boas-vindas, entrar, cadastro, recuperar senha): sem menu lateral; cada tela traz o próprio fundo. */
 export default function AcessoLayout({ children }: LayoutProps<"/">) {
-  return (
-    <main id="conteudo" tabIndex={-1} className="min-h-dvh px-4 py-10 outline-none">
-      {children}
-    </main>
-  );
+  return <>{children}</>;
 }
