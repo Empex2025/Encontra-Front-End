@@ -5,6 +5,7 @@ export const routes = {
   ofertas: "/ofertas",
   favoritos: "/favoritos",
   comparar: "/comparar",
+  compararQuadro: "/comparar/quadro",
   conversas: "/conversas",
   notificacoes: "/notificacoes",
   atividade: "/atividade",

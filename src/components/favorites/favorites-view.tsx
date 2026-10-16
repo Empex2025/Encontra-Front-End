@@ -22,7 +22,8 @@ import { useState } from "react";
 
 import { AlertsPanel } from "@/components/alerts/alerts-panel";
 import { type Access, LockedBody, useAccess } from "@/components/auth/session-gate";
-import { ResultCard } from "@/components/search/result-card";
+import { CompareButton, useCompareState } from "@/components/comparison/compare-button";
+import { SelectableCard } from "@/components/comparison/selectable-card";
 import { cn } from "@/components/ui/cn";
 import { EmptyCard } from "@/components/ui/empty-card";
 import { ErrorState } from "@/components/ui/error-state";
@@ -124,7 +125,7 @@ export function FavoritesView() {
           sub={
             compareList.length > 0 ? `${compareList.length} de 3 opções salvas` : "Salve opções para comparar"
           }
-          href={compareList.length > 0 ? routes.comparar : routes.explorar}
+          href={compareList.length > 1 ? routes.compararQuadro : routes.comparar}
         />
         <Tile
           tone="amber"
@@ -154,7 +155,7 @@ export function FavoritesView() {
         />
       </section>
 
-      <PillTabs idBase="fav" label="Favoritos" tabs={tabs} value={tab} onChange={setTab} bordered />
+      <PillTabs idBase="fav" label="Favoritos" tabs={tabs} value={tab} onChange={setTab} />
       <PillTabPanel idBase="fav" active={tab}>
         {tab === "itens" && <FavoriteItems lists={lists.data?.items ?? []} access={access} />}
         {tab === "lojas" && <FollowingTab access={access} />}
@@ -188,15 +189,15 @@ function Tile({
   onClick?: () => void;
   href?: string;
 }) {
-  const cls = cn("flex items-center gap-3 p-4 text-left hover:shadow-raised", card);
+  const cls = cn("flex min-h-[92px] items-center gap-3 p-4 text-left hover:shadow-raised", card);
   const body = (
     <>
       <span className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", TONE[tone])}>
         <Icon className="size-5" aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[15px] leading-[22px] font-extrabold text-text-strong">{title}</span>
-        <span className="truncate text-xs leading-4 text-text-muted">{sub}</span>
+        <span className="text-[17px] leading-6 font-bold text-text-strong">{title}</span>
+        <span className="truncate text-[13px] leading-[18px] text-text-muted">{sub}</span>
       </span>
       <span aria-hidden className="text-lg font-bold text-accent-hover">
         ›
@@ -353,8 +354,8 @@ const pill = (on: boolean) =>
   );
 
 /**
- * Cartão de favorito: o cartão de resultado do app + o que é só de quem salvou
- * (coração para remover, o que mudou, “Salvo há…” e “+ Lista”), tudo dentro do mesmo cartão.
+ * Cartão de favorito (protótipo › Favoritos): foto com “Comparar” à esquerda e coração à direita, corpo do
+ * cartão de resultado e, antes da loja, o que mudou, “Salvo há…” e “+ Lista”.
  */
 export function FavoriteCard({
   fav,
@@ -377,58 +378,70 @@ export function FavoriteCard({
     },
     onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível remover.", "info"),
   });
+  const compare = useCompareState(fav.item);
   const saved = formatTimeAgo(fav.savedAt);
   const inLists = fav.listCount ?? 0;
 
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-2xl bg-surface shadow-raised [&>article]:rounded-none [&>article]:border-0 [&>article]:shadow-none [&>article:hover]:shadow-none">
-      <ResultCard item={fav.item} />
-      {!readOnly && (
-        <button
-          type="button"
-          disabled={remove.isPending}
-          onClick={() => remove.mutate()}
-          aria-label={`Remover dos favoritos: ${fav.item.title}`}
-          title="Remover dos favoritos"
-          className="absolute top-2.5 right-2.5 z-10 flex size-[34px] items-center justify-center rounded-full bg-surface shadow-card hover:scale-105"
-        >
-          <Heart className="size-4 fill-danger text-danger" aria-hidden />
-        </button>
-      )}
-      {(fav.change || !readOnly) && (
-        <div className="flex flex-col gap-2.5 px-3.5 pb-3">
-          {fav.change && (
-            <p
-              className={cn(
-                "inline-flex max-w-full items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs leading-4 font-bold",
-                fav.change.kind === "price_drop"
-                  ? "bg-success-soft text-success-text"
-                  : "bg-selected text-text-strong",
-              )}
+    <>
+      <SelectableCard
+        item={fav.item}
+        imageHeight={190}
+        highlight={compare?.state === "in"}
+        topLeft={<CompareButton item={fav.item} variant="overlay" />}
+        topRight={
+          !readOnly && (
+            <button
+              type="button"
+              disabled={remove.isPending}
+              onClick={() => remove.mutate()}
+              aria-label={`Remover dos favoritos: ${fav.item.title}`}
+              title="Remover dos favoritos"
+              className="flex size-[34px] items-center justify-center rounded-full bg-surface shadow-card hover:scale-105"
             >
-              {fav.change.kind === "price_drop" && (
-                <TrendingDown className="size-[13px] shrink-0" aria-hidden />
+              <Heart className="size-4 fill-danger text-danger" aria-hidden />
+            </button>
+          )
+        }
+        middle={
+          (fav.change || !readOnly) && (
+            <>
+              {fav.change && (
+                <p
+                  className={cn(
+                    "inline-flex max-w-full items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs leading-4 font-bold",
+                    fav.change.kind === "price_drop"
+                      ? "bg-success-soft text-success-text"
+                      : "bg-selected text-text-strong",
+                  )}
+                >
+                  {fav.change.kind === "price_drop" && (
+                    <TrendingDown className="size-[13px] shrink-0" aria-hidden />
+                  )}
+                  <span className="truncate">{fav.change.text}</span>
+                </p>
               )}
-              <span className="truncate">{fav.change.text}</span>
-            </p>
-          )}
-          {!readOnly && (
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] leading-4 text-text-subtle">{saved ? `Salvo ${saved}` : ""}</span>
-              <button
-                type="button"
-                onClick={() => setListOpen(true)}
-                className="inline-flex h-[26px] items-center gap-1 rounded-full border border-border bg-surface px-2 text-[11px] font-bold text-text-strong hover:bg-surface-2"
-              >
-                <List className="size-3" aria-hidden />
-                {inLists > 0 ? `Em ${inLists} ${inLists === 1 ? "lista" : "listas"}` : "+ Lista"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+              {!readOnly && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] leading-4 text-text-subtle">
+                    {saved ? `Salvo ${saved}` : ""}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setListOpen(true)}
+                    className="inline-flex h-[26px] items-center gap-1 rounded-full border border-border bg-surface px-2 text-[11px] font-bold text-text-strong hover:bg-surface-2"
+                  >
+                    <List className="size-3" aria-hidden />
+                    {inLists > 0 ? `Em ${inLists} ${inLists === 1 ? "lista" : "listas"}` : "+ Lista"}
+                  </button>
+                </div>
+              )}
+            </>
+          )
+        }
+      />
       {listOpen && <AddToListDialog item={fav.item} lists={lists ?? []} onClose={() => setListOpen(false)} />}
-    </div>
+    </>
   );
 }
 
@@ -915,7 +928,7 @@ function SavedComparisons({ access }: { access: Access }) {
   });
   const open = (c: SavedComparison) => {
     replace(savedToEntries(c));
-    router.push(routes.comparar);
+    router.push(routes.compararQuadro);
   };
   return (
     <section aria-labelledby="comparacoes-salvas" className="flex flex-col gap-3">
@@ -1065,7 +1078,7 @@ function ListDetail({
             type="button"
             onClick={() => {
               replace(entries);
-              router.push(routes.comparar);
+              router.push(routes.compararQuadro);
             }}
             className="inline-flex h-9 items-center gap-1.5 rounded-full bg-accent px-4 text-[13px] font-extrabold text-on-accent hover:bg-accent-hover"
           >

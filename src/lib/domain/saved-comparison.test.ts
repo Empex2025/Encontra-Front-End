@@ -20,8 +20,8 @@ describe("comparação salva", () => {
       ],
     });
     expect(e).toEqual([
-      { ref: "product:1", group: { id: "g", label: "Tênis" }, origin: "conta" },
-      { ref: "product:2", group: { id: "g", label: "Tênis" }, origin: "conta" },
+      { ref: "product:1", group: { id: "g", label: "Tênis" }, origin: "conta", title: "A", imageUrl: null },
+      { ref: "product:2", group: { id: "g", label: "Tênis" }, origin: "conta", title: "B", imageUrl: null },
     ]);
   });
 });

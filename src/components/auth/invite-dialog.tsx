@@ -36,6 +36,7 @@ const ICONS: Record<AuthActionType, LucideIcon> = {
   quote: FileText,
   saveComparison: Scale,
   want: Megaphone,
+  ask: Megaphone,
   reserve: CalendarCheck,
   like: Heart,
   helpful: ThumbsUp,
