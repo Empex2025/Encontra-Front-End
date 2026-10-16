@@ -39,6 +39,10 @@ export const AUTH_ACTIONS = {
     title: "Entre para pedir em promoção",
     text: "Avisamos as lojas e prestadores perto de você e você é avisado quando alguém criar a oferta.",
   },
+  ask: {
+    title: "Entre para perguntar às lojas",
+    text: "Lojas e prestadores perto respondem no chat, e você acompanha em Conversas.",
+  },
   reserve: {
     title: "Entre para reservar",
     text: "A reserva fica guardada na sua conta para você acompanhar.",

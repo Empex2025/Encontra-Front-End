@@ -162,3 +162,30 @@ export function createWant(body: {
 }) {
   return api("/me/wants", wantSchema, { method: "POST", body });
 }
+
+/**
+ * "Perguntar às lojas perto" (Explorar, busca sem resultado). Contrato proposto em docs/contratos/busca.md:
+ * o servidor envia “alguém faz {term}?” às lojas e prestadores do ramo no raio e abre as conversas.
+ */
+export const askStoresSchema = z.object({ profilesNotified: z.number().int().nonnegative() });
+export type AskStoresResult = z.infer<typeof askStoresSchema>;
+
+export function askStores(body: {
+  term: string;
+  radiusKm: number;
+  lat: number | null;
+  lng: number | null;
+  where: string;
+}) {
+  const hasPoint = body.lat !== null && body.lng !== null;
+  return api("/search/asks", askStoresSchema, {
+    method: "POST",
+    body: {
+      term: body.term,
+      radiusKm: body.radiusKm,
+      lat: hasPoint ? body.lat : undefined,
+      lng: hasPoint ? body.lng : undefined,
+      where: hasPoint ? undefined : body.where,
+    },
+  });
+}

@@ -1,7 +1,18 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { BadgeCheck, CircleCheck, Heart, House, MapPin, Play, ShoppingBag, Star, Store } from "lucide-react";
+import {
+  BadgeCheck,
+  ChevronDown,
+  CircleCheck,
+  Heart,
+  House,
+  MapPin,
+  Play,
+  ShoppingBag,
+  Star,
+  Store,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -17,7 +28,7 @@ import { categoryById } from "@/lib/domain/categories";
 import { discountPct, formatDayMonth, formatKm, formatMoney, formatRating } from "@/lib/format";
 import { liveHref, lojaHref, prestadorHref, produtoHref } from "@/lib/routes";
 
-const STATUS = {
+export const STATUS = {
   open: {
     label: "Aberta agora",
     place: "Aberto agora",
@@ -56,9 +67,9 @@ export function targetTypeOf(item: SearchItem) {
 
 const compact = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 /** 1500 → "1,5k". Contagens pequenas ficam inteiras. */
-const kcount = (n: number) => (n >= 1000 ? `${compact.format(n / 1000)}k` : String(n));
+export const kcount = (n: number) => (n >= 1000 ? `${compact.format(n / 1000)}k` : String(n));
 
-const initials = (name: string) =>
+export const initials = (name: string) =>
   name
     .split(/\s+/)
     .filter(Boolean)
@@ -103,7 +114,7 @@ const cardCls =
 const stretched =
   "after:absolute after:inset-0 after:z-[1] after:content-[''] focus-visible:outline-none group-has-[a:focus-visible]:underline";
 
-function Media({ item, className, light }: { item: SearchItem; className?: string; light?: boolean }) {
+export function Media({ item, className, light }: { item: SearchItem; className?: string; light?: boolean }) {
   const cat = item.categoryId ? categoryById(item.categoryId) : undefined;
   const CatIcon = cat?.icon;
   return (
@@ -158,7 +169,16 @@ function ViewsPill({ n, className }: { n: number; className?: string }) {
 }
 
 /** Coração do card. Visitante vê o convite para entrar; depois do login a ação é retomada. */
-function CardHeart({ item, className }: { item: SearchItem; className?: string }) {
+export function CardHeart({
+  item,
+  className,
+  inline,
+}: {
+  item: SearchItem;
+  className?: string;
+  /** Sem posição absoluta: o pai posiciona (Explorar). */
+  inline?: boolean;
+}) {
   const requireAuth = useRequireAuth();
   const toast = useToast();
   const [on, setOn] = useState(item.favorited ?? false);
@@ -193,7 +213,8 @@ function CardHeart({ item, className }: { item: SearchItem; className?: string }
         m.mutate(!on);
       }}
       className={cn(
-        "absolute z-10 flex size-8 items-center justify-center rounded-full bg-white text-navy shadow-card transition-transform hover:scale-110 disabled:opacity-60",
+        inline ? "relative z-10" : "absolute z-10",
+        "flex size-8 items-center justify-center rounded-full bg-white text-navy shadow-card transition-transform hover:scale-110 disabled:opacity-60",
         className,
       )}
     >
@@ -217,7 +238,7 @@ function StatusChip({ status }: { status: NonNullable<SearchItem["status"]> }) {
   );
 }
 
-function Avatar({ item, size = "md" }: { item: SearchItem; size?: "sm" | "md" }) {
+export function Avatar({ item, size = "md" }: { item: SearchItem; size?: "sm" | "md" }) {
   const name = item.profile?.name ?? item.title;
   const box = size === "md" ? "size-8 text-[10px]" : "size-7 text-[10px]";
   return item.profile?.avatarUrl ? (
@@ -510,6 +531,10 @@ function ServiceCard({ item, onOpen, compare }: { item: SearchItem; onOpen?: () 
 
 /* ---------- lugar / experiência ---------- */
 
+/**
+ * Card de experiência (protótipo): foto cheia com degradê, selo de situação no topo, título e preço embaixo e o
+ * botão "mais" que abre categoria, nota, bairro e quem oferece.
+ */
 function PlaceCard({
   item,
   onOpen,
@@ -519,67 +544,128 @@ function PlaceCard({
   onOpen?: () => void;
   reason?: string | null;
 }) {
+  const [more, setMore] = useState(false);
   const cat = item.categoryId ? categoryById(item.categoryId) : undefined;
   const plaque = item.scheduleLabel ?? (item.status ? STATUS[item.status].place : null);
   const dot = item.status ? STATUS[item.status].dot : "bg-accent-hover";
+  const plaqueCls = item.status
+    ? { open: "text-success-text", soon: "text-accent-text", closed: "text-danger-text" }[item.status]
+    : "text-text-strong";
+  const href = resultHref(item);
+  const chip = reason ?? cat?.name;
   return (
-    <article className="card group relative flex h-[420px] min-w-0 flex-col justify-end overflow-hidden rounded-2xl bg-navy-700 text-white shadow-raised transition duration-150 hover:-translate-y-0.5 hover:shadow-pop">
+    <article className="card group relative h-[420px] min-w-0 overflow-hidden rounded-2xl bg-navy-700 text-white shadow-raised transition duration-150 hover:-translate-y-0.5 hover:shadow-pop">
       <Media item={item} light />
       <span aria-hidden className="scrim-place pointer-events-none absolute inset-0" />
+      <Link
+        href={href}
+        onClick={onOpen}
+        aria-label={item.title}
+        tabIndex={-1}
+        className="absolute inset-0 z-[1]"
+      />
       {plaque && (
-        <span className="absolute top-3 left-3 z-[2] inline-flex h-6 items-center gap-1.5 rounded bg-white px-2 text-[11px] leading-4 font-bold text-text-strong">
+        <span
+          className={cn(
+            "pointer-events-none absolute top-3 left-3 z-[2] inline-flex h-6 items-center gap-1.5 rounded bg-white px-2 text-[11px] leading-4 font-bold",
+            plaqueCls,
+          )}
+        >
           <span className={cn("size-1.5 rounded-full", dot)} aria-hidden />
           {plaque}
         </span>
       )}
-      {item.sponsored && <SponsoredTag className="top-11 left-3" />}
-      <CardHeart item={item} className="top-2.5 right-2.5" />
-      <div className="relative z-[2] flex flex-col gap-2 p-3">
-        {(reason || cat) && (
-          <span className="inline-flex h-6 items-center self-start rounded-full bg-white/20 px-2.5 text-xs leading-4 font-bold whitespace-nowrap">
-            {reason ?? cat?.name}
-          </span>
+      {item.sponsored && <SponsoredTag className="pointer-events-none top-11 left-3 tracking-[0.3px]" />}
+      <CardHeart item={item} className="top-2 right-2" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex flex-col gap-1.5 p-3">
+        {more && (
+          <div className="flex flex-col gap-2">
+            {chip && (
+              <span className="inline-flex h-6 items-center self-start rounded-full bg-white/[0.18] px-2.5 text-xs leading-4 font-bold whitespace-nowrap">
+                {chip}
+              </span>
+            )}
+            {item.description && (
+              <span className="truncate text-xs leading-4 text-white/80">{item.description}</span>
+            )}
+            <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-white/85">
+              {typeof item.viewCount === "number" && (
+                <>
+                  <Play className="size-2.5 fill-white" aria-hidden />
+                  {kcount(item.viewCount)}
+                  <span aria-hidden className="mx-0.5 text-white/60">
+                    ·
+                  </span>
+                </>
+              )}
+              {item.rating !== null && item.reviewCount > 0 && (
+                <>
+                  <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
+                  <span className="font-semibold text-white">{formatRating(item.rating)}</span>
+                  <span>({item.reviewCount})</span>
+                  <span aria-hidden className="mx-0.5 text-white/60">
+                    ·
+                  </span>
+                </>
+              )}
+              <span className="truncate">
+                {item.distanceKm !== null ? formatKm(item.distanceKm) : "distância indisponível"}
+                {item.neighborhood && ` · ${item.neighborhood}`}
+              </span>
+            </p>
+          </div>
         )}
-        <h3 className="truncate text-[15px] leading-5 font-bold">
-          <Link href={resultHref(item)} onClick={onOpen} className={stretched} title={item.title}>
+        <h3 className="truncate text-base leading-6 font-bold">
+          <Link
+            href={href}
+            onClick={onOpen}
+            className="pointer-events-auto relative z-[2]"
+            title={item.title}
+          >
             {item.title}
           </Link>
         </h3>
-        <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-white/85">
-          {item.rating !== null && item.reviewCount > 0 && (
-            <>
-              <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
-              <span className="font-semibold text-white">{formatRating(item.rating)}</span>
-              <span>({item.reviewCount})</span>
-              <span aria-hidden className="mx-0.5 text-white/60">
-                ·
-              </span>
-            </>
-          )}
-          <span className="truncate">
-            {item.distanceKm !== null ? formatKm(item.distanceKm) : "distância indisponível"}
-            {item.neighborhood && ` · ${item.neighborhood}`}
-          </span>
-        </p>
-        {item.profile && (
-          <div className="flex min-w-0 items-center gap-1.5">
-            <Avatar item={item} size="sm" />
-            <span className="truncate text-xs leading-4 font-semibold">{item.profile.name}</span>
-            {item.profile.verified && (
-              <BadgeCheck className="size-3.5 shrink-0" aria-label="Identidade verificada" />
-            )}
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden whitespace-nowrap">
+            {item.price ? (
+              <>
+                {item.price.unit && (
+                  <span className="text-xs leading-4 text-white/85">{item.price.unit}</span>
+                )}
+                <span className="text-xl leading-7 font-bold text-accent">
+                  {formatMoney(item.price.amountCents)}
+                </span>
+              </>
+            ) : item.offerText ? (
+              <span className="truncate text-sm leading-5 font-bold text-accent">{item.offerText}</span>
+            ) : null}
           </div>
-        )}
-        {item.price && (
-          <p className="flex items-baseline gap-1.5 text-white">
-            {item.price.unit && <span className="text-xs text-white/80">{item.price.unit}</span>}
-            <span className="text-xl leading-7 font-extrabold text-accent">
-              {formatMoney(item.price.amountCents)}
-            </span>
-          </p>
-        )}
-        {!item.price && item.offerText && (
-          <p className="text-sm leading-5 font-extrabold text-accent">{item.offerText}</p>
+          <button
+            type="button"
+            aria-expanded={more}
+            aria-label={`${more ? "Menos" : "Mais"} informações: ${item.title}`}
+            onClick={() => setMore((m) => !m)}
+            className="pointer-events-auto relative z-[3] inline-flex h-[26px] shrink-0 items-center gap-0.5 rounded-full pr-1.5 pl-2 text-xs font-semibold text-white"
+          >
+            {more ? "menos" : "mais"}
+            <ChevronDown
+              className={cn("size-3.5 transition-transform", more && "rotate-180")}
+              strokeWidth={2.4}
+              aria-hidden
+            />
+          </button>
+        </div>
+        {more && item.profile && (
+          <div className="flex flex-col gap-2">
+            <div className="h-px bg-white/20" />
+            <div className="flex min-w-0 items-center gap-1.5">
+              <Avatar item={item} size="sm" />
+              <span className="truncate text-xs leading-4 font-semibold">{item.profile.name}</span>
+              {item.profile.verified && (
+                <BadgeCheck className="size-3.5 shrink-0" aria-label="Identidade verificada" />
+              )}
+            </div>
+          </div>
         )}
       </div>
     </article>
@@ -600,7 +686,7 @@ function ReelCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
           ? { text: "Novo", cls: "bg-white text-navy", live: false }
           : null;
   const right = item.live
-    ? `${item.live.viewers} assistindo`
+    ? kcount(item.live.viewers)
     : typeof item.viewCount === "number"
       ? kcount(item.viewCount)
       : null;
@@ -614,6 +700,13 @@ function ReelCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
     >
       <Media item={item} light />
       <span aria-hidden className="scrim-reel pointer-events-none absolute inset-0" />
+      <Link
+        href={resultHref(item)}
+        onClick={onOpen}
+        aria-label={item.title}
+        tabIndex={-1}
+        className="absolute inset-0 z-[1]"
+      />
       {tag && (
         <span
           className={cn(
@@ -629,6 +722,7 @@ function ReelCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
         <span className="absolute top-2.5 right-2.5 z-[2] inline-flex h-[22px] items-center gap-1 rounded-full bg-black/35 px-2 text-[11px] font-semibold">
           <Play className="size-2.5 fill-white" aria-hidden />
           {right}
+          {item.live && <span className="sr-only">assistindo</span>}
         </span>
       )}
       {item.live && (
@@ -640,7 +734,7 @@ function ReelCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
         </span>
       )}
       {item.sponsored && <SponsoredTag className="top-10 left-2.5" />}
-      <div className="absolute inset-x-0 bottom-0 z-[2] flex flex-col gap-1.5 p-3">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] flex flex-col gap-1.5 p-3">
         {item.profile && (
           <div className="flex min-w-0 items-center gap-1.5">
             <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full border-2 border-amber bg-navy-700 text-[9px] font-extrabold">
@@ -658,7 +752,7 @@ function ReelCard({ item, onOpen }: { item: SearchItem; onOpen?: () => void }) {
           <Link
             href={resultHref(item)}
             onClick={onOpen}
-            className={cn("line-clamp-2", stretched)}
+            className="pointer-events-auto line-clamp-2"
             title={item.title}
           >
             {item.title}
