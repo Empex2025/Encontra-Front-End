@@ -73,7 +73,6 @@ export const productSchema = z.object({
   profile: profileSummarySchema,
   rating: z.number().min(0).max(5).nullable(),
   reviewCount: z.number().int().nonnegative(),
-  sold: z.number().int().nonnegative().nullable(),
   price: z
     .object({
       amountCents: z.number().int().nonnegative(),
@@ -121,7 +120,6 @@ export const providerSchema = z.object({
   serviceMode: z.enum(["local", "home", "both"]),
   homeRadiusKm: z.number().nullable(),
   areas: z.array(z.string()),
-  jobsDone: z.number().int().nullable(),
   yearsExperience: z.number().int().nullable(),
   recommendPct: z.number().int().min(0).max(100).nullable(),
   nextSlot: nullableStr,
@@ -261,7 +259,7 @@ export const catalog = {
     slug: string,
     q: {
       q: string;
-      sort: "best_selling" | "price_asc" | "price_desc";
+      sort: "most_reviewed" | "price_asc" | "price_desc";
       cat?: string;
       page: number;
       lat: number | null;

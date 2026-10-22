@@ -22,7 +22,6 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
   "profile": "ProfileSummary (abaixo)",
   "rating": 4.8,
   "reviewCount": 120,
-  "sold": 340,
   "price": { "amountCents": 27990, "oldAmountCents": 34990, "updatedAt": "2026-10-10T10:00:00Z" },
   "location": { "distanceKm": 2.4, "neighborhood": "Farol", "city": "Maceió", "lat": null, "lng": null },
   "sizes": [{ "label": "42", "available": false }],
@@ -120,7 +119,6 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
   "serviceMode": "home",
   "homeRadiusKm": 8,
   "areas": ["Farol", "Ponta Verde"],
-  "jobsDone": 210,
   "yearsExperience": 12,
   "recommendPct": 97,
   "nextSlot": "Hoje, 14h",
@@ -135,7 +133,7 @@ Endereço público `/p/{slug}`. 404 `NOT_FOUND` se não existir.
 
 ### `GET /profiles/{slug}/products?q&sort&cat&page&limit`
 
-`sort` ∈ `best_selling` (padrão), `price_asc`, `price_desc`. Resposta: a de `GET /search` (`items`, `total`, `facets.categories` para as categorias com contagem). Respeita o raio do usuário só para calcular `distanceKm`.
+`sort` ∈ `most_reviewed` (padrão; mais avaliados), `price_asc`, `price_desc`. Resposta: a de `GET /search` (`items`, `total`, `facets.categories` para as categorias com contagem). Respeita o raio do usuário só para calcular `distanceKm`.
 
 ### `GET /profiles/{slug}/posts?page&limit`
 

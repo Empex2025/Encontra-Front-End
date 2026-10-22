@@ -40,7 +40,7 @@ Branch: `fix/fidelidade-home`. Comparação em 1440 px (artboard HomeV2) e 390 p
 
 ## Depende do back-end
 
-`GET /discovery/home?section&tab&page&limit`, `mapTotal`, campos opcionais dos itens (`viewCount`, `soldCount`, `doneCount`, `specialties`, `serviceNote`, `scheduleLabel`, `favorited`, `profile.avatarUrl`), `live` nos grupos de Stories, `headline` e `series` em preços do radar, serviço de mapas.
+`GET /discovery/home?section&tab&page&limit`, `mapTotal`, campos opcionais dos itens (`viewCount`, `specialties`, `serviceNote`, `scheduleLabel`, `favorited`, `profile.avatarUrl`), `live` nos grupos de Stories, `headline` e `series` em preços do radar, serviço de mapas.
 
 ## Testado
 

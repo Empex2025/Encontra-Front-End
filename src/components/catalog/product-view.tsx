@@ -11,7 +11,6 @@ import {
   Navigation,
   Package,
   Scale,
-  ShoppingBag,
   Star,
   Store,
 } from "lucide-react";
@@ -266,13 +265,6 @@ function ProductContent({ product: p }: { product: Product }) {
               ) : (
                 <span>Ainda sem avaliações</span>
               )}
-              <span aria-hidden className="mx-0.5 text-border-strong">
-                ·
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <ShoppingBag className="size-4" aria-hidden />
-                {p.sold !== null ? `${formatInt(p.sold)} vendidos` : "Vendas não informadas"}
-              </span>
             </p>
           </div>
 

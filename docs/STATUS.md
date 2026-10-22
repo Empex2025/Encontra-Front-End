@@ -8,6 +8,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 > **Fidelidade ao protótipo (16/10/2026, PR consolidado):** Home, Explorar (busca em dois campos, Grade/Grade + mapa/Mapa, cards), Ofertas, Comparar (`/comparar` e `/comparar/quadro`), Favoritos, Entrada (9 telas + `/visitante`), Conta, Ajuda, Institucional, Estados, Stories, Ao vivo, Evento e Radar conferidos tela a tela contra o protótipo (roteiros em `docs/testes/*-fidelidade.md`). Visitante: Conversas, Notificações, Favoritos e Conta abrem o pop-up "Entre para…". Tudo **Implementado**, nada **Validado** (sem a API real). Mapa segue Bloqueado.
 
+> **Avaliações no lugar de vendas (21/10/2026, decisão dos fundadores):** a plataforma não tem pagamento, então não existe contagem de vendidos nem de serviços feitos. Removidos `sold` (produto), `jobsDone` (prestador), `soldCount` e `doneCount` (itens de busca); cards, comparação e perfil mostram "(N avaliações)". Ordenação "Mais vendidos" virou "Mais avaliados" (`most_reviewed` no perfil da loja, `reviews` na seleção de comparação). Conferido com tipos, lint, 168 testes e build; **não** validado com a API real.
+
 > **Situação do back-end (14/10/2026):** o repositório do back-end já tem código (NestJS, cerca de 220 rotas sob `/api/v1`), mas só 11 de 69 grupos de rotas do front coincidem em método e caminho; veja `docs/RECONCILIACAO-API.md`. Nada foi testado contra ele, então **nada pode ser "Validado"** ainda.
 
 ## Base (estrutura global)

@@ -65,7 +65,7 @@ export function fetchComparison(refs: readonly string[], point: { lat: number | 
 
 /* ---------- Pesquisa da tela Comparar (docs/contratos/comparar.md › Pesquisa para comparar) ---------- */
 
-export const COMPARE_SORTS = ["relevance", "distance", "price", "price_desc", "rating", "sold"] as const;
+export const COMPARE_SORTS = ["relevance", "distance", "price", "price_desc", "rating", "reviews"] as const;
 export type CompareSort = (typeof COMPARE_SORTS)[number];
 
 const compareSearchSchema = searchResponseSchema.extend({

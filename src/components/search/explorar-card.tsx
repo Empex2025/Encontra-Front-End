@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, CircleCheck, Home, MapPin, Sparkles, Star, Tag } from "lucide-react";
+import { BadgeCheck, Home, MapPin, Sparkles, Star, Tag } from "lucide-react";
 import Link from "next/link";
 
 import { CompareButton } from "@/components/comparison/compare-button";
@@ -10,7 +10,7 @@ import { categoryById } from "@/lib/domain/categories";
 import { discountPct, formatKm, formatMoney, formatRating } from "@/lib/format";
 import { lojaHref, prestadorHref } from "@/lib/routes";
 
-import { Avatar, CardHeart, initials, kcount, Media, resultHref, STATUS } from "./result-card";
+import { Avatar, CardHeart, initials, Media, resultHref, STATUS } from "./result-card";
 
 /** Alturas da foto em ciclo, como o mosaico do protótipo (Explorar › Grade). É só ritmo visual, não é dado. */
 const PHOTO_H = [300, 220, 260, 200, 320, 240, 280, 210];
@@ -51,21 +51,18 @@ function StatusText({ status }: { status: NonNullable<SearchItem["status"]> }) {
   );
 }
 
-function Rating({ item, extra }: { item: SearchItem; extra?: React.ReactNode }) {
+function Rating({ item }: { item: SearchItem }) {
   const has = item.rating !== null && item.reviewCount > 0;
-  if (!has && !extra) return null;
+  if (!has) return null;
   return (
     <p className="flex min-w-0 items-center gap-1 overflow-hidden text-xs leading-4 whitespace-nowrap text-text-muted">
       {has && (
         <>
           <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
           <span className="font-semibold text-text">{formatRating(item.rating as number)}</span>
-          <span>({item.reviewCount})</span>
-          <span className="sr-only">avaliações</span>
+          <span>({item.reviewCount} avaliações)</span>
         </>
       )}
-      {has && extra && dot}
-      {extra}
     </p>
   );
 }
@@ -334,17 +331,7 @@ function ServiceCard({
         )}
         <Highlight item={item} />
         <div className="flex flex-col gap-1.5">
-          <Rating
-            item={item}
-            extra={
-              typeof item.doneCount === "number" ? (
-                <>
-                  <CircleCheck className="size-3.5 shrink-0 text-success" strokeWidth={2.4} aria-hidden />
-                  <span>{kcount(item.doneCount)} atendimentos</span>
-                </>
-              ) : null
-            }
-          />
+          <Rating item={item} />
           <p className="flex min-w-0 items-center gap-1 overflow-hidden text-xs leading-4 whitespace-nowrap text-text-muted">
             <Where item={item} note={mode ?? item.neighborhood} />
           </p>

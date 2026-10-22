@@ -61,8 +61,6 @@ export const searchItemSchema = z.object({
   lng: z.number().nullable(),
   /* Campos opcionais dos cards (protótipo). Ausente = o card não mostra a informação. Contrato: docs/contratos/home.md */
   viewCount: z.number().int().nonnegative().nullable().optional(),
-  soldCount: z.number().int().nonnegative().nullable().optional(),
-  doneCount: z.number().int().nonnegative().nullable().optional(),
   specialties: z.array(z.string()).optional(),
   /** Detalhe de onde o serviço atende (ex.: "até 8 km" em domicílio, "Salão próprio" no local). */
   serviceNote: z.string().nullable().optional(),

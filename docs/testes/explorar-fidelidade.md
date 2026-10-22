@@ -9,7 +9,7 @@ Compare em tela de 1440 px de largura (e depois em 390 px, celular). Sem back-en
 3. Linha de categorias: "Tudo" + 12 categorias (quadrados de 52 px, barra âmbar na escolhida).
 4. NÃO há linha de lentes nem caixa "Filtrar" aqui (no protótipo elas só existem depois de buscar).
 5. Título "O que tem perto de você" e, à direita, o seletor **Grade · Grade + mapa · Mapa**. Não há "Ordenar" na descoberta.
-6. Grade em mosaico (5 colunas em 1440 px): foto com alturas diferentes, selo AO VIVO, "Patrocinado", título, preço, nota · km · bairro, loja e "Aberto agora". Serviços têm chip da categoria, "A partir de" e "N atendimentos".
+6. Grade em mosaico (5 colunas em 1440 px): foto com alturas diferentes, selo AO VIVO, "Patrocinado", título, preço, nota · km · bairro, loja e "Aberto agora". Serviços têm chip da categoria, "A partir de" e "(N avaliações)" ao lado da nota.
 7. "Carregar mais resultados (N restantes)" no fim.
 
 ## 2. Busca (`/explorar?q=…`)

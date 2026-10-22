@@ -161,3 +161,9 @@ Código pronto (PR #8), **não validado com a API real** (testado no navegador c
 - Ajuda/Institucional/Estados: `GET /help/faq` (`items[].link`, `support`), `GET /legal/{doc}` (`summary`), `GET /status` (`until`). Texto de "Como funciona" e descrições de cookies fixos no código: revisão jurídica.
 - Ao vivo: `distanceKm` opcional em `GET /lives`.
 - Sem cache offline para a tela "sem internet" com itens salvos; sem dado "senha alterada há…".
+
+## Avaliações no lugar de vendas (21/10/2026) — dependem do back-end
+
+- Não enviar nem esperar `sold`, `jobsDone`, `soldCount`, `doneCount`: o front não os lê mais (campos extras são ignorados pelo Zod).
+- `sort`: `GET /search` na seleção de comparação passa a usar `reviews` (em vez de `sold`); `GET /profiles/{slug}/products` usa `most_reviewed` (em vez de `best_selling`). Ordem pela quantidade de avaliações.
+- Comparação: o critério "Vendidos" sai; o servidor pode enviar "Nº de avaliações" (`kind: number`, maior vence, selo "Mais avaliado").
