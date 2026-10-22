@@ -248,12 +248,6 @@ function ProviderHeader({
             )}
             {SEP}
             <span>
-              {v.jobsDone !== null
-                ? `${formatInt(v.jobsDone)} serviços feitos`
-                : "Serviços feitos não informado"}
-            </span>
-            {SEP}
-            <span>
               {v.yearsExperience !== null
                 ? `${v.yearsExperience} anos de experiência`
                 : "Experiência não informada"}

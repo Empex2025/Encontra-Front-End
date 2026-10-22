@@ -30,7 +30,7 @@ De cima para baixo, deve ser exatamente: cartão branco com **busca → Atalhos 
 1. Cada bloco tem: rótulo em caixa-alta com ícone, título, subtítulo, contador ("1–6 de 12"), **setas** para avançar/voltar, **abas** em pílulas e **Ver todos** (leva ao Explorar já filtrado).
 2. Abas: Acontecendo (Tudo · Ao vivo · Vídeos · Promoções e ofertas · Menor preço); Produtos (Tudo · Esporte · Moda · Eletrônicos · Casa e construção); Serviços (Tudo · Disponível hoje · Casa e reparos · Beleza · Limpeza · Automotivo); Experiências (Tudo · Aberto agora · Comer · Beber · Passeios · Para crianças · Eventos). Setas ← → do teclado trocam a aba.
 3. Trocar de aba ou página busca no servidor; carregando mostra esqueleto, erro mostra "Tentar de novo" dentro do bloco, aba sem itens diz "Nenhum item nesta aba perto de você agora".
-4. Cartões: **Acontecendo** = cartão vertical de 380 px com foto, etiqueta (AO VIVO, % OFF, Oferta, Novo), "N assistindo" e botão de play nas lives; **Produtos** = foto alta, coração, motivo ("Mais perto", "Você segue"…), nota, vendidos, preço com desconto, loja e "Aberta agora"; **Serviços** = especialidades, "A partir de", serviços feitos, "Atende em domicílio/no local"; **Experiências** = foto cheia de 420 px com etiqueta "Aberto agora / Hoje, 20h". Só aparece o que o servidor trouxe.
+4. Cartões: **Acontecendo** = cartão vertical de 380 px com foto, etiqueta (AO VIVO, % OFF, Oferta, Novo), "N assistindo" e botão de play nas lives; **Produtos** = foto alta, coração, motivo ("Mais perto", "Você segue"…), nota e quantidade de avaliações, preço com desconto, loja e "Aberta agora"; **Serviços** = especialidades, "A partir de", nota e quantidade de avaliações, "Atende em domicílio/no local"; **Experiências** = foto cheia de 420 px com etiqueta "Aberto agora / Hoje, 20h". Só aparece o que o servidor trouxe.
 5. Coração: visitante vê o convite para entrar; depois do login o item é salvo.
 
 ## E. Stories, Meu Radar e Radar do bairro
@@ -53,4 +53,4 @@ Sem API, todos os blocos mostram erro com "Tentar de novo" ou "Defina seu local�
 
 ## H. Com back-end
 
-Confirmar contra a API real: paginação e abas (`GET /discovery/home?section&tab&page&limit`), `mapTotal`, campos opcionais dos cartões (`viewCount`, `soldCount`, `doneCount`, `specialties`, `serviceNote`, `scheduleLabel`, `favorited`, `profile.avatarUrl`), story `live`, faixa de destaque e minigráfico dos preços. Contratos em `docs/contratos/home.md` e `docs/contratos/radar.md`.
+Confirmar contra a API real: paginação e abas (`GET /discovery/home?section&tab&page&limit`), `mapTotal`, campos opcionais dos cartões (`viewCount`, `specialties`, `serviceNote`, `scheduleLabel`, `favorited`, `profile.avatarUrl`), story `live`, faixa de destaque e minigráfico dos preços. Contratos em `docs/contratos/home.md` e `docs/contratos/radar.md`.

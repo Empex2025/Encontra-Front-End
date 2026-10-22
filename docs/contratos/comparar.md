@@ -79,11 +79,11 @@ Itens que não existem mais (apagados ou desativados) **não dão erro**: voltam
 
 ### Regras
 
-- **Os critérios vêm do servidor**, configurados por grupo (cabeleireiros: Preço, Avaliação, Distância, Serviços, Experiência, Atende em domicílio, Horário, Responde em; tênis: Preço, Cupom da loja hoje, Desconto, Avaliação, Vendidos, Tamanhos disponíveis, Loja, Distância, Retirada e entrega, Pagamento…). O front só desenha o que vier. A ordem do array é a ordem das linhas.
+- **Os critérios vêm do servidor**, configurados por grupo (cabeleireiros: Preço, Avaliação, Distância, Serviços, Experiência, Atende em domicílio, Horário, Responde em; tênis: Preço, Cupom da loja hoje, Desconto, Avaliação, Nº de avaliações, Tamanhos disponíveis, Loja, Distância, Retirada e entrega, Pagamento…). O front só desenha o que vier. A ordem do array é a ordem das linhas.
 - O **último critério é sempre `differs`** ("O que diferencia"): o front nunca o esconde.
 - `kind`: `money` (centavos em `value`), `distance` (km), `rating` (0–5), `number`, `boolean` (`value` true/false; `text` "Sim"/"Não"), `text`.
 - `better`: `lower` (ganha o menor), `higher` (ganha o maior) ou `null` (não compara).
-- `priority`: se não for `null`, o critério pode ser marcado pela pessoa como prioridade (até 3) e `badge` é o selo do vencedor ("Menor preço", "Mais perto", "Melhor avaliação", "Mais serviços", "Mais experiência", "Mais rápido", "Mais vendido", "Maior desconto").
+- `priority`: se não for `null`, o critério pode ser marcado pela pessoa como prioridade (até 3) e `badge` é o selo do vencedor ("Menor preço", "Mais perto", "Melhor avaliação", "Mais serviços", "Mais experiência", "Mais rápido", "Mais avaliado", "Maior desconto").
 - `cells[critério]`: `text` é o texto principal já formatado (pt-BR); `detail` é o complemento ("de R$ 349,90", "com cupom: R$ 251,91 · código ESPORTE10"); `value` é o número usado para decidir o vencedor. `text: null` = **informação não disponível** (o front mostra "Não informado"; nunca invente valor).
 - **O destaque é decidido no front**, só nos critérios que a pessoa marcou e só se os valores forem diferentes. Empate: todos os empatados ganham o selo. O servidor não escolhe vencedor.
 - Todos os itens de uma resposta pertencem ao mesmo `group`. `group.id` é o mesmo `group.id` que vem em cada item de `GET /search` (campo novo `group`, abaixo).
@@ -100,13 +100,13 @@ Para o botão "Comparar" saber o grupo sem outra chamada, cada item de `GET /sea
 
 ## Dados que já existem e alimentam o quadro
 
-Preço e data da atualização, loja/prestador, distância, nota e avaliações, disponibilidade, vendidos, horário, atende em domicílio. Nada novo precisa ser coletado do lojista para a comparação funcionar; critérios sem dado aparecem como "Não informado".
+Preço e data da atualização, loja/prestador, distância, nota e quantidade de avaliações, disponibilidade, horário, atende em domicílio. Nada novo precisa ser coletado do lojista para a comparação funcionar; critérios sem dado aparecem como "Não informado".
 
 ## Extensões da fidelidade ao protótipo (16/10/2026)
 
 Aditivas e opcionais.
 
-- **`GET /search` na tela de seleção:** novos filtros `comparable=1` (só itens com `group`), `hasDiscount=1`, `openNow=1`, `serviceMode=home`, `verified=1`; `sort` aceita também `price_desc` (maior preço) e `sold` (mais vendidos). A resposta ganha `related: string[]` (buscas relacionadas; padrão `[]`, a linha some sem dados).
+- **`GET /search` na tela de seleção:** novos filtros `comparable=1` (só itens com `group`), `hasDiscount=1`, `openNow=1`, `serviceMode=home`, `verified=1`; `sort` aceita também `price_desc` (maior preço) e `reviews` (mais avaliados, pela quantidade de avaliações). A resposta ganha `related: string[]` (buscas relacionadas; padrão `[]`, a linha some sem dados).
 - **`GET /comparisons/view`:** cada item pode trazer `card` (um `SearchItem` completo) para o quadro mostrar o mesmo cartão da pesquisa. Sem `card`, o quadro usa o cartão enxuto com os dados da comparação.
 - A seleção (até 3, mesmo `group`) continua no navegador; cada entrada guarda um instantâneo (`title`, `imageUrl`, `priceCents`, `categoryId`) só para desenhar a bandeja "Sua comparação" sem nova chamada.
 - Rota do quadro: `/comparar/quadro`; a seleção/pesquisa fica em `/comparar?q=`.

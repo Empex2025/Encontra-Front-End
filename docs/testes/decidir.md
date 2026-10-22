@@ -44,7 +44,7 @@ Checar: nenhuma página em branco; nenhum texto "em breve".
 
 **Prestador `/s/ALGUM-ENDERECO`**
 
-- Indicadores Recomendam / Serviços feitos / Experiência / Próximo horário (com "—").
+- Indicadores Recomendam / Experiência / Próximo horário (com "—").
 - Seções Serviços, Fotos de trabalhos, Avaliações, Sobre, Pedir orçamento sempre presentes.
 - Sem serviços: o formulário de orçamento fica desativado com aviso; use **Conversar**.
 

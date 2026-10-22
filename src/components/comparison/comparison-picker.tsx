@@ -42,7 +42,7 @@ const SORT_LABEL: Record<CompareSort, string> = {
   price: "Menor preço",
   price_desc: "Maior preço",
   rating: "Melhor avaliação",
-  sold: "Mais vendidos",
+  reviews: "Mais avaliados",
 };
 
 const chip = (on: boolean, extra?: string) =>
@@ -255,7 +255,7 @@ export function ComparisonPicker() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-surface px-4 py-3 shadow-card">
         <div role="group" aria-label="Ordenar" className="flex flex-wrap items-center gap-1.5">
           <span className="text-[13px] font-bold text-text-strong">Ordenar:</span>
-          {COMPARE_SORTS.filter((s) => s !== "sold" || !serviceSearch).map((s) => (
+          {COMPARE_SORTS.map((s) => (
             <button
               key={s}
               type="button"

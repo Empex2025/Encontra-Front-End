@@ -625,7 +625,7 @@ function PostViewer({ post, onClose }: { post: Post; onClose: () => void }) {
 }
 
 const SORTS = [
-  { id: "best_selling", label: "Mais vendidos" },
+  { id: "most_reviewed", label: "Mais avaliados" },
   { id: "price_asc", label: "Menor preço" },
   { id: "price_desc", label: "Maior preço" },
 ] as const;
@@ -645,7 +645,7 @@ function StoreProducts({ slug }: { slug: string }) {
   const requireAuth = useRequireAuth();
   const [term, setTerm] = useState("");
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<(typeof SORTS)[number]["id"]>("best_selling");
+  const [sort, setSort] = useState<(typeof SORTS)[number]["id"]>("most_reviewed");
   const [cat, setCat] = useState<string | undefined>();
   const [want, setWant] = useState(false);
 

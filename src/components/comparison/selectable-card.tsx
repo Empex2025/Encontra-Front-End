@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, CircleCheck, House, MapPin, Play, ShoppingBag, Star, Store } from "lucide-react";
+import { BadgeCheck, House, MapPin, Play, Star, Store } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@/components/ui/cn";
@@ -179,29 +179,13 @@ export function SelectableCard({
         )}
 
         <div className="flex flex-col gap-1.5">
-          {(hasRating || typeof item.soldCount === "number" || typeof item.doneCount === "number") && (
+          {hasRating && (
             <p className={metaLine}>
               {hasRating && (
                 <>
                   <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
                   <span className="font-semibold text-text">{formatRating(item.rating as number)}</span>
-                  <span>({item.reviewCount})</span>
-                  <span className="sr-only">avaliações</span>
-                </>
-              )}
-              {hasRating && (typeof item.soldCount === "number" || typeof item.doneCount === "number") && (
-                <Dot />
-              )}
-              {!service && typeof item.soldCount === "number" && (
-                <>
-                  <ShoppingBag className="size-3.5 shrink-0" aria-hidden />
-                  <span>{kcount(item.soldCount)} vendidos</span>
-                </>
-              )}
-              {service && typeof item.doneCount === "number" && (
-                <>
-                  <CircleCheck className="size-3.5 shrink-0" aria-hidden />
-                  <span>{kcount(item.doneCount)} serviços feitos</span>
+                  <span>({item.reviewCount} avaliações)</span>
                 </>
               )}
             </p>

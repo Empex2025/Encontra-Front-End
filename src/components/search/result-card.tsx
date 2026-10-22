@@ -4,12 +4,10 @@ import { useMutation } from "@tanstack/react-query";
 import {
   BadgeCheck,
   ChevronDown,
-  CircleCheck,
   Heart,
   House,
   MapPin,
   Play,
-  ShoppingBag,
   Star,
   Store,
 } from "lucide-react";
@@ -257,25 +255,18 @@ export function Avatar({ item, size = "md" }: { item: SearchItem; size?: "sm" | 
   );
 }
 
-function Rating({ item, extra }: { item: SearchItem; extra?: React.ReactNode }) {
+function Rating({ item }: { item: SearchItem }) {
   const hasRating = item.rating !== null && item.reviewCount > 0;
-  if (!hasRating && !extra) return null;
+  if (!hasRating) return null;
   return (
     <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-text-muted">
       {hasRating && (
         <>
           <Star className="size-3.5 shrink-0 fill-accent text-accent" aria-hidden />
           <span className="font-semibold text-text">{formatRating(item.rating as number)}</span>
-          <span>({item.reviewCount})</span>
-          <span className="sr-only">avaliações</span>
+          <span>({item.reviewCount} avaliações)</span>
         </>
       )}
-      {hasRating && extra && (
-        <span aria-hidden className="mx-0.5 text-border-strong">
-          ·
-        </span>
-      )}
-      {extra}
     </p>
   );
 }
@@ -355,17 +346,7 @@ function ProductCard({
           </Link>
         </h3>
         <div className="flex flex-col gap-1.5">
-          <Rating
-            item={item}
-            extra={
-              typeof item.soldCount === "number" ? (
-                <>
-                  <ShoppingBag className="size-3.5 shrink-0" aria-hidden />
-                  <span>{kcount(item.soldCount)} vendidos</span>
-                </>
-              ) : null
-            }
-          />
+          <Rating item={item} />
           <Where item={item} />
         </div>
 
@@ -475,17 +456,7 @@ function ServiceCard({ item, onOpen, compare }: { item: SearchItem; onOpen?: () 
           <span className="text-xs leading-4 text-text-subtle">Preço sob consulta</span>
         )}
         <div className="flex flex-col gap-1.5">
-          <Rating
-            item={item}
-            extra={
-              typeof item.doneCount === "number" ? (
-                <>
-                  <CircleCheck className="size-3.5 shrink-0" aria-hidden />
-                  <span>{kcount(item.doneCount)} serviços feitos</span>
-                </>
-              ) : null
-            }
-          />
+          <Rating item={item} />
           <Where item={item} />
           {modeLabel && (
             <p className="flex min-w-0 items-center gap-1 text-xs leading-4 whitespace-nowrap text-text-muted">
