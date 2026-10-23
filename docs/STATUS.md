@@ -64,6 +64,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 > **Entrega nos cartões (23/10/2026, branch `feat/entrega-nos-cartoes`):** cartões de Explorar e resultados mostram, na linha da distância, "Entrega R$ 10", "Entrega grátis", "Só retirada" (produto) e "Na sua casa · +R$ 20" ou "Online" (serviço), só quando o servidor informa. Contrato em `docs/contratos/entrega.md`. Conferido com tipos, lint e testes; **não** validado com a API real. **Pendente:** Ofertas, Favoritos, Perfil da loja, Início, página do produto, e o cadastro do lojista (campos no painel).
 
+> **Cartão do pedido na conversa (23/10/2026, branch `feat/cartao-pedido-conversa`):** no topo da conversa, cancelar e remarcar sem custo, "Serviço realizado" / "Recebi meu produto" e nota em 1 toque com etiquetas opcionais. Contrato em `docs/contratos/pedido-conversa.md`. Conferido com tipos, lint e testes da lógica; **não** validado com a API real nem visto no navegador. **Pendente:** agenda de serviços no site, link "Escrever um comentário" (tela Avaliar com a conversa), lado do prestador.
+
 ## Contato e conta (transversal)
 
 | Tela / funcionalidade | Estado | Depende de |

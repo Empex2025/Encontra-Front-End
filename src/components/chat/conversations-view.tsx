@@ -1,5 +1,6 @@
 "use client";
 
+import { OrderCard } from "./order-card";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -557,6 +558,15 @@ function Thread({ id }: { id: string }) {
         <span className="self-center rounded-full bg-surface-2 px-3 py-1 text-center text-[11px] text-text-subtle">
           🔒 Conversa protegida na EncontraÊ · nunca compartilhe senhas ou códigos
         </span>
+        {detail.data.request && (
+          <OrderCard
+            conversationId={id}
+            request={detail.data.request}
+            partner={detail.data.profile.name}
+            reviewHref={null}
+            onChanged={refreshAll}
+          />
+        )}
         {msgs.hasNextPage && (
           <button
             type="button"
