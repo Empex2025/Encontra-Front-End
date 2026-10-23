@@ -39,6 +39,14 @@ export const searchItemSchema = z.object({
   imageUrl: z.string().nullable(),
   distanceKm: z.number().nonnegative().nullable(),
   neighborhood: z.string().nullable(),
+  /** Como receber: entrega com valor, grátis ou só retirada (produto); na casa/online com taxa (serviço). docs/contratos/entrega.md */
+  fulfillment: z
+    .object({
+      delivers: z.boolean().nullish(),
+      feeCents: z.number().int().nonnegative().nullish(),
+      serviceVenue: z.enum(["home", "online"]).nullish(),
+    })
+    .nullish(),
   rating: z.number().min(0).max(5).nullable(),
   reviewCount: z.number().int().nonnegative(),
   price: z

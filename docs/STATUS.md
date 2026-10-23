@@ -62,6 +62,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 
 > **Serviços: tipos de preço e "Combinar pelo chat" (23/10/2026, branch `feat/servicos-lista-precos`):** a lista de serviços do prestador mostra fixo, a partir de, por hora, por unidade, por período, grátis, sob orçamento e "a combinar pelo chat" (o botão abre a conversa). Contrato em `docs/contratos/servicos.md`. Conferido com tipos, lint e testes da lógica; **não** validado com a API real. Ainda **Pendente** no site: agenda e cancelar/remarcar no cartão da conversa, "Serviço realizado" com avaliação em 2 toques e entrega com valor nos cartões.
 
+> **Entrega nos cartões (23/10/2026, branch `feat/entrega-nos-cartoes`):** cartões de Explorar e resultados mostram, na linha da distância, "Entrega R$ 10", "Entrega grátis", "Só retirada" (produto) e "Na sua casa · +R$ 20" ou "Online" (serviço), só quando o servidor informa. Contrato em `docs/contratos/entrega.md`. Conferido com tipos, lint e testes; **não** validado com a API real. **Pendente:** Ofertas, Favoritos, Perfil da loja, Início, página do produto, e o cadastro do lojista (campos no painel).
+
 ## Contato e conta (transversal)
 
 | Tela / funcionalidade | Estado | Depende de |
