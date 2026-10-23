@@ -39,6 +39,18 @@ export const conversationDetailSchema = conversationSchema.extend({
   status: z.object({ online: z.boolean(), responseText: nstr }),
   whatsapp: nstr,
   profileHref: z.string(),
+  /** Pedido ligado à conversa (horário, orçamento, solicitação ou produto). Contrato: docs/contratos/pedido-conversa.md */
+  request: z
+    .object({
+      id: z.string(),
+      kind: z.enum(["booking", "quote", "service", "product"]),
+      title: z.string(),
+      rows: z.array(z.object({ label: z.string(), value: z.string() })),
+      status: z.enum(["open", "rescheduling", "cancelled", "done", "rated"]),
+      rating: z.number().int().min(1).max(5).nullish(),
+      tags: z.array(z.string()).nullish(),
+    })
+    .nullish(),
   /** Rascunho vindo de outra tela; o servidor entrega uma única vez. */
   draft: nstr.optional(),
 });
@@ -64,6 +76,12 @@ export const chat = {
     api(`/conversations/${seg(id)}/messages`, messagesSchema, { query: { before } }),
   send: (id: string, body: { text?: string; imageKey?: string }) =>
     api(`/conversations/${seg(id)}/messages`, messageSchema, { method: "POST", body }),
+  /** Cancelar, remarcar ou confirmar; o servidor registra a mensagem correspondente na conversa. */
+  requestAction: (id: string, action: "done" | "reschedule" | "cancel") =>
+    api(`/conversations/${seg(id)}/request/${action}`, none, { method: "POST" }),
+  /** Nota de 1 a 5 e etiquetas prontas (opcionais); comentário escrito fica na tela Avaliar. */
+  rateRequest: (id: string, body: { rating: number; tags: string[] }) =>
+    api(`/conversations/${seg(id)}/request/rating`, none, { method: "PUT", body }),
   mute: (id: string, muted: boolean) =>
     api(`/conversations/${seg(id)}/mute`, none, { method: "PUT", body: { muted } }),
   block: (id: string, blocked: boolean) =>
