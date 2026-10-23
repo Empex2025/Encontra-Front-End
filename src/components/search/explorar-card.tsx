@@ -10,6 +10,7 @@ import { categoryById } from "@/lib/domain/categories";
 import { discountPct, formatKm, formatMoney, formatRating } from "@/lib/format";
 import { lojaHref, prestadorHref } from "@/lib/routes";
 
+import { FulfillmentLine } from "./fulfillment-line";
 import { Avatar, CardHeart, initials, Media, resultHref, STATUS } from "./result-card";
 
 /** Alturas da foto em ciclo, como o mosaico do protótipo (Explorar › Grade). É só ritmo visual, não é dado. */
@@ -74,6 +75,7 @@ function Where({ item, note }: { item: SearchItem; note?: string | null }) {
       {item.distanceKm !== null ? (
         <>
           <span className="font-semibold text-text">{formatKm(item.distanceKm)}</span>
+          <FulfillmentLine item={item} />
           {(note ?? item.neighborhood) && (
             <>
               {dot}

@@ -26,6 +26,8 @@ import { categoryById } from "@/lib/domain/categories";
 import { discountPct, formatDayMonth, formatKm, formatMoney, formatRating } from "@/lib/format";
 import { liveHref, lojaHref, prestadorHref, produtoHref } from "@/lib/routes";
 
+import { FulfillmentLine } from "./fulfillment-line";
+
 export const STATUS = {
   open: {
     label: "Aberta agora",
@@ -278,6 +280,7 @@ function Where({ item }: { item: SearchItem }) {
       {item.distanceKm !== null ? (
         <>
           <span className="font-semibold text-text">{formatKm(item.distanceKm)}</span>
+          <FulfillmentLine item={item} />
           {item.neighborhood && (
             <>
               <span aria-hidden className="mx-0.5 text-border-strong">
