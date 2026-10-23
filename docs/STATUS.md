@@ -60,6 +60,8 @@ Fonte das telas e regras: Documento de entrega EncontraÊ – consumidor. Fases:
 | Stories (visualizador), Ao vivo (chat por consulta periódica) e Evento | Implementado (idem). Socket.IO e streaming de vídeo dependem do back-end/serviço | `/stories`, `/lives`, `/happenings` |
 | Compartilhado: página pública `/o/{slug}` (oferta) e prévia de links no servidor em `/p`, `/l`, `/s`, `/o` (Open Graph, JSON-LD, 404 real) | Implementado (tipos, lint, testes, build e navegador contra servidor de teste; **não** validado com a API real). Contrato em `docs/contratos/oferta.md`. Faltam `sitemap.xml`/`robots.txt` (dependem do back-end) | `GET /offers/{slug}`, rotas públicas sem sessão, `NEXT_PUBLIC_SITE_URL` |
 
+> **Serviços: tipos de preço e "Combinar pelo chat" (23/10/2026, branch `feat/servicos-lista-precos`):** a lista de serviços do prestador mostra fixo, a partir de, por hora, por unidade, por período, grátis, sob orçamento e "a combinar pelo chat" (o botão abre a conversa). Contrato em `docs/contratos/servicos.md`. Conferido com tipos, lint e testes da lógica; **não** validado com a API real. Ainda **Pendente** no site: agenda e cancelar/remarcar no cartão da conversa, "Serviço realizado" com avaliação em 2 toques e entrega com valor nos cartões.
+
 ## Contato e conta (transversal)
 
 | Tela / funcionalidade | Estado | Depende de |
