@@ -130,6 +130,11 @@ export const providerSchema = z.object({
       description: nullableStr,
       durationMinutes: z.number().int().nullable(),
       fromCents: z.number().int().nullable(),
+      // Tipos de preço (docs/contratos/servicos.md). Todos opcionais: sem `priceType`, vale `fromCents`.
+      priceType: z.enum(["fixed", "from", "hour", "unit", "period", "free", "quote", "combine"]).nullish(),
+      priceCents: z.number().int().nonnegative().nullish(),
+      unitLabel: z.string().nullish(),
+      minCents: z.number().int().nonnegative().nullish(),
     }),
   ),
   photos: z.array(z.object({ id: z.string(), url: z.string() })),

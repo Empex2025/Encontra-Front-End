@@ -41,8 +41,9 @@ import {
   WHEN_OPTIONS,
   type QuoteWhen,
 } from "@/lib/domain/quote-form";
+import { servicePrice } from "@/lib/domain/service-price";
 import { providerMessage, whatsappUrl } from "@/lib/domain/whatsapp";
-import { formatCount, formatInt, formatKm, formatMoney } from "@/lib/format";
+import { formatCount, formatInt, formatKm } from "@/lib/format";
 import { avaliarHref, conversaHref, denunciarHref, prestadorHref, routes } from "@/lib/routes";
 
 import { Avatar } from "./avatar";
@@ -95,7 +96,13 @@ export function ProviderPage({ profile: p }: { profile: Profile }) {
         <div className="flex min-w-0 flex-col gap-5">
           <ProviderHeader profile={p} provider={v} target={target} />
           <ProviderTabs profile={p} />
-          <Services provider={v} first={firstName(p.name)} serviceId={serviceId} onPick={setServiceId} />
+          <Services
+            provider={v}
+            first={firstName(p.name)}
+            serviceId={serviceId}
+            onPick={setServiceId}
+            profileId={p.id}
+          />
           <Photos provider={v} />
           <section id="avaliacoes" aria-label="Avaliações" className={cn(CARD, "scroll-mt-32")}>
             <h2 className={H2}>Avaliações</h2>
@@ -391,12 +398,25 @@ function Services({
   first,
   serviceId,
   onPick,
+  profileId,
 }: {
   provider: ProviderData;
   first: string;
   serviceId: string | null;
   onPick: (id: string) => void;
+  profileId: string;
 }) {
+  const router = useRouter();
+  const toast = useToast();
+  const requireAuth = useRequireAuth();
+  const openChat = useMutation({
+    mutationFn: (sid: string) => actions.startConversation({ profileId, serviceId: sid }),
+    onSuccess: (c) => router.push(conversaHref(c.id)),
+    onError: (e) => toast(e instanceof Error ? e.message : "Não foi possível abrir a conversa.", "info"),
+  });
+  useResumeAction("chat", profileId, () => {
+    if (serviceId) openChat.mutate(serviceId);
+  });
   return (
     <section id="servicos" aria-label="Serviços e preços" className={cn(CARD, "scroll-mt-32")}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -427,18 +447,21 @@ function Services({
                   {s.durationMinutes ? `~${s.durationMinutes} min` : "Duração não informada"}
                 </span>
                 <span className="flex w-[150px] flex-col items-end">
-                  <span className="text-[11px] text-text-muted">
-                    {s.fromCents !== null ? "a partir de" : "preço"}
-                  </span>
-                  <span className="text-lg leading-6 font-extrabold text-text-strong">
-                    {s.fromCents !== null ? formatMoney(s.fromCents) : "Sob orçamento"}
-                  </span>
+                  <span className="text-[11px] text-text-muted">{servicePrice(s).prefix || " "}</span>
+                  <span className="text-lg leading-6 font-extrabold text-text-strong">{servicePrice(s).value}</span>
+                  {servicePrice(s).suffix && (
+                    <span className="text-[11px] text-text-muted">{servicePrice(s).suffix}</span>
+                  )}
                 </span>
                 <button
                   type="button"
                   aria-pressed={on}
                   onClick={() => {
                     onPick(s.id);
+                    if (servicePrice(s).action === "Combinar pelo chat") {
+                      if (requireAuth("chat", profileId)) openChat.mutate(s.id);
+                      return;
+                    }
                     document
                       .getElementById("orcamento")
                       ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -448,7 +471,7 @@ function Services({
                     on ? "bg-primary text-on-primary" : "bg-surface text-text-strong hover:bg-selected",
                   )}
                 >
-                  {on ? "Selecionado" : "Pedir orçamento"}
+                  {on ? "Selecionado" : servicePrice(s).action}
                 </button>
               </li>
             );
@@ -747,7 +770,7 @@ function QuotePanel({
                   />
                   <span className="flex-1 text-[13px] font-semibold text-text">{s.name}</span>
                   <span className="text-xs whitespace-nowrap text-text-2">
-                    {s.fromCents !== null ? formatMoney(s.fromCents) : "Sob orçamento"}
+                    {servicePrice(s).value}
                   </span>
                 </button>
               );
